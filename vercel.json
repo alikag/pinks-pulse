@@ -1,10 +1,15 @@
 {
-  "buildCommand": "echo 'Skipping build - API only deployment'",
-  "outputDirectory": ".",
-  "installCommand": "npm install",
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 60
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    }
+  ]
 }
