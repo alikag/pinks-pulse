@@ -1,17 +1,16 @@
 {
+  "buildCommand": "echo 'Skipping build - API only deployment'",
+  "outputDirectory": ".",
+  "installCommand": "npm install",
   "functions": {
     "api/index.js": {
-      "maxDuration": 10
+      "maxDuration": 60
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
     }
   ]
 }
