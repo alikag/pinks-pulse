@@ -59,6 +59,45 @@ app.get('/api/test-bigquery', async (req, res) => {
   }
 });
 
+// Check if views exist and get schema
+app.get('/api/check-views', async (req, res) => {
+  try {
+    const results = {};
+    
+    // Check v_quotes
+    try {
+      const [quotesRows] = await bigquery.query(`
+        SELECT * FROM \`jobber-data-warehouse-462721.jobber_data.v_quotes\` LIMIT 1
+      `);
+      results.v_quotes = { 
+        success: true, 
+        columns: quotesRows.length > 0 ? Object.keys(quotesRows[0]) : [],
+        sample: quotesRows[0] || {}
+      };
+    } catch (error) {
+      results.v_quotes = { success: false, error: error.message };
+    }
+    
+    // Check v_jobs
+    try {
+      const [jobsRows] = await bigquery.query(`
+        SELECT * FROM \`jobber-data-warehouse-462721.jobber_data.v_jobs\` LIMIT 1
+      `);
+      results.v_jobs = { 
+        success: true, 
+        columns: jobsRows.length > 0 ? Object.keys(jobsRows[0]) : [],
+        sample: jobsRows[0] || {}
+      };
+    } catch (error) {
+      results.v_jobs = { success: false, error: error.message };
+    }
+    
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Helper function to run BigQuery queries
 async function runQuery(query) {
   try {
@@ -80,20 +119,18 @@ app.get('/api/dashboard-data', async (req, res) => {
     const datasetId = process.env.BIGQUERY_DATASET || 'jobber_data';
     const projectId = process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721';
     
-    // Query v_quotes view with full path
+    // Query v_quotes view with full path - no ORDER BY until we know columns
     const quotesQuery = `
       SELECT *
       FROM \`jobber-data-warehouse-462721.jobber_data.v_quotes\`
-      ORDER BY created_at DESC
-      LIMIT 1000
+      LIMIT 10
     `;
 
-    // Query v_jobs view with full path
+    // Query v_jobs view with full path - no ORDER BY until we know columns
     const jobsQuery = `
       SELECT *
       FROM \`jobber-data-warehouse-462721.jobber_data.v_jobs\`
-      ORDER BY created_at DESC
-      LIMIT 1000
+      LIMIT 10
     `;
 
     // Run both queries
