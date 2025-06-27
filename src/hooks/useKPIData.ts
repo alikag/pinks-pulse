@@ -18,6 +18,7 @@ export const useKPIData = () => {
     } catch (err) {
       console.error('Error fetching KPI data:', err);
       setError('Failed to load dashboard data');
+      console.log('Using mock data due to API connection error');
       
       // Fallback to mock data for development
       setData({

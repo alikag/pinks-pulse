@@ -12,22 +12,47 @@ const PORT = process.env.PORT || 3001;
 const LAUNCH_DATE = new Date('2025-03-01');
 
 // Initialize BigQuery client
-const bigquery = new BigQuery({
-  projectId: process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721',
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS
-});
+let bigqueryConfig = {
+  projectId: process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721'
+};
+
+// Handle credentials for Vercel deployment
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  // For Vercel - credentials as JSON string
+  const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  bigqueryConfig.credentials = credentials;
+} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  // For local development - credentials as file path
+  bigqueryConfig.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
+
+const bigquery = new BigQuery(bigqueryConfig);
 
 app.use(cors());
 app.use(express.json());
 
+// Test endpoint to check if server is running
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    hasCredentials: !!(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  });
+});
+
 // Helper function to run BigQuery queries
 async function runQuery(query) {
-  const options = {
-    query: query,
-    location: 'US',
-  };
-  const [rows] = await bigquery.query(options);
-  return rows;
+  try {
+    const options = {
+      query: query,
+      location: 'US',
+    };
+    const [rows] = await bigquery.query(options);
+    return rows;
+  } catch (error) {
+    console.error('BigQuery query error:', error);
+    throw error;
+  }
 }
 
 // API endpoint to fetch dashboard data from v_jobs and v_quotes views
