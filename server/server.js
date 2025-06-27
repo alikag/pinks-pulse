@@ -61,18 +61,18 @@ app.get('/api/dashboard-data', async (req, res) => {
     const datasetId = process.env.BIGQUERY_DATASET || 'jobber_data';
     const projectId = process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721';
     
-    // Query v_quotes view
+    // Query v_quotes view with full path
     const quotesQuery = `
       SELECT *
-      FROM \`${projectId}.${datasetId}.v_quotes\`
+      FROM \`jobber-data-warehouse-462721.jobber_data.v_quotes\`
       ORDER BY created_at DESC
       LIMIT 1000
     `;
 
-    // Query v_jobs view
+    // Query v_jobs view with full path
     const jobsQuery = `
       SELECT *
-      FROM \`${projectId}.${datasetId}.v_jobs\`
+      FROM \`jobber-data-warehouse-462721.jobber_data.v_jobs\`
       ORDER BY created_at DESC
       LIMIT 1000
     `;
@@ -84,6 +84,8 @@ app.get('/api/dashboard-data', async (req, res) => {
     ]);
     
     // Log sample data to see structure
+    console.log(`Found ${quotesData.length} quotes and ${jobsData.length} jobs`);
+    
     if (quotesData.length > 0) {
       console.log('Sample quote:', quotesData[0]);
       console.log('Quote columns:', Object.keys(quotesData[0]));
@@ -99,12 +101,28 @@ app.get('/api/dashboard-data', async (req, res) => {
 
     res.json(kpiData);
   } catch (error) {
-    console.error('BigQuery error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch data from BigQuery',
-      details: error.message,
-      code: error.code
-    });
+    console.error('BigQuery error - Message:', error.message);
+    console.error('BigQuery error - Code:', error.code);
+    console.error('BigQuery error - Full:', JSON.stringify(error, null, 2));
+    
+    // Check for specific error types
+    if (error.code === 403) {
+      res.status(500).json({ 
+        error: 'Permission denied - check service account access to BigQuery',
+        details: error.message
+      });
+    } else if (error.code === 404) {
+      res.status(500).json({ 
+        error: 'Table/View not found - check if v_quotes and v_jobs exist',
+        details: error.message
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to fetch data from BigQuery',
+        details: error.message || 'Unknown error',
+        code: error.code || 'NO_CODE'
+      });
+    }
   }
 });
 
