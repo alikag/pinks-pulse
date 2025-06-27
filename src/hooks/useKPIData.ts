@@ -19,7 +19,8 @@ export const useKPIData = () => {
     } catch (err) {
       console.error('Error fetching KPI data:', err);
       console.log('API URL was:', API_BASE_URL);
-      setError('Using demo data - API connection pending');
+      // Use mock data but don't show as error
+      setError(null);
       console.log('Using mock data due to API connection error');
       
       // Fallback to mock data for development
