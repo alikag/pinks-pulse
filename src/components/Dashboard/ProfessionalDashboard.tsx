@@ -26,6 +26,12 @@ const ProfessionalDashboard: React.FC = () => {
   }
 
   const { kpis } = data;
+  
+  // Check if kpis exists
+  if (!kpis) {
+    console.error('KPIs data is missing:', data);
+    return <ErrorState message="Invalid data format received from server" />;
+  }
 
   // Define KPI metrics with proper formatting and icons
   const kpiMetrics = [

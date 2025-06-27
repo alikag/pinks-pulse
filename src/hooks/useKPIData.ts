@@ -13,11 +13,13 @@ export const useKPIData = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/dashboard-data`);
+      console.log('API Response:', response.data);
       setData(response.data);
       setError(null);
     } catch (err) {
       console.error('Error fetching KPI data:', err);
-      setError('Failed to load dashboard data');
+      console.log('API URL was:', API_BASE_URL);
+      setError('Using demo data - API connection pending');
       console.log('Using mock data due to API connection error');
       
       // Fallback to mock data for development
