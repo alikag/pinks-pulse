@@ -3,14 +3,8 @@
   "outputDirectory": ".",
   "installCommand": "npm install",
   "functions": {
-    "api/index.js": {
+    "api/*.js": {
       "maxDuration": 60
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    }
-  ]
+  }
 }
