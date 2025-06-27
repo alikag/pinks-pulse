@@ -36,8 +36,27 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    hasCredentials: !!(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS)
+    hasCredentials: !!(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS),
+    projectId: process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721',
+    dataset: process.env.BIGQUERY_DATASET || 'jobber_data'
   });
+});
+
+// Test BigQuery connection
+app.get('/api/test-bigquery', async (req, res) => {
+  try {
+    // Simple test query
+    const testQuery = `SELECT 1 as test`;
+    const [rows] = await bigquery.query(testQuery);
+    res.json({ success: true, result: rows });
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      error: error.message,
+      code: error.code,
+      details: error.errors
+    });
+  }
 });
 
 // Helper function to run BigQuery queries
