@@ -100,7 +100,11 @@ app.get('/api/dashboard-data', async (req, res) => {
     res.json(kpiData);
   } catch (error) {
     console.error('BigQuery error:', error);
-    res.status(500).json({ error: 'Failed to fetch data from BigQuery' });
+    res.status(500).json({ 
+      error: 'Failed to fetch data from BigQuery',
+      details: error.message,
+      code: error.code
+    });
   }
 });
 
@@ -139,7 +143,11 @@ app.get('/api/dashboard-data-legacy', async (req, res) => {
     res.json(processedData);
   } catch (error) {
     console.error('BigQuery error:', error);
-    res.status(500).json({ error: 'Failed to fetch data from BigQuery' });
+    res.status(500).json({ 
+      error: 'Failed to fetch data from BigQuery',
+      details: error.message,
+      code: error.code
+    });
   }
 });
 
