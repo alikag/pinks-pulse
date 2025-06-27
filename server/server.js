@@ -103,7 +103,7 @@ app.get('/api/dashboard-data', async (req, res) => {
     ]);
     
     // Log sample data to see structure
-    console.log(`Found ${quotesData.length} quotes and ${jobsData.length} jobs`);
+    console.log(`BigQuery Success: Found ${quotesData.length} quotes and ${jobsData.length} jobs`);
     
     if (quotesData.length > 0) {
       console.log('Sample quote:', quotesData[0]);
