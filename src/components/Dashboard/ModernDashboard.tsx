@@ -3,9 +3,6 @@ import {
   DollarSign, 
   TrendingUp, 
   Target, 
-  Calendar,
-  Clock,
-  BarChart3,
   Activity,
   ArrowUp,
   ArrowDown
@@ -13,7 +10,7 @@ import {
 import { useKPIData } from '../../hooks/useKPIData';
 
 const ModernDashboard: React.FC = () => {
-  const { data, loading, error } = useKPIData();
+  const { data, loading } = useKPIData();
 
   if (loading) {
     return <LoadingSkeleton />;
