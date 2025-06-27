@@ -258,20 +258,35 @@ function processKPIData(quotesData, jobsData) {
 
   // Helper function to check if date is today
   const isToday = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toDateString() === today.toDateString();
+    if (!dateStr) return false;
+    try {
+      const date = new Date(dateStr);
+      return date.toDateString() === today.toDateString();
+    } catch (e) {
+      return false;
+    }
   };
 
   // Helper function to check if date is this week
   const isThisWeek = (dateStr) => {
-    const date = new Date(dateStr);
-    return date >= weekStart && date <= now;
+    if (!dateStr) return false;
+    try {
+      const date = new Date(dateStr);
+      return date >= weekStart && date <= now;
+    } catch (e) {
+      return false;
+    }
   };
 
   // Helper function to check if date is in last 30 days
   const isLast30Days = (dateStr) => {
-    const date = new Date(dateStr);
-    return date >= thirtyDaysAgo && date <= now;
+    if (!dateStr) return false;
+    try {
+      const date = new Date(dateStr);
+      return date >= thirtyDaysAgo && date <= now;
+    } catch (e) {
+      return false;
+    }
   };
 
   // 1. Quotes Sent Today
@@ -332,8 +347,13 @@ function processKPIData(quotesData, jobsData) {
   const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
   const nextMonthOTB = jobsData
     .filter(j => {
-      const jobDate = new Date(j.Date);
-      return jobDate >= nextMonth && jobDate <= nextMonthEnd;
+      if (!j.Date) return false;
+      try {
+        const jobDate = new Date(j.Date);
+        return !isNaN(jobDate.getTime()) && jobDate >= nextMonth && jobDate <= nextMonthEnd;
+      } catch (e) {
+        return false;
+      }
     })
     .reduce((sum, j) => sum + (parseFloat(j.Calculated_Value) || 0), 0);
 
@@ -390,8 +410,13 @@ function calculateWeeklyHistorical(quotesData) {
     weekStart.setDate(weekStart.getDate() - 7);
     
     const weekQuotes = quotesData.filter(q => {
-      const date = new Date(q.sent_date);
-      return q.sent_date && date >= weekStart && date < weekEnd;
+      if (!q.sent_date) return false;
+      try {
+        const date = new Date(q.sent_date);
+        return date >= weekStart && date < weekEnd;
+      } catch (e) {
+        return false;
+      }
     });
     
     const converted = weekQuotes.filter(q => q.converted_date !== null).length;
@@ -444,8 +469,10 @@ function calculateOTBByMonth(jobsData) {
   
   jobsData.forEach(job => {
     if (!job.Date) return;
-    const jobDate = new Date(job.Date);
-    const monthKey = jobDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    try {
+      const jobDate = new Date(job.Date);
+      if (isNaN(jobDate.getTime())) return;
+      const monthKey = jobDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     
     if (months.hasOwnProperty(monthKey)) {
       const amount = parseFloat(job.Calculated_Value) || 0;
@@ -453,6 +480,9 @@ function calculateOTBByMonth(jobsData) {
       if (monthIndex !== -1) {
         next6Months[monthIndex].amount += amount;
       }
+    }
+    } catch (e) {
+      console.warn('Invalid job date format:', job.Date);
     }
   });
   
@@ -470,8 +500,12 @@ function calculateOTBByWeek(jobsData) {
     
     const weekJobs = jobsData.filter(j => {
       if (!j.Date) return false;
-      const jobDate = new Date(j.Date);
-      return jobDate >= weekStart && jobDate <= weekEnd;
+      try {
+        const jobDate = new Date(j.Date);
+        return !isNaN(jobDate.getTime()) && jobDate >= weekStart && jobDate <= weekEnd;
+      } catch (e) {
+        return false;
+      }
     });
     
     const amount = weekJobs.reduce((sum, j) => sum + (parseFloat(j.Calculated_Value) || 0), 0);
@@ -494,14 +528,23 @@ function calculateMonthlyProjections(quotesData, jobsData) {
   const last90Days = new Date();
   last90Days.setDate(last90Days.getDate() - 90);
   
-  const recentQuotes = quotesData.filter(q => new Date(q.created_at) >= last90Days);
+  const recentQuotes = quotesData.filter(q => {
+    if (!q.sent_date) return false;
+    try {
+      const sentDate = new Date(q.sent_date);
+      return !isNaN(sentDate.getTime()) && sentDate >= last90Days;
+    } catch (e) {
+      console.warn('Invalid sent_date format:', q.sent_date);
+      return false;
+    }
+  });
   const avgConversionRate = recentQuotes.length > 0 
     ? recentQuotes.filter(q => q.status === 'converted' || q.status === 'approved').length / recentQuotes.length
     : 0.3; // Default 30% if no data
   
   const avgQuoteValue = recentQuotes
     .filter(q => q.status === 'converted' || q.status === 'approved')
-    .reduce((sum, q, _, arr) => sum + (parseFloat(q.total_amount) || 0) / arr.length, 0);
+    .reduce((sum, q, _, arr) => sum + (parseFloat(q.total_dollars) || 0) / arr.length, 0);
   
   // Project based on historical trends
   months.forEach((month, index) => {
