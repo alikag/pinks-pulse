@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import PremiumDashboard from './components/Dashboard/PremiumDashboard'
+import ModernKPIDashboard from './components/Dashboard/ModernKPIDashboard'
 import PasswordProtect from './components/Auth/PasswordProtect'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -17,7 +17,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <PasswordProtect>
-          <PremiumDashboard />
+          <ModernKPIDashboard />
         </PasswordProtect>
       </QueryClientProvider>
     </ErrorBoundary>
