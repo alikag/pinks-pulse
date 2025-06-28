@@ -357,6 +357,7 @@ const SalesKPIDashboard: React.FC = () => {
         // Default to week view
         const chartPeriodKey: keyof typeof data.timeSeries = 'week'
         const chartData = data.timeSeries[chartPeriodKey]
+        console.log('[Converted This Week Chart] Chart data:', chartData)
         
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',

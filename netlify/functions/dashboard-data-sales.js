@@ -174,6 +174,10 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   const now = new Date(referenceDate);
   now.setHours(0, 0, 0, 0);
   
+  // For week calculations, always use the actual current date
+  const actualToday = new Date();
+  actualToday.setHours(0, 0, 0, 0);
+  
   // Helper functions
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -190,9 +194,9 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   const isThisWeek = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    // Sunday-Saturday weeks
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay()); // Sunday
+    // Sunday-Saturday weeks - use actual today for consistency
+    const weekStart = new Date(actualToday);
+    weekStart.setDate(actualToday.getDate() - actualToday.getDay()); // Sunday
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
@@ -392,6 +396,19 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     }))
     .sort((a, b) => b.valueConverted - a.valueConverted)
     .slice(0, 10);
+  
+  // Count quotes for this week
+  const thisWeekQuotes = quotesData.filter(q => {
+    const sentDate = q.sent_date ? new Date(q.sent_date) : null;
+    return sentDate && isThisWeek(sentDate);
+  });
+  
+  console.log('[dashboard-data-sales] This week quotes:', {
+    count: thisWeekQuotes.length,
+    actualToday: actualToday.toISOString(),
+    weekStart: new Date(actualToday.getTime() - actualToday.getDay() * 24 * 60 * 60 * 1000).toISOString(),
+    sampleDates: thisWeekQuotes.slice(0, 3).map(q => q.sent_date)
+  });
   
   // Process time series data
   const timeSeries = {
