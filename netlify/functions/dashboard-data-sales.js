@@ -410,11 +410,13 @@ function processWeekData(quotesData, referenceDate) {
     totalConverted: 0
   };
 
-  // Process last 7 days from reference date
-  console.log('[processWeekData] Reference date:', referenceDate.toISOString());
+  // Always use actual today for the week view to show the current week
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  console.log('[processWeekData] Using today for week view:', today.toISOString());
   
   for (let i = 6; i >= 0; i--) {
-    const date = new Date(referenceDate);
+    const date = new Date(today);
     date.setDate(date.getDate() - i);
     date.setHours(0, 0, 0, 0);
     const nextDate = new Date(date);
@@ -432,9 +434,7 @@ function processWeekData(quotesData, referenceDate) {
     const converted = dayQuotesConverted;
     
     // Debug logging
-    if (i === 0) { // Most recent day
-      console.log(`[processWeekData] ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
-    }
+    console.log(`[processWeekData] Day ${6-i}: ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
     
     weekData.labels.push(weekDays[date.getDay()]);
     weekData.quotesSent.push(sent);
