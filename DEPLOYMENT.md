@@ -35,10 +35,10 @@ The dashboard includes client-side password protection:
 
 You need to deploy the backend server separately. Options:
 
-#### Option A: Deploy to Vercel (Recommended for serverless)
-1. Install Vercel CLI: `npm i -g vercel`
-2. In the `/server` directory, run: `vercel`
-3. Set environment variables in Vercel dashboard
+#### Option A: Deploy to Netlify Functions (Recommended for serverless)
+1. Netlify Functions are already configured in the project
+2. Backend functions are located in `/netlify/functions`
+3. Set environment variables in Netlify dashboard
 
 #### Option B: Deploy to Google Cloud Run
 1. Create a Dockerfile in `/server`:

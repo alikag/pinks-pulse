@@ -1,54 +1,130 @@
-# React + TypeScript + Vite
+# Pinks Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive business analytics dashboard for tracking quotes, conversions, and sales performance.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Real-time KPI tracking and analytics
+- Quote conversion metrics and trends
+- Sales performance visualization
+- Responsive design for desktop and mobile
+- Password-protected access
+- Integration with BigQuery for data storage
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend**: React + TypeScript + Vite
+- **Styling**: Tailwind CSS
+- **Charts**: Chart.js, Recharts
+- **Backend**: Node.js + Express
+- **Database**: Google BigQuery
+- **Deployment**: Netlify (Frontend) + Netlify Functions (Backend)
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- Google Cloud account with BigQuery access
+- Netlify account for deployment
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd pinks-dashboard
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+2. Install dependencies:
+```bash
+npm install
 ```
+
+3. Create a `.env` file in the root directory:
+```env
+VITE_API_URL=http://localhost:3001/api
+VITE_DASHBOARD_PASSWORD=your-password
+```
+
+4. For the backend server, create a `.env` file in the `/server` directory:
+```env
+BIGQUERY_PROJECT_ID=your-project-id
+BIGQUERY_DATASET=your-dataset
+GOOGLE_APPLICATION_CREDENTIALS=path-to-service-account-key.json
+```
+
+### Development
+
+1. Start the development server:
+```bash
+npm run dev
+```
+
+2. In a separate terminal, start the backend server:
+```bash
+cd server
+npm install
+npm start
+```
+
+3. Open http://localhost:5173 in your browser
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Netlify
+
+1. Push your code to GitHub
+2. Connect your GitHub repository to Netlify
+3. Configure environment variables in Netlify dashboard
+4. Deploy with automatic builds on push
+
+## Project Structure
+
+```
+pinks-dashboard/
+├── src/                    # React source files
+│   ├── components/         # React components
+│   ├── hooks/             # Custom React hooks
+│   ├── services/          # API services
+│   └── types/             # TypeScript types
+├── netlify/               # Netlify Functions
+│   └── functions/         # Serverless functions
+├── server/                # Express backend server
+├── public/                # Static assets
+└── dist/                  # Build output
+```
+
+## Environment Variables
+
+### Frontend (Vite)
+- `VITE_API_URL`: Backend API endpoint
+- `VITE_DASHBOARD_PASSWORD`: Dashboard access password
+
+### Backend
+- `BIGQUERY_PROJECT_ID`: Google Cloud project ID
+- `BIGQUERY_DATASET`: BigQuery dataset name
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to service account JSON (local)
+- `GOOGLE_APPLICATION_CREDENTIALS_JSON`: Service account JSON string (production)
+
+## Security
+
+- Password protection for dashboard access
+- Environment variables for sensitive configuration
+- CORS configuration for API security
+- Service account credentials for BigQuery access
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is private and proprietary.

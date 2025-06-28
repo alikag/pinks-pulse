@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "npm run build"
+    "netlify-build": "npm run build"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.0",

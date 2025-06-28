@@ -16,9 +16,9 @@ let bigqueryConfig = {
   projectId: process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721'
 };
 
-// Handle credentials for Vercel deployment
+// Handle credentials for Netlify deployment
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  // For Vercel - credentials as JSON string
+  // For Netlify - credentials as JSON string
   const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
   bigqueryConfig.credentials = credentials;
 } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
