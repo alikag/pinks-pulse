@@ -18,7 +18,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('[dashboard-data-sales] Starting request processing...');
+    console.log('[dashboard-data-sales] Starting request processing... v2');
     
     // Check environment variables
     console.log('[dashboard-data-sales] Environment check:', {
@@ -413,7 +413,7 @@ function processWeekData(quotesData, referenceDate) {
   // Always use actual today for the week view to show the current week
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  console.log('[processWeekData] Using today for week view:', today.toISOString());
+  console.log('[processWeekData] Using today for week view:', today.toISOString(), 'Day:', weekDays[today.getDay()]);
   
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today);
@@ -434,7 +434,7 @@ function processWeekData(quotesData, referenceDate) {
     const converted = dayQuotesConverted;
     
     // Debug logging
-    console.log(`[processWeekData] Day ${6-i}: ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
+    console.log(`[processWeekData] Position ${6-i} (i=${i}): ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
     
     weekData.labels.push(weekDays[date.getDay()]);
     weekData.quotesSent.push(sent);
