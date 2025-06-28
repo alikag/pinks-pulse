@@ -376,11 +376,18 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   
   // Process time series data
   const timeSeries = {
-    week: processWeekData(quotesData),
-    month: processMonthData(quotesData),
-    year: processYearData(quotesData),
-    all: processAllTimeData(quotesData)
+    week: processWeekData(quotesData, now),
+    month: processMonthData(quotesData, now),
+    year: processYearData(quotesData, now),
+    all: processAllTimeData(quotesData, now)
   };
+  
+  console.log('[dashboard-data-sales] Week time series data:', {
+    labels: timeSeries.week.labels,
+    quotesSent: timeSeries.week.quotesSent,
+    quotesConverted: timeSeries.week.quotesConverted,
+    referenceDate: now.toISOString()
+  });
   
   return {
     timeSeries,
@@ -393,7 +400,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
 }
 
 // Time series processing functions
-function processWeekData(quotesData) {
+function processWeekData(quotesData, referenceDate) {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekData = {
     labels: [],
@@ -404,9 +411,9 @@ function processWeekData(quotesData) {
     totalConverted: 0
   };
 
-  // Process last 7 days
+  // Process last 7 days from reference date
   for (let i = 6; i >= 0; i--) {
-    const date = new Date();
+    const date = new Date(referenceDate);
     date.setDate(date.getDate() - i);
     date.setHours(0, 0, 0, 0);
     const nextDate = new Date(date);
@@ -417,13 +424,11 @@ function processWeekData(quotesData) {
       return sentDate && sentDate >= date && sentDate < nextDate;
     });
     
-    const dayConverted = quotesData.filter(q => {
-      const convertedDate = q.converted_date ? new Date(q.converted_date) : null;
-      return convertedDate && convertedDate >= date && convertedDate < nextDate && q.status === 'Converted';
-    });
+    // For the chart, show quotes that were sent on this day and eventually converted
+    const dayQuotesConverted = dayQuotes.filter(q => q.status === 'Converted').length;
     
     const sent = dayQuotes.length;
-    const converted = dayConverted.length;
+    const converted = dayQuotesConverted;
     
     weekData.labels.push(weekDays[date.getDay()]);
     weekData.quotesSent.push(sent);
@@ -445,7 +450,7 @@ function processWeekData(quotesData) {
   };
 }
 
-function processMonthData(quotesData) {
+function processMonthData(quotesData, referenceDate) {
   const monthData = {
     labels: [],
     quotesSent: [],
@@ -455,11 +460,11 @@ function processMonthData(quotesData) {
     totalConverted: 0
   };
 
-  // Process last 4 weeks
+  // Process last 4 weeks from reference date
   for (let week = 0; week < 4; week++) {
-    const weekStart = new Date();
+    const weekStart = new Date(referenceDate);
     weekStart.setDate(weekStart.getDate() - ((week + 1) * 7));
-    const weekEnd = new Date();
+    const weekEnd = new Date(referenceDate);
     weekEnd.setDate(weekEnd.getDate() - (week * 7));
     
     const weekQuotes = quotesData.filter(q => {
@@ -467,13 +472,11 @@ function processMonthData(quotesData) {
       return sentDate && sentDate >= weekStart && sentDate < weekEnd;
     });
     
-    const weekConverted = quotesData.filter(q => {
-      const convertedDate = q.converted_date ? new Date(q.converted_date) : null;
-      return convertedDate && convertedDate >= weekStart && convertedDate < weekEnd && q.status === 'Converted';
-    });
+    // Show quotes sent in this week that were eventually converted
+    const weekQuotesConverted = weekQuotes.filter(q => q.status === 'Converted').length;
     
     const sent = weekQuotes.length;
-    const converted = weekConverted.length;
+    const converted = weekQuotesConverted;
     
     monthData.labels.unshift(`Week ${4 - week}`);
     monthData.quotesSent.unshift(sent);
@@ -495,10 +498,10 @@ function processMonthData(quotesData) {
   };
 }
 
-function processYearData(quotesData) {
-  const currentYear = new Date().getFullYear();
+function processYearData(quotesData, referenceDate) {
+  const currentYear = referenceDate.getFullYear();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonth = new Date().getMonth();
+  const currentMonth = referenceDate.getMonth();
   
   const activeMonths = monthNames.slice(0, currentMonth + 1);
   
@@ -549,7 +552,7 @@ function processYearData(quotesData) {
   };
 }
 
-function processAllTimeData(quotesData) {
+function processAllTimeData(quotesData, referenceDate) {
   // Since launch (March 2025)
   const launchDate = new Date('2025-03-01');
   const allTimeQuotes = quotesData.filter(q => {
