@@ -5,6 +5,7 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Content-Type': 'application/json',
   };
 
   if (event.httpMethod === 'OPTIONS') {
@@ -12,6 +13,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('[debug-dates] Starting debug function...');
     // Initialize BigQuery
     const bigqueryConfig = {
       projectId: process.env.BIGQUERY_PROJECT_ID
@@ -93,11 +95,28 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(debugInfo, null, 2),
     };
   } catch (error) {
-    console.error('Debug error:', error);
+    console.error('[debug-dates] Error:', error);
+    
+    // Return JavaScript dates even if BigQuery fails
+    const jsToday = new Date();
+    const jsWeekStart = new Date(jsToday);
+    jsWeekStart.setDate(jsToday.getDate() - jsToday.getDay());
+    jsWeekStart.setHours(0, 0, 0, 0);
+    const jsWeekEnd = new Date(jsWeekStart);
+    jsWeekEnd.setDate(jsWeekStart.getDate() + 6);
+    
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({
+        error: error.message,
+        javascript: {
+          today: jsToday.toISOString(),
+          dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][jsToday.getDay()],
+          weekStart: jsWeekStart.toISOString(),
+          weekEnd: jsWeekEnd.toISOString()
+        }
+      }, null, 2),
     };
   }
 };
