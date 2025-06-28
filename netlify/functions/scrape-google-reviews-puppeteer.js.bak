@@ -1,0 +1,172 @@
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+
+export default async (request, context) => {
+  let browser = null;
+  
+  try {
+    // Configure Puppeteer for Netlify Functions
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless
+    });
+    
+    const page = await browser.newPage();
+    
+    // Set user agent to avoid detection
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    
+    // Navigate to the Google Maps URL
+    const url = 'https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7';
+    await page.goto(url, { 
+      waitUntil: 'networkidle2',
+      timeout: 30000 
+    });
+    
+    // Wait for content to load
+    await page.waitForTimeout(3000);
+    
+    // Extract data from the page
+    const data = await page.evaluate(() => {
+      const extractedData = {
+        businessName: null,
+        rating: null,
+        totalReviews: null,
+        reviews: []
+      };
+      
+      // Try to extract business name
+      const nameElement = document.querySelector('h1[class*="fontHeadlineLarge"]') || 
+                         document.querySelector('h1[aria-label]') ||
+                         document.querySelector('h1');
+      if (nameElement) {
+        extractedData.businessName = nameElement.textContent.trim();
+      }
+      
+      // Try to extract rating
+      const ratingElement = document.querySelector('div[jsaction*="pane.rating"] span[aria-label*="star"]') ||
+                           document.querySelector('span[aria-label*="stars"]') ||
+                           document.querySelector('div[class*="fontDisplayLarge"]');
+      if (ratingElement) {
+        const ratingText = ratingElement.getAttribute('aria-label') || ratingElement.textContent;
+        const ratingMatch = ratingText.match(/(\d+\.?\d*)/);
+        if (ratingMatch) {
+          extractedData.rating = parseFloat(ratingMatch[1]);
+        }
+      }
+      
+      // Try to extract total reviews
+      const reviewCountElement = document.querySelector('button[jsaction*="pane.reviewChart"] span') ||
+                                document.querySelector('span[aria-label*="reviews"]') ||
+                                document.querySelector('button[aria-label*="reviews"]');
+      if (reviewCountElement) {
+        const countText = reviewCountElement.getAttribute('aria-label') || reviewCountElement.textContent;
+        const countMatch = countText.match(/(\d+)/);
+        if (countMatch) {
+          extractedData.totalReviews = parseInt(countMatch[1], 10);
+        }
+      }
+      
+      // Try to extract reviews
+      const reviewElements = document.querySelectorAll('div[jsaction*="pane.review"]') ||
+                            document.querySelectorAll('div[data-review-id]') ||
+                            document.querySelectorAll('div[class*="section-review"]');
+      
+      reviewElements.forEach((reviewEl, index) => {
+        if (index >= 10) return; // Limit to 10 reviews
+        
+        const review = {
+          text: null,
+          rating: null,
+          date: null,
+          reviewerName: null
+        };
+        
+        // Extract reviewer name
+        const nameEl = reviewEl.querySelector('div[class*="section-review-title"] span') ||
+                      reviewEl.querySelector('button[class*="section-review-owner"]') ||
+                      reviewEl.querySelector('div[class*="fontTitleSmall"]');
+        if (nameEl) {
+          review.reviewerName = nameEl.textContent.trim();
+        }
+        
+        // Extract review rating
+        const ratingEl = reviewEl.querySelector('span[class*="section-review-stars"]') ||
+                        reviewEl.querySelector('span[aria-label*="star"]');
+        if (ratingEl) {
+          const ratingLabel = ratingEl.getAttribute('aria-label') || '';
+          const ratingMatch = ratingLabel.match(/(\d+)/);
+          if (ratingMatch) {
+            review.rating = parseInt(ratingMatch[1], 10);
+          }
+        }
+        
+        // Extract review text
+        const textEl = reviewEl.querySelector('span[class*="section-review-text"]') ||
+                      reviewEl.querySelector('span[jsaction*="review.expandText"]') ||
+                      reviewEl.querySelector('div[class*="MyEned"]');
+        if (textEl) {
+          review.text = textEl.textContent.trim();
+        }
+        
+        // Extract review date
+        const dateEl = reviewEl.querySelector('span[class*="section-review-publish-date"]') ||
+                      reviewEl.querySelector('span[class*="rsqaWe"]');
+        if (dateEl) {
+          review.date = dateEl.textContent.trim();
+        }
+        
+        // Only add review if it has meaningful content
+        if (review.text || review.rating) {
+          extractedData.reviews.push(review);
+        }
+      });
+      
+      return extractedData;
+    });
+    
+    await browser.close();
+    
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        ...data,
+        scrapedAt: new Date().toISOString(),
+        method: 'puppeteer',
+        url: page.url()
+      }
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error scraping with Puppeteer:', error);
+    
+    if (browser) {
+      await browser.close();
+    }
+    
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message,
+      stack: error.stack,
+      suggestion: 'Ensure @sparticuz/chromium and puppeteer-core are installed as dependencies'
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
+};
+
+export const config = {
+  path: "/api/scrape-google-reviews-puppeteer"
+};

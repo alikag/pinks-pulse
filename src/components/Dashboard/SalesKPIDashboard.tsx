@@ -78,14 +78,9 @@ const SalesKPIDashboard: React.FC = () => {
     console.log('SalesKPIDashboard - Data keys:', data ? Object.keys(data) : 'No data');
     console.log('SalesKPIDashboard - Has kpiMetrics?', data?.kpiMetrics);
     
-    if (loading) {
-      console.log('Still loading, using mock data');
-      return getMockKPIs()
-    }
-    
-    if (!data || !data.kpiMetrics) {
-      console.log('No data or kpiMetrics available, using mock data');
-      return getMockKPIs()
+    if (loading || !data || !data.kpiMetrics) {
+      console.log('Data not ready yet');
+      return []
     }
     
     const metrics = data.kpiMetrics;
@@ -379,7 +374,7 @@ const SalesKPIDashboard: React.FC = () => {
         const chartData = data.timeSeries[chartPeriodKey]
         const revenueData = chartData.quotesConverted.map((_, index) => {
           // Use actual converted dollars from the period
-          return chartData.quotesConverted[index] * (data.kpiMetrics?.convertedThisWeekDollars / Math.max(data.kpiMetrics?.convertedThisWeek || 1, 1) || 5000)
+          return chartData.quotesConverted[index] * ((data.kpiMetrics?.convertedThisWeekDollars || 0) / Math.max(data.kpiMetrics?.convertedThisWeek || 1, 1) || 5000)
         })
         
         trendChartInstance.current = new Chart(ctx, {
@@ -813,8 +808,8 @@ const SalesKPIDashboard: React.FC = () => {
         const hours = ['9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM']
         
         const heatmapData: any[] = []
-        days.forEach((day, dayIndex) => {
-          hours.forEach((hour, hourIndex) => {
+        days.forEach((_, dayIndex) => {
+          hours.forEach((_, hourIndex) => {
             const activity = Math.random() * 10 + (dayIndex < 5 ? 5 : 2) // Higher on weekdays
             heatmapData.push({
               x: hourIndex,
@@ -831,7 +826,7 @@ const SalesKPIDashboard: React.FC = () => {
               label: 'Quote Activity',
               data: heatmapData,
               backgroundColor: (context) => {
-                const value = context.raw.v
+                const value = (context.raw as any).v
                 const alpha = value / 15
                 return `rgba(249, 115, 22, ${alpha})`
               },
@@ -849,7 +844,7 @@ const SalesKPIDashboard: React.FC = () => {
                 borderWidth: 1,
                 callbacks: {
                   label: (context) => {
-                    const dataPoint = context.raw
+                    const dataPoint = context.raw as { x: number; y: number; v: number }
                     return `${days[dataPoint.y]} ${hours[dataPoint.x]}: ${dataPoint.v} quotes`
                   }
                 }
@@ -863,7 +858,7 @@ const SalesKPIDashboard: React.FC = () => {
                 max: 8.5,
                 ticks: {
                   stepSize: 1,
-                  callback: (value) => hours[value] || ''
+                  callback: (value) => hours[value as number] || ''
                 },
                 grid: { display: false }
               },
@@ -873,7 +868,7 @@ const SalesKPIDashboard: React.FC = () => {
                 max: 6.5,
                 ticks: {
                   stepSize: 1,
-                  callback: (value) => days[value] || ''
+                  callback: (value) => days[value as number] || ''
                 },
                 grid: { display: false }
               }
@@ -898,13 +893,30 @@ const SalesKPIDashboard: React.FC = () => {
     }
   }, [data, loading, selectedPeriod, kpis])
 
+  if (loading) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f]">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="relative inline-flex mb-8">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-spin"></div>
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full absolute top-0 left-0 animate-ping"></div>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Loading Dashboard</h2>
+            <p className="text-white/60">Connecting to data source...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f]">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <p className="text-red-400 mb-4">Error loading dashboard</p>
-            <p className="text-white/60">Using mock data</p>
+            <p className="text-white/60">{error}</p>
           </div>
         </div>
       </div>

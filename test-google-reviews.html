@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Reviews Scraper Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .endpoint-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .endpoint-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .endpoint-description {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: inline-block;
+            margin-left: 10px;
+            color: #666;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .success {
+            border-color: #4caf50;
+            background-color: #f1f8f4;
+        }
+        .error {
+            border-color: #f44336;
+            background-color: #fef1f0;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #1976d2;
+            font-size: 16px;
+        }
+        .info-box p {
+            margin: 5px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        .review-display {
+            margin-top: 20px;
+        }
+        .review-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .reviewer-name {
+            font-weight: 600;
+            color: #333;
+        }
+        .review-rating {
+            color: #fbbc04;
+        }
+        .review-date {
+            color: #666;
+            font-size: 12px;
+        }
+        .review-text {
+            color: #333;
+            line-height: 1.5;
+        }
+        .business-info {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .business-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .business-stats {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        .rating-stars {
+            color: #fbbc04;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Reviews Scraper Test</h1>
+        <p class="subtitle">Test different approaches to scrape Google Business reviews</p>
+        
+        <div class="info-box">
+            <h3>ℹ️ Important Notes</h3>
+            <p><strong>Target URL:</strong> https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7</p>
+            <p><strong>Local Development:</strong> Run <code>netlify dev</code> to test these functions locally</p>
+            <p><strong>Production:</strong> The Puppeteer/Playwright versions require additional dependencies to be installed</p>
+        </div>
+
+        <div class="endpoint-section">
+            <div class="endpoint-title">Simple Fetch Approach</div>
+            <div class="endpoint-description">
+                Uses standard fetch API. Fast but limited - Google Maps loads content dynamically, so this might not capture all data.
+            </div>
+            <button onclick="testEndpoint('/.netlify/functions/scrape-google-reviews', 'simple')">
+                Test Simple Fetch
+            </button>
+            <div id="simple-result"></div>
+        </div>
+
+        <div class="endpoint-section">
+            <div class="endpoint-title">Puppeteer Approach</div>
+            <div class="endpoint-description">
+                Uses Puppeteer with headless Chrome. Can handle dynamic content but requires @sparticuz/chromium and puppeteer-core dependencies.
+            </div>
+            <button onclick="testEndpoint('/.netlify/functions/scrape-google-reviews-puppeteer', 'puppeteer')">
+                Test Puppeteer
+            </button>
+            <div id="puppeteer-result"></div>
+        </div>
+
+        <div class="endpoint-section">
+            <div class="endpoint-title">Playwright Approach</div>
+            <div class="endpoint-description">
+                Uses Playwright with headless Chrome. Modern alternative to Puppeteer, requires playwright-chromium dependency.
+            </div>
+            <button onclick="testEndpoint('/.netlify/functions/scrape-google-reviews-playwright', 'playwright')">
+                Test Playwright
+            </button>
+            <div id="playwright-result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testEndpoint(url, type) {
+            const resultDiv = document.getElementById(`${type}-result`);
+            const button = event.target;
+            
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = 'Loading... <span class="loading">⏳</span>';
+            resultDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    // Display formatted results
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <div class="business-info">
+                                <div class="business-name">${data.data.businessName || 'Business Name Not Found'}</div>
+                                <div class="business-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Rating:</span>
+                                        <span class="stat-value">${data.data.rating || 'N/A'}</span>
+                                        <span class="rating-stars">${data.data.rating ? '★'.repeat(Math.round(data.data.rating)) : ''}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Total Reviews:</span>
+                                        <span class="stat-value">${data.data.totalReviews || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            ${data.data.reviews && data.data.reviews.length > 0 ? `
+                                <div class="review-display">
+                                    <h3>Recent Reviews (${data.data.reviews.length})</h3>
+                                    ${data.data.reviews.map(review => `
+                                        <div class="review-item">
+                                            <div class="review-header">
+                                                <span class="reviewer-name">${review.reviewerName || 'Anonymous'}</span>
+                                                <span class="review-rating">${review.rating ? '★'.repeat(review.rating) : ''}</span>
+                                            </div>
+                                            ${review.date ? `<div class="review-date">${review.date}</div>` : ''}
+                                            ${review.text ? `<div class="review-text">${review.text}</div>` : '<div class="review-text"><em>No review text</em></div>'}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p><em>No reviews found</em></p>'}
+                            <details style="margin-top: 20px;">
+                                <summary style="cursor: pointer; color: #666;">View Raw Response</summary>
+                                <pre style="margin-top: 10px;">${JSON.stringify(data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    // Show error or failure message
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>❌ ${data.message || 'Failed to scrape reviews'}</strong>
+                            ${data.suggestion ? `<p style="margin-top: 10px;">💡 ${data.suggestion}</p>` : ''}
+                            ${data.error ? `<p style="margin-top: 10px; color: #d32f2f;">Error: ${data.error}</p>` : ''}
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer;">View Full Response</summary>
+                                <pre style="margin-top: 10px;">${JSON.stringify(data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Request Failed</strong>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                // Reset button
+                button.disabled = false;
+                button.textContent = button.textContent.replace('Loading... ⏳', `Test ${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            }
+        }
+    </script>
+</body>
+</html>

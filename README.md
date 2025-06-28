@@ -10,6 +10,7 @@ A comprehensive business analytics dashboard for tracking quotes, conversions, a
 - Responsive design for desktop and mobile
 - Password-protected access
 - Integration with BigQuery for data storage
+- Google Reviews scraper for business insights
 
 ## Tech Stack
 
@@ -93,6 +94,8 @@ pinks-dashboard/
 │   └── types/             # TypeScript types
 ├── netlify/               # Netlify Functions
 │   └── functions/         # Serverless functions
+│       ├── dashboard-*    # Dashboard data endpoints
+│       └── scrape-*       # Google Reviews scrapers
 ├── server/                # Express backend server
 ├── public/                # Static assets
 └── dist/                  # Build output
@@ -124,6 +127,40 @@ pinks-dashboard/
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## Google Reviews Scraper
+
+The project includes Google Reviews scraping functionality with two implementations:
+
+### 1. Simple Fetch Scraper
+- Location: `/netlify/functions/scrape-google-reviews.js`
+- Method: Basic HTTP fetch
+- Limitations: Limited effectiveness with dynamic content
+
+### 2. Playwright Scraper
+- Location: `/netlify/functions/scrape-google-reviews-playwright.js`
+- Method: Headless browser automation
+- Features: Handles dynamic content, extracts ratings, reviews, and business info
+- Dependencies: `playwright-chromium`
+
+### Testing the Scrapers
+
+Use the test interface at `/test-google-reviews.html` or call the API endpoints directly:
+
+```bash
+# Simple fetch version
+curl https://your-domain/.netlify/functions/scrape-google-reviews
+
+# Playwright version (recommended)
+curl https://your-domain/.netlify/functions/scrape-google-reviews-playwright
+```
+
+### Recent Updates
+
+- Fixed TypeScript build errors in SalesKPIDashboard component
+- Installed Playwright dependencies for Google Reviews scraper
+- Removed Puppeteer implementation to reduce complexity
+- Updated scraper timeout handling for better reliability
 
 ## License
 

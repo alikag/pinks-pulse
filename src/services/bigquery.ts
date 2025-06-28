@@ -31,8 +31,7 @@ export class BigQueryService {
       return cleanData;
     } catch (error) {
       console.error('[BigQueryService] Error fetching dashboard data:', error);
-      console.error('[BigQueryService] Falling back to client-side mock data');
-      return this.getMockData();
+      throw error;
     }
   }
 
