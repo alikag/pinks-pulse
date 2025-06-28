@@ -48,6 +48,11 @@ const SalesKPIDashboard: React.FC = () => {
     console.log('SalesKPIDashboard - Data keys:', data ? Object.keys(data) : 'No data');
     console.log('SalesKPIDashboard - Has timeSeries?', data?.timeSeries);
     
+    if (loading) {
+      console.log('Still loading, using mock data');
+      return getMockKPIs()
+    }
+    
     if (!data || !data.timeSeries) {
       console.log('No data or timeSeries available, using mock data');
       return getMockKPIs()
@@ -121,7 +126,7 @@ const SalesKPIDashboard: React.FC = () => {
         isLive: false
       }
     ]
-  }, [data, selectedPeriod])
+  }, [data, selectedPeriod, loading])
 
   // Mock recent events
   const recentEvents: RecentEvent[] = [
@@ -231,7 +236,7 @@ const SalesKPIDashboard: React.FC = () => {
     }
 
     // Revenue Trend Chart
-    if (trendChartRef.current && data?.timeSeries) {
+    if (trendChartRef.current && !loading && data?.timeSeries) {
       const ctx = trendChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 200)
@@ -311,7 +316,7 @@ const SalesKPIDashboard: React.FC = () => {
     }
 
     // Conversion Funnel Chart
-    if (conversionChartRef.current && data?.timeSeries) {
+    if (conversionChartRef.current && !loading && data?.timeSeries) {
       const ctx = conversionChartRef.current.getContext('2d')
       if (ctx) {
         // Calculate funnel data from current period
