@@ -13,7 +13,7 @@ import {
 import Chart from 'chart.js/auto';
 
 const ModernKPIDashboard: React.FC = () => {
-  const { data, loading } = useKPIData();
+  const { data, loading, error } = useKPIData();
   const [isDark, setIsDark] = useState(false);
   const barChartRef = useRef<HTMLCanvasElement>(null);
   const areaChartRef = useRef<HTMLCanvasElement>(null);
@@ -157,7 +157,11 @@ const ModernKPIDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400">Loading dashboard...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <div className="text-gray-600">Loading dashboard...</div>
+          <div className="text-sm text-gray-400 mt-2">Connecting to BigQuery</div>
+        </div>
       </div>
     );
   }
@@ -265,6 +269,13 @@ const ModernKPIDashboard: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Status Banner */}
+      {error && (
+        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 text-sm text-yellow-800 text-center fade-in">
+          {error}
+        </div>
+      )}
 
       {/* Mobile KPI Swipe */}
       <section className="md:hidden mt-6 overflow-x-auto no-scrollbar fade-in">
