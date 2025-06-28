@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, Bell, HelpCircle, TrendingUp, Activity, Users, Target, BarChart3, XCircle } from 'lucide-react'
+import { Menu, Bell, HelpCircle, TrendingUp, Activity, BarChart3, XCircle, Trophy, Users, Target } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -48,13 +48,15 @@ const SalesKPIDashboard: React.FC = () => {
   // Chart refs
   const trendChartRef = useRef<HTMLCanvasElement>(null)
   const conversionChartRef = useRef<HTMLCanvasElement>(null)
-  const performanceChartRef = useRef<HTMLCanvasElement>(null)
+  const monthlyOTBChartRef = useRef<HTMLCanvasElement>(null)
+  const weeklyOTBChartRef = useRef<HTMLCanvasElement>(null)
   const sparklineRef = useRef<HTMLCanvasElement>(null)
   
   // Chart instances
   const trendChartInstance = useRef<Chart | null>(null)
   const conversionChartInstance = useRef<Chart | null>(null)
-  const performanceChartInstance = useRef<Chart | null>(null)
+  const monthlyOTBChartInstance = useRef<Chart | null>(null)
+  const weeklyOTBChartInstance = useRef<Chart | null>(null)
   const sparklineInstance = useRef<Chart | null>(null)
 
   // Calculate KPIs from data
@@ -228,7 +230,8 @@ const SalesKPIDashboard: React.FC = () => {
     // Destroy existing charts
     if (trendChartInstance.current) trendChartInstance.current.destroy()
     if (conversionChartInstance.current) conversionChartInstance.current.destroy()
-    if (performanceChartInstance.current) performanceChartInstance.current.destroy()
+    if (monthlyOTBChartInstance.current) monthlyOTBChartInstance.current.destroy()
+    if (weeklyOTBChartInstance.current) weeklyOTBChartInstance.current.destroy()
     if (sparklineInstance.current) sparklineInstance.current.destroy()
 
     // Daily Trend Sparkline
@@ -427,49 +430,112 @@ const SalesKPIDashboard: React.FC = () => {
       }
     }
 
-    // Salesperson Performance Chart
-    if (performanceChartRef.current) {
-      const ctx = performanceChartRef.current.getContext('2d')
+    // Monthly OTB Chart
+    if (monthlyOTBChartRef.current && !loading && data) {
+      const ctx = monthlyOTBChartRef.current.getContext('2d')
       if (ctx) {
-        performanceChartInstance.current = new Chart(ctx, {
-          type: 'radar',
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300)
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)')
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)')
+        
+        // Mock monthly OTB data - would come from BigQuery jobs data
+        const monthLabels = ['Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025']
+        const monthlyOTB = [1000, 33550, 50918.5, 78517.5, 73032.5, 52967.5, 4742.5, 4727.5, 5662.5, 2427.5]
+        
+        monthlyOTBChartInstance.current = new Chart(ctx, {
+          type: 'bar',
           data: {
-            labels: ['Quotes', 'Conversions', 'Revenue', 'Avg Deal', 'Speed'],
-            datasets: [
-              {
-                label: 'Current',
-                data: [85, 72, 90, 78, 65],
-                borderColor: '#8b5cf6',
-                backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                pointBackgroundColor: '#8b5cf6',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2
-              },
-              {
-                label: 'Target',
-                data: [90, 80, 85, 85, 80],
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                backgroundColor: 'transparent',
-                borderDash: [5, 5],
-                pointRadius: 0
-              }
-            ]
+            labels: monthLabels,
+            datasets: [{
+              label: 'Total Dollars',
+              data: monthlyOTB,
+              backgroundColor: gradient,
+              borderColor: '#6366f1',
+              borderWidth: 2,
+              borderRadius: 4
+            }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                position: 'bottom',
-                labels: { padding: 20, usePointStyle: true }
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1,
+                callbacks: {
+                  label: (context) => `OTB: $${context.parsed.y.toLocaleString()}`
+                }
               }
             },
             scales: {
-              r: {
+              y: {
                 beginAtZero: true,
-                max: 100,
+                max: 150000,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                ticks: { display: false }
+                ticks: {
+                  callback: (value) => `$${Number(value) / 1000}k`
+                }
+              },
+              x: {
+                grid: { display: false }
+              }
+            }
+          }
+        })
+      }
+    }
+    
+    // Weekly OTB Chart
+    if (weeklyOTBChartRef.current && !loading && data) {
+      const ctx = weeklyOTBChartRef.current.getContext('2d')
+      if (ctx) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 200)
+        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
+        gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
+        
+        // Mock weekly OTB data
+        const weekLabels = ['06-9', '06-16', '06-23', '06-30', '07-7', '07-14', '07-21', '07-28', '08-4', '08-11']
+        const weeklyOTB = [25785, 19975.56, 19875.56, 5536, 12496.5, 30544.5, 18052, 5636, 18052, 4557.8]
+        
+        weeklyOTBChartInstance.current = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: weekLabels,
+            datasets: [{
+              label: 'Total Dollars',
+              data: weeklyOTB,
+              backgroundColor: gradient,
+              borderColor: '#22d3ee',
+              borderWidth: 2,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1,
+                callbacks: {
+                  label: (context) => `OTB: $${context.parsed.y.toLocaleString()}`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: {
+                  callback: (value) => `$${Number(value).toLocaleString()}`
+                }
+              },
+              x: {
+                grid: { display: false }
               }
             }
           }
@@ -481,7 +547,8 @@ const SalesKPIDashboard: React.FC = () => {
     return () => {
       trendChartInstance.current?.destroy()
       conversionChartInstance.current?.destroy()
-      performanceChartInstance.current?.destroy()
+      monthlyOTBChartInstance.current?.destroy()
+      weeklyOTBChartInstance.current?.destroy()
       sparklineInstance.current?.destroy()
     }
   }, [data, loading, selectedPeriod])
@@ -715,7 +782,7 @@ const SalesKPIDashboard: React.FC = () => {
                   <h2 className="font-medium">On The Books by Month (Excluding Sales Tax)</h2>
                 </div>
                 <div className="h-48">
-                  <canvas ref={performanceChartRef}></canvas>
+                  <canvas ref={monthlyOTBChartRef}></canvas>
                 </div>
               </div>
 
@@ -723,10 +790,44 @@ const SalesKPIDashboard: React.FC = () => {
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4">On the Books by Week</h2>
                 <div className="h-48">
-                  <canvas ref={sparklineRef}></canvas>
+                  <canvas ref={weeklyOTBChartRef}></canvas>
                 </div>
               </div>
             </div>
+
+            {/* Salesperson Leaderboard */}
+            {data?.salespersons && data.salespersons.length > 0 && (
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(147,51,234,0.3)] transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-medium flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-400" />
+                    Sales Team Performance
+                  </h2>
+                  <span className="text-xs text-gray-400">Last 90 days</span>
+                </div>
+                <div className="space-y-3">
+                  {data.salespersons.slice(0, 5).map((sp, index) => (
+                    <div key={sp.name} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: sp.color }}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium">{sp.name}</p>
+                          <p className="text-xs text-gray-400">
+                            {sp.quotesSent} quotes • {sp.quotesConverted} converted
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{formatValue(sp.valueConverted, 'currency')}</p>
+                        <p className="text-xs text-gray-400">{sp.conversionRate.toFixed(1)}% CVR</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Converted Quotes Table */}
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
