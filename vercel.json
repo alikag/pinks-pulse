@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/dashboard-data.js": {
-      "runtime": "nodejs20.x"
-    }
-  }
-}
