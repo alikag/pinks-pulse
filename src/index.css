@@ -1,25 +1,16 @@
 /* Inter font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Base styles */
 @layer base {
-  html {
+  html, body, #root {
     height: 100%;
   }
   
   body {
-    height: 100%;
-    margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    @apply antialiased;
-  }
-  
-  #root {
-    height: 100%;
   }
 }
 
