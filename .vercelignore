@@ -1,0 +1,13 @@
+node_modules
+.env
+.env.local
+dist
+src
+public
+*.md
+package-lock.json
+tsconfig.json
+vite.config.ts
+index.html
+.gitignore
+netlify.toml
