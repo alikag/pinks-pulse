@@ -72,6 +72,11 @@ const SalesKPIDashboard: React.FC = () => {
   const cohortInstance = useRef<Chart | null>(null)
   const kpiSparklineInstances = useRef<{ [key: string]: Chart | null }>({})
 
+  // Helper function to generate sparkline data
+  const generateSparklineData = () => {
+    return Array.from({ length: 7 }, () => Math.random() * 50 + 25)
+  }
+
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
     console.log('SalesKPIDashboard - Full data object:', data);
@@ -243,11 +248,6 @@ const SalesKPIDashboard: React.FC = () => {
       default:
         return value.toString()
     }
-  }
-  
-  // Helper function to generate sparkline data
-  const generateSparklineData = () => {
-    return Array.from({ length: 7 }, () => Math.random() * 50 + 25)
   }
 
   // Setup charts
