@@ -25,7 +25,33 @@ export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 export interface DashboardData {
   timeSeries: Record<TimePeriod, TimeSeriesData>;
   salespersons: SalespersonData[];
+  kpiMetrics?: {
+    quotesToday: number;
+    convertedToday: number;
+    convertedTodayDollars: number;
+    quotesThisWeek: number;
+    convertedThisWeek: number;
+    convertedThisWeekDollars: number;
+    cvrThisWeek: number;
+    quotes30Days: number;
+    converted30Days: number;
+    cvr30Days: number;
+    avgQPD: number;
+    speedToLead30Days: number;
+    recurringRevenue2026: number;
+    nextMonthOTB: number;
+    reviewsThisWeek: number;
+  };
+  recentConvertedQuotes?: Array<{
+    dateConverted: string;
+    quoteNumber: string;
+    clientName: string;
+    salesPerson: string;
+    totalDollars: number;
+    status: string;
+  }>;
   lastUpdated: Date;
+  dataSource?: string;
 }
 
 export interface QuoteData {

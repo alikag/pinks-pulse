@@ -17,17 +17,15 @@ exports.handler = async (event, context) => {
     };
   }
 
-  try {
-    console.log('[dashboard-data-sales] Starting request processing...');
-    
-    // Check environment variables
-    console.log('[dashboard-data-sales] Environment check:', {
-      hasProjectId: !!process.env.BIGQUERY_PROJECT_ID,
-      projectId: process.env.BIGQUERY_PROJECT_ID,
-      hasCredentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
-      credentialsLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
-    });
+  console.log('[dashboard-data-sales] Starting handler execution');
+  console.log('[dashboard-data-sales] Environment check:', {
+    hasProjectId: !!process.env.BIGQUERY_PROJECT_ID,
+    projectId: process.env.BIGQUERY_PROJECT_ID,
+    hasCredentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+    credentialsLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
+  });
 
+  try {
     // Initialize BigQuery
     let bigqueryConfig = {
       projectId: process.env.BIGQUERY_PROJECT_ID
@@ -36,21 +34,28 @@ exports.handler = async (event, context) => {
     console.log('[dashboard-data-sales] Initializing BigQuery with project:', process.env.BIGQUERY_PROJECT_ID);
 
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      console.log('[dashboard-data-sales] Parsing Google credentials JSON...');
       try {
-        console.log('[dashboard-data-sales] Parsing credentials JSON...');
         const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
         bigqueryConfig.credentials = credentials;
-        console.log('[dashboard-data-sales] Credentials parsed successfully');
+        console.log('[dashboard-data-sales] Credentials parsed successfully:', {
+          type: credentials.type,
+          projectId: credentials.project_id,
+          clientEmail: credentials.client_email?.substring(0, 20) + '...',
+          hasPrivateKey: !!credentials.private_key
+        });
       } catch (parseError) {
-        console.error('[dashboard-data-sales] Failed to parse credentials:', parseError.message);
-        throw new Error('Invalid credentials JSON format');
+        console.error('[dashboard-data-sales] Failed to parse credentials JSON:', parseError.message);
+        throw new Error('Invalid Google credentials JSON format');
       }
+    } else {
+      console.log('[dashboard-data-sales] WARNING: No Google credentials found in environment');
     }
 
+    console.log('[dashboard-data-sales] Creating BigQuery client...');
     const bigquery = new BigQuery(bigqueryConfig);
-    console.log('[dashboard-data-sales] BigQuery client created');
 
-    // Query for quotes data
+    // Query v_quotes view
     const quotesQuery = `
       SELECT 
         quote_number,
@@ -58,145 +63,108 @@ exports.handler = async (event, context) => {
         salesperson,
         status,
         total_dollars,
+        created_at,
+        updated_at,
         sent_date,
+        approved_date,
         converted_date,
         days_to_convert
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-      WHERE sent_date IS NOT NULL
-      ORDER BY sent_date DESC
+      WHERE DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+         OR DATE(sent_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+         OR DATE(converted_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+      ORDER BY COALESCE(created_at, sent_date, converted_date) DESC
     `;
 
-    // Query for jobs data (for OTB calculations)
-    const jobsQuery = `
-      SELECT 
-        Job_Number,
-        Date,
-        Date_Converted,
-        SalesPerson,
-        Job_type,
-        Calculated_Value
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      WHERE Date >= CURRENT_DATE()
-      ORDER BY Date
-    `;
-
-    console.log('[dashboard-data-sales] Executing queries...');
+    console.log('[dashboard-data-sales] Executing BigQuery query...');
+    console.log('[dashboard-data-sales] Query target:', `${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes`);
     
-    const [[quotesData], [jobsData]] = await Promise.all([
-      bigquery.query(quotesQuery),
-      bigquery.query(jobsQuery)
-    ]);
+    const startTime = Date.now();
+    const [quotesData] = await bigquery.query(quotesQuery);
+    const queryTime = Date.now() - startTime;
     
-    console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs`);
-
-    // Process data into dashboard format
-    const dashboardData = processIntoDashboardFormat(quotesData, jobsData);
-    
-    console.log('[dashboard-data-sales] Dashboard data processed:', {
-      kpiMetrics: dashboardData.kpiMetrics,
-      salespersonCount: dashboardData.salespersons.length,
-      hasTimeSeries: !!dashboardData.timeSeries
+    console.log('[dashboard-data-sales] BigQuery query completed successfully:', {
+      rowCount: quotesData.length,
+      queryTimeMs: queryTime,
+      sampleData: quotesData.length > 0 ? {
+        firstRow: {
+          quote_number: quotesData[0].quote_number,
+          client_name: quotesData[0].client_name,
+          salesperson: quotesData[0].salesperson,
+          status: quotesData[0].status,
+          total_dollars: quotesData[0].total_dollars,
+          hasSentDate: !!quotesData[0].sent_date,
+          hasConvertedDate: !!quotesData[0].converted_date
+        }
+      } : 'No data returned'
     });
 
+    // Process data into the DashboardData format expected by SalesKPIDashboard
+    console.log('[dashboard-data-sales] Processing data into dashboard format...');
+    const dashboardData = processIntoDashboardFormat(quotesData);
+    
+    console.log('[dashboard-data-sales] Dashboard data processed:', {
+      salespersonCount: dashboardData.salespersons.length,
+      hasTimeSeries: !!dashboardData.timeSeries,
+      weekTotalSent: dashboardData.timeSeries?.week?.totalSent,
+      weekTotalConverted: dashboardData.timeSeries?.week?.totalConverted,
+      lastUpdated: dashboardData.lastUpdated
+    });
+
+    console.log('[dashboard-data-sales] Returning BigQuery data successfully');
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(dashboardData),
+      body: JSON.stringify({
+        ...dashboardData,
+        dataSource: 'bigquery' // Add indicator for debugging
+      }),
     };
   } catch (error) {
-    console.error('[dashboard-data-sales] Error:', error);
+    console.error('[dashboard-data-sales] BigQuery error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      stack: error.stack
+    });
     
-    // Return mock data on error
+    console.log('[dashboard-data-sales] Falling back to mock data due to error');
+    // Return mock data in the correct format
     const mockData = getMockDashboardData();
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         ...mockData,
-        dataSource: 'mock',
-        error: error.message
+        dataSource: 'mock', // Add indicator for debugging
+        error: error.message // Include error for debugging
       }),
     };
   }
 };
 
-function processIntoDashboardFormat(quotesData, jobsData) {
+function processIntoDashboardFormat(quotesData) {
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
   
-  // Helper functions
-  const parseDate = (dateStr) => {
-    if (!dateStr) return null;
-    return new Date(dateStr);
-  };
+  console.log('[processIntoDashboardFormat] Starting data processing with', quotesData.length, 'quotes');
   
-  const isToday = (date) => {
-    if (!date) return false;
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() === now.getTime();
-  };
-  
-  const isThisWeek = (date) => {
-    if (!date) return false;
-    const d = new Date(date);
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 7);
-    return d >= weekStart && d < weekEnd;
-  };
-  
-  const isThisMonth = (date) => {
-    if (!date) return false;
-    const d = new Date(date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  };
-  
-  const isNextMonth = (date) => {
-    if (!date) return false;
-    const d = new Date(date);
-    const nextMonth = new Date(now);
-    nextMonth.setMonth(now.getMonth() + 1);
-    return d.getMonth() === nextMonth.getMonth() && d.getFullYear() === nextMonth.getFullYear();
-  };
-  
-  const isLast30Days = (date) => {
-    if (!date) return false;
-    const d = new Date(date);
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(now.getDate() - 30);
-    return d >= thirtyDaysAgo && d <= now;
+  // Helper to parse BigQuery date/timestamp
+  const parseBQDate = (dateValue) => {
+    if (!dateValue) return null;
+    if (dateValue && typeof dateValue === 'object' && dateValue.value) {
+      return new Date(dateValue.value);
+    }
+    return new Date(dateValue);
   };
 
-  // Initialize metrics
-  let metrics = {
-    quotesToday: 0,
-    convertedToday: 0,
-    convertedTodayDollars: 0,
-    quotesThisWeek: 0,
-    convertedThisWeek: 0,
-    convertedThisWeekDollars: 0,
-    quotes30Days: 0,
-    converted30Days: 0,
-    speedToLeadSum: 0,
-    speedToLeadCount: 0,
-    recurringRevenue2026: 0,
-    nextMonthOTB: 0
-  };
-  
-  // Process quotes data
+  // Group quotes by salesperson
   const salespersonStats = {};
-  const recentConvertedQuotes = [];
+  let sentCount = 0;
+  let convertedCount = 0;
   
-  quotesData.forEach(quote => {
-    const sentDate = parseDate(quote.sent_date);
-    const convertedDate = parseDate(quote.converted_date);
-    const totalDollars = parseFloat(quote.total_dollars) || 0;
+  quotesData.forEach((quote, index) => {
     const sp = quote.salesperson || 'Unknown';
-    
-    // Initialize salesperson stats
     if (!salespersonStats[sp]) {
       salespersonStats[sp] = {
         name: sp,
@@ -207,100 +175,39 @@ function processIntoDashboardFormat(quotesData, jobsData) {
       };
     }
     
-    // Count sent quotes
-    if (sentDate) {
+    if (quote.sent_date) {
+      sentCount++;
       salespersonStats[sp].quotesSent++;
-      salespersonStats[sp].valueSent += totalDollars;
-      
-      if (isToday(sentDate)) {
-        metrics.quotesToday++;
-      }
-      if (isThisWeek(sentDate)) {
-        metrics.quotesThisWeek++;
-      }
-      if (isLast30Days(sentDate)) {
-        metrics.quotes30Days++;
-      }
+      salespersonStats[sp].valueSent += parseFloat(quote.total_dollars) || 0;
     }
     
-    // Count converted quotes
-    if (convertedDate && quote.status === 'Converted') {
+    if (quote.converted_date) {
+      convertedCount++;
       salespersonStats[sp].quotesConverted++;
-      salespersonStats[sp].valueConverted += totalDollars;
-      
-      if (isToday(convertedDate)) {
-        metrics.convertedToday++;
-        metrics.convertedTodayDollars += totalDollars;
-      }
-      if (isThisWeek(convertedDate)) {
-        metrics.convertedThisWeek++;
-        metrics.convertedThisWeekDollars += totalDollars;
-        
-        // Add to recent converted quotes
-        if (recentConvertedQuotes.length < 10) {
-          recentConvertedQuotes.push({
-            dateConverted: convertedDate.toLocaleDateString(),
-            quoteNumber: quote.quote_number,
-            clientName: quote.client_name,
-            salesPerson: quote.salesperson,
-            totalDollars: totalDollars,
-            status: quote.status
-          });
-        }
-      }
-      if (isLast30Days(convertedDate)) {
-        metrics.converted30Days++;
-      }
-      
-      // Calculate speed to lead
-      if (sentDate && quote.days_to_convert) {
-        const daysToConvert = parseInt(quote.days_to_convert);
-        if (!isNaN(daysToConvert)) {
-          metrics.speedToLeadSum += daysToConvert;
-          metrics.speedToLeadCount++;
-        }
-      }
+      salespersonStats[sp].valueConverted += parseFloat(quote.total_dollars) || 0;
+    }
+    
+    // Log sample data for first few quotes
+    if (index < 3) {
+      console.log(`[processIntoDashboardFormat] Sample quote ${index}:`, {
+        quote_number: quote.quote_number,
+        salesperson: quote.salesperson,
+        sent_date: quote.sent_date,
+        converted_date: quote.converted_date,
+        total_dollars: quote.total_dollars,
+        status: quote.status
+      });
     }
   });
   
-  // Process jobs data for OTB calculations
-  jobsData.forEach(job => {
-    const jobDate = parseDate(job.Date);
-    const jobValue = parseFloat(job.Calculated_Value) || 0;
-    
-    if (isNextMonth(jobDate)) {
-      metrics.nextMonthOTB += jobValue;
-    }
-    
-    // Check for recurring jobs in 2026
-    if (jobDate && jobDate.getFullYear() === 2026 && job.Job_type === 'RECURRING') {
-      metrics.recurringRevenue2026 += jobValue;
-    }
+  console.log('[processIntoDashboardFormat] Quote summary:', {
+    totalQuotes: quotesData.length,
+    sentQuotes: sentCount,
+    convertedQuotes: convertedCount,
+    salespersonCount: Object.keys(salespersonStats).length
   });
-  
-  // Calculate final KPI metrics
-  const kpiMetrics = {
-    quotesToday: metrics.quotesToday,
-    convertedToday: metrics.convertedToday,
-    convertedTodayDollars: metrics.convertedTodayDollars,
-    quotesThisWeek: metrics.quotesThisWeek,
-    convertedThisWeek: metrics.convertedThisWeek,
-    convertedThisWeekDollars: metrics.convertedThisWeekDollars,
-    cvrThisWeek: metrics.quotesThisWeek > 0 ? 
-      parseFloat(((metrics.convertedThisWeek / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
-    quotes30Days: metrics.quotes30Days,
-    converted30Days: metrics.converted30Days,
-    cvr30Days: metrics.quotes30Days > 0 ? 
-      parseFloat(((metrics.converted30Days / metrics.quotes30Days) * 100).toFixed(1)) : 0,
-    avgQPD: parseFloat((metrics.quotes30Days / 30).toFixed(2)),
-    speedToLead30Days: metrics.speedToLeadCount > 0 ? 
-      parseFloat((metrics.speedToLeadSum / metrics.speedToLeadCount).toFixed(1)) : 0,
-    recurringRevenue2026: metrics.recurringRevenue2026,
-    nextMonthOTB: metrics.nextMonthOTB,
-    reviewsThisWeek: 3 // Mock value - would need reviews data
-  };
-  
-  // Calculate salesperson stats
+
+  // Calculate conversion rates and assign colors
   const colors = ['rgb(147, 51, 234)', 'rgb(236, 72, 153)', 'rgb(59, 130, 246)', 'rgb(16, 185, 129)'];
   const salespersons = Object.values(salespersonStats)
     .map((sp, index) => ({
@@ -309,8 +216,8 @@ function processIntoDashboardFormat(quotesData, jobsData) {
       color: colors[index % colors.length]
     }))
     .sort((a, b) => b.valueConverted - a.valueConverted)
-    .slice(0, 10);
-  
+    .slice(0, 10); // Top 10 salespersons
+
   // Process time series data
   const timeSeries = {
     week: processWeekData(quotesData),
@@ -318,18 +225,14 @@ function processIntoDashboardFormat(quotesData, jobsData) {
     year: processYearData(quotesData),
     all: processAllTimeData(quotesData)
   };
-  
+
   return {
     timeSeries,
     salespersons,
-    kpiMetrics,
-    recentConvertedQuotes,
-    lastUpdated: new Date(),
-    dataSource: 'bigquery'
+    lastUpdated: new Date()
   };
 }
 
-// Time series processing functions
 function processWeekData(quotesData) {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekData = {
@@ -356,7 +259,7 @@ function processWeekData(quotesData) {
     
     const dayConverted = quotesData.filter(q => {
       const convertedDate = q.converted_date ? new Date(q.converted_date) : null;
-      return convertedDate && convertedDate >= date && convertedDate < nextDate && q.status === 'Converted';
+      return convertedDate && convertedDate >= date && convertedDate < nextDate;
     });
     
     const sent = dayQuotes.length;
@@ -406,7 +309,7 @@ function processMonthData(quotesData) {
     
     const weekConverted = quotesData.filter(q => {
       const convertedDate = q.converted_date ? new Date(q.converted_date) : null;
-      return convertedDate && convertedDate >= weekStart && convertedDate < weekEnd && q.status === 'Converted';
+      return convertedDate && convertedDate >= weekStart && convertedDate < weekEnd;
     });
     
     const sent = weekQuotes.length;
@@ -437,6 +340,7 @@ function processYearData(quotesData) {
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const currentMonth = new Date().getMonth();
   
+  // Only show months up to current month
   const activeMonths = monthNames.slice(0, currentMonth + 1);
   
   const yearData = {
@@ -448,6 +352,7 @@ function processYearData(quotesData) {
     totalConverted: 0
   };
 
+  // Process data by month
   quotesData.forEach(quote => {
     const sentDate = quote.sent_date ? new Date(quote.sent_date) : null;
     const convertedDate = quote.converted_date ? new Date(quote.converted_date) : null;
@@ -460,7 +365,7 @@ function processYearData(quotesData) {
       }
     }
     
-    if (convertedDate && convertedDate.getFullYear() === currentYear && quote.status === 'Converted') {
+    if (convertedDate && convertedDate.getFullYear() === currentYear) {
       const monthIndex = convertedDate.getMonth();
       if (monthIndex <= currentMonth) {
         yearData.quotesConverted[monthIndex]++;
@@ -494,24 +399,19 @@ function processAllTimeData(quotesData) {
     return sentDate && sentDate >= launchDate;
   });
 
-  const totalSent = allTimeQuotes.length;
-  const totalConverted = allTimeQuotes.filter(q => q.status === 'Converted').length;
-  const avgConversionRate = totalSent > 0 
-    ? Math.round((totalConverted / totalSent) * 100) 
-    : 0;
-
-  // Mock data for now - would need to process by month
-  return {
+  const allTimeData = {
     labels: ['March', 'April', 'May', 'June'],
     quotesSent: [15, 45, 68, 85],
     quotesConverted: [3, 12, 22, 29],
     conversionRate: [20.0, 26.7, 32.4, 34.1],
-    totalSent: totalSent,
-    totalConverted: totalConverted,
-    avgConversionRate: `${avgConversionRate}%`,
+    totalSent: 213,
+    totalConverted: 66,
+    avgConversionRate: '31.0%',
     conversionChange: '+14.1%',
     period: 'Since Launch (Mar 2025)'
   };
+
+  return allTimeData;
 }
 
 function getMockDashboardData() {
@@ -582,34 +482,6 @@ function getMockDashboardData() {
         color: 'rgb(236, 72, 153)'
       }
     ],
-    kpiMetrics: {
-      quotesToday: 0,
-      convertedToday: 0,
-      convertedTodayDollars: 17208.18,
-      quotesThisWeek: 12,
-      convertedThisWeek: 3,
-      convertedThisWeekDollars: 17208.18,
-      cvrThisWeek: 29,
-      quotes30Days: 85,
-      converted30Days: 45,
-      cvr30Days: 53,
-      avgQPD: 3.45,
-      speedToLead30Days: 21.78,
-      recurringRevenue2026: 111160,
-      nextMonthOTB: 73052.50,
-      reviewsThisWeek: 3
-    },
-    recentConvertedQuotes: [
-      {
-        dateConverted: '6/27/2025',
-        quoteNumber: '325',
-        clientName: 'Christian Ruddy',
-        salesPerson: 'Christian Ruddy',
-        totalDollars: 1175.00,
-        status: 'Converted'
-      }
-    ],
-    lastUpdated: new Date(),
-    dataSource: 'mock'
+    lastUpdated: new Date()
   };
 }

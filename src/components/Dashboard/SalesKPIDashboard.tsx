@@ -29,6 +29,24 @@ interface ConvertedQuote {
   totalDollars: number
 }
 
+interface KPIMetrics {
+  quotesToday: number
+  convertedToday: number
+  convertedTodayDollars: number
+  quotesThisWeek: number
+  convertedThisWeek: number
+  convertedThisWeekDollars: number
+  cvrThisWeek: number
+  quotes30Days: number
+  converted30Days: number
+  cvr30Days: number
+  avgQPD: number
+  speedToLead30Days: number
+  recurringRevenue2026: number
+  nextMonthOTB: number
+  reviewsThisWeek: number
+}
+
 interface RecentEvent {
   id: string
   time: string
@@ -58,138 +76,102 @@ const SalesKPIDashboard: React.FC = () => {
   const kpis = useMemo<KPI[]>(() => {
     console.log('SalesKPIDashboard - Full data object:', data);
     console.log('SalesKPIDashboard - Data keys:', data ? Object.keys(data) : 'No data');
-    console.log('SalesKPIDashboard - Has timeSeries?', data?.timeSeries);
+    console.log('SalesKPIDashboard - Has kpiMetrics?', data?.kpiMetrics);
     
     if (loading) {
       console.log('Still loading, using mock data');
       return getMockKPIs()
     }
     
-    if (!data || !data.timeSeries) {
-      console.log('No data or timeSeries available, using mock data');
+    if (!data || !data.kpiMetrics) {
+      console.log('No data or kpiMetrics available, using mock data');
       return getMockKPIs()
     }
     
-    // Map UI period to data period
-    let periodKey: keyof typeof data.timeSeries
-    switch (selectedPeriod) {
-      case 'Today':
-        periodKey = 'week' // Use week data for today view
-        break
-      case 'Week':
-        periodKey = 'week'
-        break
-      case 'Month':
-        periodKey = 'month'
-        break
-      case 'Quarter':
-        periodKey = 'year' // Use year data for quarter view
-        break
-      default:
-        periodKey = 'week'
-    }
-    
-    const timeData = data.timeSeries[periodKey]
-    
-    const totalQuotes = timeData.quotesSent.reduce((sum, val) => sum + val, 0)
-    const totalConversions = timeData.quotesConverted.reduce((sum, val) => sum + val, 0)
-    
-    // Calculate today's data
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayQuotes = timeData.quotesSent[timeData.quotesSent.length - 1] || 0
-    const todayConverted = timeData.quotesConverted[timeData.quotesConverted.length - 1] || 0
-    const todayRevenue = todayConverted * 5000
-    
-    // Calculate week totals
-    const weekRevenue = timeData.quotesConverted.reduce((sum, val) => sum + val * 5000, 0)
-    const weekCVR = totalQuotes > 0 ? (totalConversions / totalQuotes) * 100 : 0
-    
-    // Mock recurring and OTB values (these would come from BigQuery)
-    const recurringRevenue = 111160
-    const nextMonthOTB = 73052.50
+    const metrics = data.kpiMetrics;
     
     return [
       {
         id: 'quotes-sent-today',
         label: 'Quotes Sent Today',
         subtitle: 'Target: 12',
-        value: todayQuotes,
+        value: metrics.quotesToday,
         target: 12,
         format: 'number',
-        status: todayQuotes >= 12 ? 'success' : todayQuotes >= 8 ? 'warning' : 'danger',
+        status: metrics.quotesToday >= 12 ? 'success' : metrics.quotesToday >= 8 ? 'warning' : 'danger',
         isLive: true
       },
       {
         id: 'converted-today',
         label: 'Converted Today',
         subtitle: 'total_dollars',
-        value: todayRevenue,
+        value: metrics.convertedTodayDollars,
         target: 20000,
         format: 'currency',
-        status: todayRevenue > 0 ? 'success' : 'normal',
+        status: metrics.convertedTodayDollars > 15000 ? 'success' : metrics.convertedTodayDollars > 0 ? 'warning' : 'normal',
         isLive: true
       },
       {
         id: 'converted-week',
         label: 'Converted This Week',
         subtitle: 'total_dollars',
-        value: weekRevenue,
+        value: metrics.convertedThisWeekDollars,
         target: 100000,
         format: 'currency',
-        status: weekRevenue > 80000 ? 'success' : weekRevenue > 50000 ? 'warning' : 'danger'
+        status: metrics.convertedThisWeekDollars > 80000 ? 'success' : metrics.convertedThisWeekDollars > 50000 ? 'warning' : 'danger'
       },
       {
         id: 'cvr-week',
         label: 'CVR This Week',
         subtitle: 'Target: 45%',
-        value: weekCVR,
+        value: metrics.cvrThisWeek,
         target: 45,
         format: 'percentage',
-        status: weekCVR >= 45 ? 'success' : weekCVR >= 30 ? 'warning' : 'danger'
+        status: metrics.cvrThisWeek >= 45 ? 'success' : metrics.cvrThisWeek >= 30 ? 'warning' : 'danger'
       },
       {
         id: 'recurring-2026',
         label: '2026 Recurring',
-        subtitle: 'Total: $85k',
-        value: recurringRevenue,
+        subtitle: 'Target: $85k',
+        value: metrics.recurringRevenue2026,
         target: 85000,
         format: 'currency',
-        status: recurringRevenue >= 85000 ? 'success' : 'warning'
+        status: metrics.recurringRevenue2026 >= 85000 ? 'success' : 'warning'
       },
       {
         id: 'next-month-otb',
         label: 'Next Month OTB',
         subtitle: 'Target: $125k',
-        value: nextMonthOTB,
+        value: metrics.nextMonthOTB,
         target: 125000,
         format: 'currency',
-        status: nextMonthOTB >= 125000 ? 'success' : nextMonthOTB >= 100000 ? 'warning' : 'danger'
+        status: metrics.nextMonthOTB >= 125000 ? 'success' : metrics.nextMonthOTB >= 100000 ? 'warning' : 'danger'
       }
     ]
-  }, [data, selectedPeriod, loading])
+  }, [data, loading])
 
   // Calculate second row KPIs
   const secondRowKpis = useMemo<KPI[]>(() => {
-    if (loading || !data) {
+    if (loading || !data || !data.kpiMetrics) {
       return getSecondRowMockKPIs()
     }
     
-    // Mock values for now - these would come from BigQuery
+    const metrics = data.kpiMetrics;
+    
     return [
       {
         id: 'speed-to-lead',
         label: '30D Speed to Lead',
         subtitle: 'Target: 30%',
-        value: 21.78,
+        value: metrics.speedToLead30Days || 21.78,
         target: 30,
         format: 'percentage',
-        status: 'warning'
+        status: metrics.speedToLead30Days < 30 ? 'success' : 'warning'
       },
       {
         id: 'recurring-cvr',
         label: '30D Recurring CVR',
-        value: 0,
+        value: 0, // Would need recurring quotes data
         target: 20,
         format: 'percentage',
         status: 'normal'
@@ -198,28 +180,28 @@ const SalesKPIDashboard: React.FC = () => {
         id: 'avg-qpd',
         label: '30D AVG QPD',
         subtitle: 'Target: 12',
-        value: 3.45,
+        value: metrics.avgQPD,
         target: 12,
         format: 'number',
-        status: 'danger'
+        status: metrics.avgQPD >= 12 ? 'success' : metrics.avgQPD >= 6 ? 'warning' : 'danger'
       },
       {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 4',
-        value: 3,
+        value: metrics.reviewsThisWeek || 3,
         target: 4,
         format: 'number',
-        status: 'warning'
+        status: metrics.reviewsThisWeek >= 4 ? 'success' : 'warning'
       },
       {
         id: 'cvr-30d',
         label: '30D CVR',
         subtitle: 'Target: 45%',
-        value: 53,
+        value: metrics.cvr30Days,
         target: 45,
         format: 'percentage',
-        status: 'success'
+        status: metrics.cvr30Days >= 45 ? 'success' : metrics.cvr30Days >= 30 ? 'warning' : 'danger'
       }
     ]
   }, [data, loading])
@@ -779,23 +761,23 @@ const SalesKPIDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {getConvertedQuotes().map((quote, index) => (
+                    {(data?.recentConvertedQuotes || getConvertedQuotes()).map((quote, index) => (
                       <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
                         <td className="py-3 pr-4">{quote.dateConverted}</td>
-                        <td className="py-3 pr-4">{quote.jobNumber}</td>
-                        <td className="py-3 pr-4">{quote.date}</td>
+                        <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber}</td>
+                        <td className="py-3 pr-4">{quote.date || '-'}</td>
                         <td className="py-3 pr-4">
                           <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
-                            {quote.jobType}
+                            {quote.jobType || 'ONE_OFF'}
                           </span>
                         </td>
                         <td className="py-3 pr-4">{quote.salesPerson}</td>
                         <td className="py-3 pr-4">
-                          <a href={quote.jobberLink} className="text-blue-400 hover:underline">
+                          <a href={quote.jobberLink || '#'} className="text-blue-400 hover:underline">
                             View
                           </a>
                         </td>
-                        <td className="py-3 pr-4 text-gray-300">{quote.visitTitle}</td>
+                        <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
                         <td className="py-3 text-right font-medium">
                           {formatValue(quote.totalDollars, 'currency')}
                         </td>
