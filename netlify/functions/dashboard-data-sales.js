@@ -76,7 +76,7 @@ exports.handler = async (event, context) => {
         Job_type,
         Calculated_Value
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      WHERE Date >= CURRENT_DATE()
+      WHERE PARSE_DATE('%Y-%m-%d', Date) >= CURRENT_DATE()
       ORDER BY Date
     `;
 
