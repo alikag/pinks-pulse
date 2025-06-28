@@ -156,14 +156,14 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   quotesData.forEach(q => {
     try {
       if (q.sent_date) {
-        const sentDate = new Date(q.sent_date);
-        if (!isNaN(sentDate.getTime())) {
+        const sentDate = parseDate(q.sent_date);
+        if (sentDate && !isNaN(sentDate.getTime())) {
           allDates.push(sentDate);
         }
       }
       if (q.converted_date) {
-        const convertedDate = new Date(q.converted_date);
-        if (!isNaN(convertedDate.getTime())) {
+        const convertedDate = parseDate(q.converted_date);
+        if (convertedDate && !isNaN(convertedDate.getTime())) {
           allDates.push(convertedDate);
         }
       }
@@ -190,6 +190,10 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   // Helper functions
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
+    // Handle BigQuery date objects that come as { value: "2025-06-27" }
+    if (typeof dateStr === 'object' && dateStr.value) {
+      return new Date(dateStr.value);
+    }
     return new Date(dateStr);
   };
   
@@ -421,7 +425,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   });
   
   const thisWeekQuotes = quotesData.filter(q => {
-    const sentDate = q.sent_date ? new Date(q.sent_date) : null;
+    const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
     return sentDate && isThisWeek(sentDate);
   });
   
@@ -432,10 +436,10 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   
   // Process time series data
   const timeSeries = {
-    week: processWeekData(quotesData, now),
-    month: processMonthData(quotesData, now),
-    year: processYearData(quotesData, now),
-    all: processAllTimeData(quotesData, now)
+    week: processWeekData(quotesData, now, parseDate),
+    month: processMonthData(quotesData, now, parseDate),
+    year: processYearData(quotesData, now, parseDate),
+    all: processAllTimeData(quotesData, now, parseDate)
   };
   
   console.log('[dashboard-data-sales] Week time series data:', {
@@ -456,7 +460,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
 }
 
 // Time series processing functions
-function processWeekData(quotesData, referenceDate) {
+function processWeekData(quotesData, referenceDate, parseDate) {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekData = {
     labels: [],
@@ -480,7 +484,7 @@ function processWeekData(quotesData, referenceDate) {
     nextDate.setDate(date.getDate() + 1);
     
     const dayQuotes = quotesData.filter(q => {
-      const sentDate = q.sent_date ? new Date(q.sent_date) : null;
+      const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
       return sentDate && sentDate >= date && sentDate < nextDate;
     });
     
@@ -513,7 +517,7 @@ function processWeekData(quotesData, referenceDate) {
   };
 }
 
-function processMonthData(quotesData, referenceDate) {
+function processMonthData(quotesData, referenceDate, parseDate) {
   const monthData = {
     labels: [],
     quotesSent: [],
@@ -531,7 +535,7 @@ function processMonthData(quotesData, referenceDate) {
     weekEnd.setDate(weekEnd.getDate() - (week * 7));
     
     const weekQuotes = quotesData.filter(q => {
-      const sentDate = q.sent_date ? new Date(q.sent_date) : null;
+      const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
       return sentDate && sentDate >= weekStart && sentDate < weekEnd;
     });
     
@@ -561,7 +565,7 @@ function processMonthData(quotesData, referenceDate) {
   };
 }
 
-function processYearData(quotesData, referenceDate) {
+function processYearData(quotesData, referenceDate, parseDate) {
   const currentYear = referenceDate.getFullYear();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const currentMonth = referenceDate.getMonth();
@@ -578,8 +582,8 @@ function processYearData(quotesData, referenceDate) {
   };
 
   quotesData.forEach(quote => {
-    const sentDate = quote.sent_date ? new Date(quote.sent_date) : null;
-    const convertedDate = quote.converted_date ? new Date(quote.converted_date) : null;
+    const sentDate = quote.sent_date ? parseDate(quote.sent_date) : null;
+    const convertedDate = quote.converted_date ? parseDate(quote.converted_date) : null;
     
     if (sentDate && sentDate.getFullYear() === currentYear) {
       const monthIndex = sentDate.getMonth();
@@ -615,11 +619,11 @@ function processYearData(quotesData, referenceDate) {
   };
 }
 
-function processAllTimeData(quotesData, referenceDate) {
+function processAllTimeData(quotesData, referenceDate, parseDate) {
   // Since launch (March 2025)
   const launchDate = new Date('2025-03-01');
   const allTimeQuotes = quotesData.filter(q => {
-    const sentDate = q.sent_date ? new Date(q.sent_date) : null;
+    const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
     return sentDate && sentDate >= launchDate;
   });
 
