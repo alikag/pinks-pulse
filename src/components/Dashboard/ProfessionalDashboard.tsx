@@ -15,14 +15,13 @@ import {
   HardDrive,
   Activity,
   DollarSign,
-  MoreHorizontal,
   Circle,
-  Waveform
+  Waves
 } from 'lucide-react';
 import Chart from 'chart.js/auto';
 
 const ProfessionalDashboard: React.FC = () => {
-  const { data, loading, error } = useKPIData();
+  const { data, loading } = useKPIData();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   
   // Chart refs
@@ -247,7 +246,7 @@ const ProfessionalDashboard: React.FC = () => {
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-slate-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg grid place-content-center">
-              <Waveform className="h-5 w-5" />
+              <Waves className="h-5 w-5" />
             </div>
             <span className="text-lg font-semibold tracking-tight">Pink's Pulse</span>
           </div>
@@ -340,8 +339,8 @@ const ProfessionalDashboard: React.FC = () => {
                   All-time converted: {data.kpis._debug.allTimeConverted}
                   All-time revenue: {data.kpis._debug.allTimeRevenue}
                   Current time: {data.kpis._debug.currentTime}
-                  Quotes date range: {data.kpis._debug.dateRanges.quotes?.min ? `${new Date(data.kpis._debug.dateRanges.quotes.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.quotes.max).toLocaleDateString()}` : 'No dates'}
-                  Jobs date range: {data.kpis._debug.dateRanges.jobs?.min ? `${new Date(data.kpis._debug.dateRanges.jobs.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.jobs.max).toLocaleDateString()}` : 'No dates'}
+                  Quotes date range: {data.kpis._debug.dateRanges.quotes?.min && data.kpis._debug.dateRanges.quotes?.max ? `${new Date(data.kpis._debug.dateRanges.quotes.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.quotes.max).toLocaleDateString()}` : 'No dates'}
+                  Jobs date range: {data.kpis._debug.dateRanges.jobs?.min && data.kpis._debug.dateRanges.jobs?.max ? `${new Date(data.kpis._debug.dateRanges.jobs.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.jobs.max).toLocaleDateString()}` : 'No dates'}
                 </pre>
               </details>
             </div>
@@ -455,7 +454,7 @@ const ProfessionalDashboard: React.FC = () => {
                           <span className="truncate">Speed to Lead</span>
                         </td>
                         <td className="py-3 px-3 lg:px-5">{kpis.speedToLead30Day}</td>
-                        <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">< 2 hrs</td>
+                        <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">&lt; 2 hrs</td>
                         <td className="py-3 px-3 lg:px-5 hidden md:table-cell">
                           <span className="inline-flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
                             <Circle className="h-2 w-2 fill-current" />

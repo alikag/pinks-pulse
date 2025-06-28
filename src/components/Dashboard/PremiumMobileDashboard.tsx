@@ -182,8 +182,8 @@ const PremiumMobileDashboard: React.FC = () => {
               All-time converted: {data.kpis._debug.allTimeConverted}
               All-time revenue: {data.kpis._debug.allTimeRevenue}
               Current time: {data.kpis._debug.currentTime}
-              Quotes date range: {data.kpis._debug.dateRanges.quotes?.min ? `${new Date(data.kpis._debug.dateRanges.quotes.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.quotes.max).toLocaleDateString()}` : 'No dates'}
-              Jobs date range: {data.kpis._debug.dateRanges.jobs?.min ? `${new Date(data.kpis._debug.dateRanges.jobs.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.jobs.max).toLocaleDateString()}` : 'No dates'}
+              Quotes date range: {data.kpis._debug.dateRanges.quotes?.min && data.kpis._debug.dateRanges.quotes?.max ? `${new Date(data.kpis._debug.dateRanges.quotes.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.quotes.max).toLocaleDateString()}` : 'No dates'}
+              Jobs date range: {data.kpis._debug.dateRanges.jobs?.min && data.kpis._debug.dateRanges.jobs?.max ? `${new Date(data.kpis._debug.dateRanges.jobs.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.jobs.max).toLocaleDateString()}` : 'No dates'}
             </pre>
           </details>
         </div>

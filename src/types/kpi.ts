@@ -24,6 +24,22 @@ export interface KPIData {
     otbByMonth: MonthlyOTB[];
     otbByWeek: WeeklyOTB[];
     monthlyProjections: MonthlyProjection[];
+    
+    // Debug info (optional)
+    _debug?: {
+      allTimeQuotes: number;
+      allTimeConverted: number;
+      allTimeRevenue: string;
+      dateRanges: {
+        quotes: { min: string | null; max: string | null } | null;
+        jobs: { min: string | null; max: string | null } | null;
+      };
+      currentTime: string;
+      todayBounds: {
+        start: string;
+        end: string;
+      };
+    };
   };
   lastUpdated: Date;
 }
