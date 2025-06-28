@@ -25,6 +25,7 @@ export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 export interface DashboardData {
   timeSeries: Record<TimePeriod, TimeSeriesData>;
   salespersons: SalespersonData[];
+  salespersonsThisWeek?: SalespersonData[];
   kpiMetrics?: {
     quotesToday: number;
     convertedToday: number;

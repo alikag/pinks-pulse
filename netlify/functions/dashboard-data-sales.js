@@ -261,6 +261,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   
   // Process quotes data
   const salespersonStats = {};
+  const salespersonWeekStats = {}; // Track this week's performance separately
   const recentConvertedQuotes = [];
   
   quotesData.forEach(quote => {
@@ -290,9 +291,26 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
       }
       if (isThisWeek(sentDate)) {
         metrics.quotesThisWeek++;
+        
+        // Track this week's performance by salesperson
+        if (!salespersonWeekStats[sp]) {
+          salespersonWeekStats[sp] = {
+            name: sp,
+            quotesSent: 0,
+            quotesConverted: 0,
+            valueSent: 0,
+            valueConverted: 0,
+            conversionRate: 0
+          };
+        }
+        salespersonWeekStats[sp].quotesSent++;
+        salespersonWeekStats[sp].valueSent += totalDollars;
+        
         // Check if this quote sent this week was eventually converted
         if (quote.status === 'Converted') {
           metrics.quotesThisWeekConverted++;
+          salespersonWeekStats[sp].quotesConverted++;
+          salespersonWeekStats[sp].valueConverted += totalDollars;
         }
       }
       if (isLast30Days(sentDate)) {
@@ -409,6 +427,16 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     }))
     .sort((a, b) => b.valueConverted - a.valueConverted)
     .slice(0, 10);
+    
+  // Calculate this week's salesperson stats
+  const salespersonsThisWeek = Object.values(salespersonWeekStats)
+    .map((sp, index) => ({
+      ...sp,
+      conversionRate: sp.quotesSent > 0 ? (sp.quotesConverted / sp.quotesSent) * 100 : 0,
+      color: colors[index % colors.length]
+    }))
+    .filter(sp => sp.quotesSent > 0) // Only show salespeople who sent quotes this week
+    .sort((a, b) => b.valueConverted - a.valueConverted);
   
   // Count quotes for this week
   const weekStart = new Date(actualToday);
@@ -452,6 +480,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   return {
     timeSeries,
     salespersons,
+    salespersonsThisWeek, // Add this week's stats
     kpiMetrics,
     recentConvertedQuotes,
     lastUpdated: new Date(),

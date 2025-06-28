@@ -676,8 +676,8 @@ const SalesKPIDashboard: React.FC = () => {
     if (cohortRef.current && !loading && data) {
       const ctx = cohortRef.current.getContext('2d')
       if (ctx) {
-        // Use salesperson data from the dashboard
-        const salespersonData = data?.salespersons || []
+        // Use this week's salesperson data
+        const salespersonData = data?.salespersonsThisWeek || []
         
         cohortInstance.current = new Chart(ctx, {
           type: 'bar',
