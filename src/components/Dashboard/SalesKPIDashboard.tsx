@@ -44,10 +44,31 @@ const SalesKPIDashboard: React.FC = () => {
 
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
-    if (!data) return getMockKPIs()
+    if (!data || !data.timeSeries) {
+      console.log('No data or timeSeries available, using mock data');
+      return getMockKPIs()
+    }
     
-    const period = selectedPeriod.toLowerCase()
-    const timeData = period === 'today' ? data.timeSeries.week : data.timeSeries[period as keyof typeof data.timeSeries]
+    // Map UI period to data period
+    let periodKey: keyof typeof data.timeSeries
+    switch (selectedPeriod) {
+      case 'Today':
+        periodKey = 'week' // Use week data for today view
+        break
+      case 'Week':
+        periodKey = 'week'
+        break
+      case 'Month':
+        periodKey = 'month'
+        break
+      case 'Quarter':
+        periodKey = 'year' // Use year data for quarter view
+        break
+      default:
+        periodKey = 'week'
+    }
+    
+    const timeData = data.timeSeries[periodKey]
     
     const totalRevenue = timeData.quotesConverted.reduce((sum, val) => sum + val * 5000, 0)
     const totalQuotes = timeData.quotesSent.reduce((sum, val) => sum + val, 0)
@@ -206,20 +227,39 @@ const SalesKPIDashboard: React.FC = () => {
     }
 
     // Revenue Trend Chart
-    if (trendChartRef.current) {
+    if (trendChartRef.current && data?.timeSeries) {
       const ctx = trendChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 200)
         gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)')
         gradient.addColorStop(1, 'rgba(14, 165, 233, 0)')
         
+        // Map UI period to data period for chart
+        let chartPeriodKey: keyof typeof data.timeSeries
+        switch (selectedPeriod) {
+          case 'Today':
+          case 'Week':
+            chartPeriodKey = 'week'
+            break
+          case 'Month':
+            chartPeriodKey = 'month'
+            break
+          case 'Quarter':
+            chartPeriodKey = 'year'
+            break
+          default:
+            chartPeriodKey = 'week'
+        }
+        const chartData = data.timeSeries[chartPeriodKey]
+        const revenueData = chartData.quotesConverted.map(val => val * 5000) // Assuming $5000 per conversion
+        
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            labels: chartData.labels,
             datasets: [{
               label: 'Revenue',
-              data: [45000, 52000, 48000, 61000, 58000, 42000, 67000],
+              data: revenueData,
               borderColor: '#0ea5e9',
               backgroundColor: gradient,
               fill: true,
@@ -267,15 +307,44 @@ const SalesKPIDashboard: React.FC = () => {
     }
 
     // Conversion Funnel Chart
-    if (conversionChartRef.current) {
+    if (conversionChartRef.current && data?.timeSeries) {
       const ctx = conversionChartRef.current.getContext('2d')
       if (ctx) {
+        // Calculate funnel data from current period
+        let funnelPeriodKey: keyof typeof data.timeSeries
+        switch (selectedPeriod) {
+          case 'Today':
+          case 'Week':
+            funnelPeriodKey = 'week'
+            break
+          case 'Month':
+            funnelPeriodKey = 'month'
+            break
+          case 'Quarter':
+            funnelPeriodKey = 'year'
+            break
+          default:
+            funnelPeriodKey = 'week'
+        }
+        const periodData = data.timeSeries[funnelPeriodKey]
+        const totalSent = periodData.totalSent
+        const totalConverted = periodData.totalConverted
+        
+        // Estimate funnel stages (you can adjust these ratios based on your business)
+        const funnelData = [
+          totalSent * 1.5,  // Leads (assume 1.5x quotes were leads)
+          totalSent * 1.2,  // Contacted
+          totalSent,        // Quoted
+          totalSent * 0.6,  // Negotiated
+          totalConverted    // Closed
+        ]
+        
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: ['Leads', 'Contacted', 'Quoted', 'Negotiated', 'Closed'],
             datasets: [{
-              data: [150, 120, 85, 45, 28],
+              data: funnelData,
               backgroundColor: [
                 'rgba(99, 102, 241, 0.8)',
                 'rgba(59, 130, 246, 0.8)',

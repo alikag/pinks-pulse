@@ -1,12 +1,12 @@
 import axios from 'axios';
 import type { DashboardData, TimePeriod } from '../types/dashboard';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/.netlify/functions';
 
 export class BigQueryService {
   static async fetchDashboardData(): Promise<DashboardData> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard-data`);
+      const response = await axios.get(`${API_BASE_URL}/dashboard-data-sales`);
       return response.data;
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
