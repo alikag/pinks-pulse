@@ -45,9 +45,9 @@ exports.handler = async (event, context) => {
         converted_date,
         days_to_convert
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-      WHERE created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
-         OR sent_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
-         OR converted_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+      WHERE DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+         OR DATE(sent_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+         OR DATE(converted_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
       ORDER BY COALESCE(created_at, sent_date, converted_date) DESC
     `;
 
@@ -62,7 +62,7 @@ exports.handler = async (event, context) => {
         SalesPerson,
         Date_Converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      WHERE Date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+      WHERE DATE(Date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
       ORDER BY Date DESC
     `;
 
