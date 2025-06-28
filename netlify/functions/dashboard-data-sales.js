@@ -80,17 +80,30 @@ exports.handler = async (event, context) => {
       ORDER BY Date
     `;
 
+    // Query for requests data (for speed to lead calculations)
+    const requestsQuery = `
+      SELECT 
+        quote_number,
+        requested_on_date,
+        quote_created_at,
+        minutes_to_quote_sent
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\`
+      WHERE minutes_to_quote_sent IS NOT NULL
+      AND requested_on_date IS NOT NULL
+    `;
+
     console.log('[dashboard-data-sales] Executing queries...');
     
-    const [[quotesData], [jobsData]] = await Promise.all([
+    const [[quotesData], [jobsData], [requestsData]] = await Promise.all([
       bigquery.query(quotesQuery),
-      bigquery.query(jobsQuery)
+      bigquery.query(jobsQuery),
+      bigquery.query(requestsQuery)
     ]);
     
-    console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs`);
+    console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${requestsData.length} requests`);
 
     // Process data into dashboard format
-    const dashboardData = processIntoDashboardFormat(quotesData, jobsData);
+    const dashboardData = processIntoDashboardFormat(quotesData, jobsData, requestsData);
     
     console.log('[dashboard-data-sales] Dashboard data processed:', {
       kpiMetrics: dashboardData.kpiMetrics,
@@ -120,9 +133,11 @@ exports.handler = async (event, context) => {
   }
 };
 
-function processIntoDashboardFormat(quotesData, jobsData) {
+function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
+  // Set timezone to EST and use Sunday-Saturday weeks
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const estOffset = -5; // EST offset from UTC
+  now.setHours(0 - estOffset, 0, 0, 0);
   
   // Helper functions
   const parseDate = (dateStr) => {
@@ -140,8 +155,9 @@ function processIntoDashboardFormat(quotesData, jobsData) {
   const isThisWeek = (date) => {
     if (!date) return false;
     const d = new Date(date);
+    // Sunday-Saturday weeks
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setDate(now.getDate() - now.getDay()); // Sunday
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
@@ -183,7 +199,9 @@ function processIntoDashboardFormat(quotesData, jobsData) {
     speedToLeadSum: 0,
     speedToLeadCount: 0,
     recurringRevenue2026: 0,
-    nextMonthOTB: 0
+    nextMonthOTB: 0,
+    thisMonthOTB: 0,
+    thisWeekOTB: 0
   };
   
   // Process quotes data
@@ -251,15 +269,18 @@ function processIntoDashboardFormat(quotesData, jobsData) {
       if (isLast30Days(convertedDate)) {
         metrics.converted30Days++;
       }
-      
-      // Calculate speed to lead
-      if (sentDate && quote.days_to_convert) {
-        const daysToConvert = parseInt(quote.days_to_convert);
-        if (!isNaN(daysToConvert)) {
-          metrics.speedToLeadSum += daysToConvert;
-          metrics.speedToLeadCount++;
-        }
-      }
+      // days_to_convert is not speed to lead - remove this calculation
+    }
+  });
+  
+  // Process requests data for speed to lead calculations
+  requestsData.forEach(request => {
+    const requestDate = parseDate(request.requested_on_date);
+    const minutesToQuote = parseFloat(request.minutes_to_quote_sent);
+    
+    if (requestDate && isLast30Days(requestDate) && !isNaN(minutesToQuote)) {
+      metrics.speedToLeadSum += minutesToQuote;
+      metrics.speedToLeadCount++;
     }
   });
   
@@ -268,6 +289,12 @@ function processIntoDashboardFormat(quotesData, jobsData) {
     const jobDate = parseDate(job.Date);
     const jobValue = parseFloat(job.Calculated_Value) || 0;
     
+    if (isThisWeek(jobDate)) {
+      metrics.thisWeekOTB += jobValue;
+    }
+    if (isThisMonth(jobDate)) {
+      metrics.thisMonthOTB += jobValue;
+    }
     if (isNextMonth(jobDate)) {
       metrics.nextMonthOTB += jobValue;
     }
@@ -294,9 +321,11 @@ function processIntoDashboardFormat(quotesData, jobsData) {
       parseFloat(((metrics.converted30Days / metrics.quotes30Days) * 100).toFixed(1)) : 0,
     avgQPD: parseFloat((metrics.quotes30Days / 30).toFixed(2)),
     speedToLead30Days: metrics.speedToLeadCount > 0 ? 
-      parseFloat((metrics.speedToLeadSum / metrics.speedToLeadCount).toFixed(1)) : 0,
+      Math.round(metrics.speedToLeadSum / metrics.speedToLeadCount) : 0,
     recurringRevenue2026: metrics.recurringRevenue2026,
     nextMonthOTB: metrics.nextMonthOTB,
+    thisMonthOTB: metrics.thisMonthOTB,
+    thisWeekOTB: metrics.thisWeekOTB,
     reviewsThisWeek: 3 // Mock value - would need reviews data
   };
   

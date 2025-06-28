@@ -40,6 +40,8 @@ export interface DashboardData {
     speedToLead30Days: number;
     recurringRevenue2026: number;
     nextMonthOTB: number;
+    thisMonthOTB: number;
+    thisWeekOTB: number;
     reviewsThisWeek: number;
   };
   recentConvertedQuotes?: Array<{

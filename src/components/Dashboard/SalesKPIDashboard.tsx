@@ -93,9 +93,9 @@ const SalesKPIDashboard: React.FC = () => {
         label: 'Converted Today',
         subtitle: 'total_dollars',
         value: metrics.convertedTodayDollars,
-        target: 20000,
+        target: 22500,
         format: 'currency',
-        status: metrics.convertedTodayDollars > 15000 ? 'success' : metrics.convertedTodayDollars > 0 ? 'warning' : 'normal',
+        status: metrics.convertedTodayDollars >= 22500 ? 'success' : metrics.convertedTodayDollars > 15000 ? 'warning' : 'normal',
         isLive: true
       },
       {
@@ -103,9 +103,9 @@ const SalesKPIDashboard: React.FC = () => {
         label: 'Converted This Week',
         subtitle: 'total_dollars',
         value: metrics.convertedThisWeekDollars,
-        target: 100000,
+        target: 157500,
         format: 'currency',
-        status: metrics.convertedThisWeekDollars > 80000 ? 'success' : metrics.convertedThisWeekDollars > 50000 ? 'warning' : 'danger'
+        status: metrics.convertedThisWeekDollars >= 157500 ? 'success' : metrics.convertedThisWeekDollars > 100000 ? 'warning' : 'danger'
       },
       {
         id: 'cvr-week',
@@ -149,11 +149,11 @@ const SalesKPIDashboard: React.FC = () => {
       {
         id: 'speed-to-lead',
         label: '30D Speed to Lead',
-        subtitle: 'Target: 30%',
-        value: metrics.speedToLead30Days || 21.78,
+        subtitle: 'Target: 30 min',
+        value: metrics.speedToLead30Days || 0,
         target: 30,
-        format: 'percentage',
-        status: metrics.speedToLead30Days < 30 ? 'success' : 'warning'
+        format: 'number',
+        status: metrics.speedToLead30Days <= 30 ? 'success' : 'warning'
       },
       {
         id: 'recurring-cvr',
@@ -300,7 +300,10 @@ const SalesKPIDashboard: React.FC = () => {
             chartPeriodKey = 'week'
         }
         const chartData = data.timeSeries[chartPeriodKey]
-        const revenueData = chartData.quotesConverted.map(val => val * 5000) // Assuming $5000 per conversion
+        const revenueData = chartData.quotesConverted.map((_, index) => {
+          // Use actual converted dollars from the period
+          return chartData.quotesConverted[index] * (data.kpiMetrics?.convertedThisWeekDollars / Math.max(data.kpiMetrics?.convertedThisWeek || 1, 1) || 5000)
+        })
         
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',
@@ -355,48 +358,20 @@ const SalesKPIDashboard: React.FC = () => {
       }
     }
 
-    // Conversion Funnel Chart
+    // Weekly CVR Chart
     if (conversionChartRef.current && !loading && data?.timeSeries) {
       const ctx = conversionChartRef.current.getContext('2d')
       if (ctx) {
-        // Calculate funnel data from current period
-        let funnelPeriodKey: keyof typeof data.timeSeries
-        switch (selectedPeriod) {
-          case 'Today':
-          case 'Week':
-            funnelPeriodKey = 'week'
-            break
-          case 'Month':
-            funnelPeriodKey = 'month'
-            break
-          case 'Quarter':
-            funnelPeriodKey = 'year'
-            break
-          default:
-            funnelPeriodKey = 'week'
-        }
-        const periodData = data.timeSeries[funnelPeriodKey]
-        const totalSent = periodData.totalSent
-        const totalConverted = periodData.totalConverted
-        
-        // Estimate funnel stages (you can adjust these ratios based on your business)
-        const funnelData = [
-          totalSent * 1.5,  // Leads (assume 1.5x quotes were leads)
-          totalSent * 1.2,  // Contacted
-          totalSent,        // Quoted
-          totalSent * 0.6,  // Negotiated
-          totalConverted    // Closed
-        ]
+        const chartData = data.timeSeries.week
         
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: ['Leads', 'Contacted', 'Quoted', 'Negotiated', 'Closed'],
+            labels: chartData.labels,
             datasets: [{
-              data: funnelData,
+              label: 'CVR %',
+              data: chartData.conversionRate,
               backgroundColor: [
-                'rgba(99, 102, 241, 0.8)',
-                'rgba(59, 130, 246, 0.8)',
                 'rgba(14, 165, 233, 0.8)',
                 'rgba(6, 182, 212, 0.8)',
                 'rgba(34, 211, 238, 0.8)'
@@ -438,9 +413,25 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)')
         gradient.addColorStop(1, 'rgba(99, 102, 241, 0)')
         
-        // Mock monthly OTB data - would come from BigQuery jobs data
-        const monthLabels = ['Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025']
-        const monthlyOTB = [1000, 33550, 50918.5, 78517.5, 73032.5, 52967.5, 4742.5, 4727.5, 5662.5, 2427.5]
+        // Use actual data based on selected period
+        let monthLabels = ['Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025']
+        let monthlyOTB = [1000, 33550, 50918.5, 78517.5, 73032.5, 52967.5, 4742.5, 4727.5, 5662.5, 2427.5]
+        
+        // Adjust data based on selected period
+        const now = new Date()
+        const currentMonth = now.getMonth()
+        if (selectedPeriod === 'Today' || selectedPeriod === 'Week') {
+          // Show only current month
+          monthLabels = [monthLabels[currentMonth]]
+          monthlyOTB = [data.kpiMetrics?.thisMonthOTB || monthlyOTB[currentMonth]]
+        } else if (selectedPeriod === 'Month') {
+          // Show current month and next month
+          monthLabels = monthLabels.slice(currentMonth, currentMonth + 2)
+          monthlyOTB = [
+            data.kpiMetrics?.thisMonthOTB || monthlyOTB[currentMonth],
+            data.kpiMetrics?.nextMonthOTB || monthlyOTB[currentMonth + 1]
+          ]
+        }
         
         monthlyOTBChartInstance.current = new Chart(ctx, {
           type: 'bar',
@@ -495,9 +486,20 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
         gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
         
-        // Mock weekly OTB data
-        const weekLabels = ['06-9', '06-16', '06-23', '06-30', '07-7', '07-14', '07-21', '07-28', '08-4', '08-11']
-        const weeklyOTB = [25785, 19975.56, 19875.56, 5536, 12496.5, 30544.5, 18052, 5636, 18052, 4557.8]
+        // Use actual data based on selected period
+        let weekLabels = ['06-9', '06-16', '06-23', '06-30', '07-7', '07-14', '07-21', '07-28', '08-4', '08-11']
+        let weeklyOTB = [25785, 19975.56, 19875.56, 5536, 12496.5, 30544.5, 18052, 5636, 18052, 4557.8]
+        
+        // Adjust data for current period
+        if (selectedPeriod === 'Today' || selectedPeriod === 'Week') {
+          // Show this week's OTB
+          weekLabels = ['This Week']
+          weeklyOTB = [data.kpiMetrics?.thisWeekOTB || 0]
+        } else if (selectedPeriod === 'Month') {
+          // Show last 4 weeks
+          weekLabels = weekLabels.slice(-4)
+          weeklyOTB = weeklyOTB.slice(-4)
+        }
         
         weeklyOTBChartInstance.current = new Chart(ctx, {
           type: 'bar',
@@ -615,7 +617,7 @@ const SalesKPIDashboard: React.FC = () => {
             </div>
             <div className="relative z-10 text-center">
               <p className="text-xs text-white/60 mb-1">Today's Performance</p>
-              <p className="text-3xl font-bold">{formatValue(kpis[0]?.value || 0, 'currency')}</p>
+              <p className="text-3xl font-bold">{formatValue(kpis[1]?.value || 0, 'currency')}</p>
               <p className="text-xs text-cyan-400 mt-1">↑ 12.5% from yesterday</p>
             </div>
           </div>
@@ -720,7 +722,7 @@ const SalesKPIDashboard: React.FC = () => {
                       {formatValue(kpi.value, kpi.format)}
                     </p>
                     {kpi.id === 'speed-to-lead' && (
-                      <a href="#" className="text-xs text-blue-400 hover:underline">See details</a>
+                      <p className="text-xs text-gray-500">minutes</p>
                     )}
                   </div>
                 </div>
@@ -765,9 +767,9 @@ const SalesKPIDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Weekly Historical Conversions */}
+              {/* Weekly CVR % */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">Weekly Historical Conversions</h2>
+                <h2 className="font-medium mb-4">Weekly CVR %</h2>
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
@@ -1020,10 +1022,10 @@ function getSecondRowMockKPIs(): KPI[] {
     {
       id: 'speed-to-lead',
       label: '30D Speed to Lead',
-      subtitle: 'Target: 30%',
-      value: 21.78,
+      subtitle: 'Target: 30 min',
+      value: 22,
       target: 30,
-      format: 'percentage',
+      format: 'number',
       status: 'warning'
     },
     {
