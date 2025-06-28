@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, TrendingUp, Activity, XCircle, Trophy, Users, Target, Clock, AlertCircle, CheckCircle } from 'lucide-react'
+import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -357,23 +357,31 @@ const SalesKPIDashboard: React.FC = () => {
         // Default to week view
         const chartPeriodKey: keyof typeof data.timeSeries = 'week'
         const chartData = data.timeSeries[chartPeriodKey]
-        const revenueData = chartData.quotesConverted.map((_, index) => {
-          // Use actual converted dollars from the period
-          return chartData.quotesConverted[index] * ((data.kpiMetrics?.convertedThisWeekDollars || 0) / Math.max(data.kpiMetrics?.convertedThisWeek || 1, 1) || 5000)
-        })
         
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',
           data: {
             labels: chartData.labels,
             datasets: [{
-              label: 'Revenue',
-              data: revenueData,
-              borderColor: '#0ea5e9',
-              backgroundColor: gradient,
-              fill: true,
+              label: 'Sent Quotes',
+              data: chartData.quotesSent,
+              borderColor: '#fb923c',
+              backgroundColor: 'rgba(251, 146, 60, 0.1)',
+              fill: false,
               tension: 0.4,
-              pointBackgroundColor: '#0ea5e9',
+              pointBackgroundColor: '#fb923c',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }, {
+              label: 'Converted',
+              data: chartData.quotesConverted,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: false,
+              tension: 0.4,
+              pointBackgroundColor: '#3b82f6',
               pointBorderColor: '#ffffff',
               pointBorderWidth: 2,
               pointRadius: 4,
@@ -666,29 +674,25 @@ const SalesKPIDashboard: React.FC = () => {
     if (cohortRef.current && !loading && data) {
       const ctx = cohortRef.current.getContext('2d')
       if (ctx) {
-        // Mock cohort data
-        const cohortData = [
-          { week: 'Week 1', sent: 50, converted: 15, rate: 30 },
-          { week: 'Week 2', sent: 65, converted: 22, rate: 33.8 },
-          { week: 'Week 3', sent: 72, converted: 28, rate: 38.9 },
-          { week: 'Week 4', sent: 58, converted: 25, rate: 43.1 }
-        ]
+        // Use salesperson data from the dashboard
+        const salespersonData = data?.salespersons || []
         
         cohortInstance.current = new Chart(ctx, {
-          type: 'line',
+          type: 'bar',
           data: {
-            labels: cohortData.map(c => c.week),
+            labels: salespersonData.map(sp => sp.name),
             datasets: [{
-              label: 'Conversion Rate %',
-              data: cohortData.map(c => c.rate),
-              borderColor: '#fb923c',
-              backgroundColor: 'rgba(251, 146, 60, 0.1)',
-              fill: true,
-              tension: 0.4,
-              pointBackgroundColor: '#fb923c',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 4
+              label: 'Quotes Sent',
+              data: salespersonData.map(sp => sp.quotesSent),
+              backgroundColor: '#fb923c',
+              borderRadius: 6,
+              barPercentage: 0.8
+            }, {
+              label: 'Quotes Converted',
+              data: salespersonData.map(sp => sp.quotesConverted),
+              backgroundColor: '#3b82f6',
+              borderRadius: 6,
+              barPercentage: 0.8
             }]
           },
           options: {
@@ -703,7 +707,11 @@ const SalesKPIDashboard: React.FC = () => {
                 callbacks: {
                   afterLabel: (context) => {
                     const index = context.dataIndex
-                    return `Sent: ${cohortData[index].sent}, Converted: ${cohortData[index].converted}`
+                    const sp = salespersonData[index]
+                    if (sp) {
+                      return `CVR: ${sp.conversionRate.toFixed(1)}%`
+                    }
+                    return ''
                   }
                 }
               }
@@ -934,19 +942,6 @@ const SalesKPIDashboard: React.FC = () => {
               Dashboard
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
-              <Users className="h-4 w-4" />
-              Team
-            </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
-              <Target className="h-4 w-4" />
-              Goals
-            </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
-              <Activity className="h-4 w-4" />
-              <span className="flex-1">Live Feed</span>
-              <span className="ml-auto text-xs bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-md animate-pulse">LIVE</span>
-            </a>
           </nav>
 
           {/* Daily Sparkline */}
@@ -1079,7 +1074,7 @@ const SalesKPIDashboard: React.FC = () => {
                   <span className="text-xs text-gray-400">BigQuery Connected</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-blue-400 animate-pulse" />
+                  <TrendingUp className="h-4 w-4 text-blue-400 animate-pulse" />
                   <span className="text-xs text-gray-400">Live Data</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1157,9 +1152,9 @@ const SalesKPIDashboard: React.FC = () => {
                 </div>
               </div>
               
-              {/* Conversion Cohort Analysis */}
+              {/* Salesperson Performance */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(251,146,60,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">Conversion Cohort Analysis</h2>
+                <h2 className="font-medium mb-4">Salesperson Performance (This Week)</h2>
                 <div className="h-48">
                   <canvas ref={cohortRef}></canvas>
                 </div>

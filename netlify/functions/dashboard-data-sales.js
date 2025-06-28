@@ -134,16 +134,20 @@ exports.handler = async (event, context) => {
 };
 
 function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
-  // Find the most recent quote date to use as reference
+  // Find the most recent activity date (either sent or converted) to use as reference
   let referenceDate = new Date();
-  const quotesWithDates = quotesData.filter(q => q.sent_date).sort((a, b) => 
-    new Date(b.sent_date) - new Date(a.sent_date)
-  );
+  const allDates = [];
   
-  if (quotesWithDates.length > 0) {
-    // Use the most recent quote date as our "today"
-    referenceDate = new Date(quotesWithDates[0].sent_date);
-    console.log('[dashboard-data-sales] Using reference date from most recent quote:', referenceDate);
+  quotesData.forEach(q => {
+    if (q.sent_date) allDates.push(new Date(q.sent_date));
+    if (q.converted_date) allDates.push(new Date(q.converted_date));
+  });
+  
+  if (allDates.length > 0) {
+    // Use the most recent activity as our "today"
+    allDates.sort((a, b) => b - a);
+    referenceDate = allDates[0];
+    console.log('[dashboard-data-sales] Using reference date from most recent activity:', referenceDate);
   }
   
   // Set timezone to EST and use Sunday-Saturday weeks
@@ -213,7 +217,10 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     recurringRevenue2026: 0,
     nextMonthOTB: 0,
     thisMonthOTB: 0,
-    thisWeekOTB: 0
+    thisWeekOTB: 0,
+    // For proper CVR calculation
+    quotesThisWeekConverted: 0,
+    quotes30DaysConverted: 0
   };
   
   // Process quotes data
@@ -237,7 +244,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
       };
     }
     
-    // Count sent quotes
+    // Count sent quotes and track their conversion
     if (sentDate) {
       salespersonStats[sp].quotesSent++;
       salespersonStats[sp].valueSent += totalDollars;
@@ -247,13 +254,21 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
       }
       if (isThisWeek(sentDate)) {
         metrics.quotesThisWeek++;
+        // Check if this quote sent this week was eventually converted
+        if (quote.status === 'Converted') {
+          metrics.quotesThisWeekConverted++;
+        }
       }
       if (isLast30Days(sentDate)) {
         metrics.quotes30Days++;
+        // Check if this quote sent in last 30 days was eventually converted
+        if (quote.status === 'Converted') {
+          metrics.quotes30DaysConverted++;
+        }
       }
     }
     
-    // Count converted quotes
+    // Count converted quotes by conversion date
     if (convertedDate && quote.status === 'Converted') {
       salespersonStats[sp].quotesConverted++;
       salespersonStats[sp].valueConverted += totalDollars;
@@ -333,11 +348,11 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     convertedThisWeek: metrics.convertedThisWeek,
     convertedThisWeekDollars: metrics.convertedThisWeekDollars,
     cvrThisWeek: metrics.quotesThisWeek > 0 ? 
-      parseFloat(((metrics.convertedThisWeek / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
+      parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
     quotes30Days: metrics.quotes30Days,
     converted30Days: metrics.converted30Days,
     cvr30Days: metrics.quotes30Days > 0 ? 
-      parseFloat(((metrics.converted30Days / metrics.quotes30Days) * 100).toFixed(1)) : 0,
+      parseFloat(((metrics.quotes30DaysConverted / metrics.quotes30Days) * 100).toFixed(1)) : 0,
     avgQPD: parseFloat((metrics.quotes30Days / 30).toFixed(2)),
     speedToLead30Days: metrics.speedToLeadCount > 0 ? 
       Math.round(metrics.speedToLeadSum / metrics.speedToLeadCount) : 0,
