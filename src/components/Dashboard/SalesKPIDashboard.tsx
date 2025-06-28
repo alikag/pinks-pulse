@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, Bell, HelpCircle, TrendingUp, Activity, DollarSign, Users, Target, Zap, BarChart3, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Menu, Bell, HelpCircle, TrendingUp, Activity, Users, Target, Zap, BarChart3, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
