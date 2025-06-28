@@ -7,6 +7,11 @@ export class BigQueryService {
   static async fetchDashboardData(): Promise<DashboardData> {
     try {
       const response = await axios.get(`${API_BASE_URL}/dashboard-data-sales`);
+      console.log('Raw response from API:', response);
+      console.log('Response data:', response.data);
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data keys:', Object.keys(response.data || {}));
+      console.log('Has timeSeries?', response.data?.timeSeries);
       return response.data;
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Response</title>
+</head>
+<body>
+    <h1>API Response Test</h1>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing API...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/dashboard-data-sales');
+                const responseText = await response.text();
+                
+                console.log('Raw response text:', responseText);
+                output.textContent += '\n\nRaw Response:\n' + responseText;
+                
+                try {
+                    const data = JSON.parse(responseText);
+                    console.log('Parsed data:', data);
+                    console.log('Has timeSeries?', data.timeSeries);
+                    console.log('timeSeries keys:', data.timeSeries ? Object.keys(data.timeSeries) : 'No timeSeries');
+                    
+                    output.textContent += '\n\nParsed Data Structure:\n';
+                    output.textContent += 'Has timeSeries: ' + (data.timeSeries ? 'YES' : 'NO') + '\n';
+                    if (data.timeSeries) {
+                        output.textContent += 'timeSeries keys: ' + Object.keys(data.timeSeries).join(', ') + '\n';
+                    }
+                    output.textContent += 'Has salespersons: ' + (data.salespersons ? 'YES' : 'NO') + '\n';
+                    output.textContent += 'Has lastUpdated: ' + (data.lastUpdated ? 'YES' : 'NO') + '\n';
+                } catch (parseError) {
+                    output.textContent += '\n\nParse Error: ' + parseError.message;
+                }
+            } catch (error) {
+                output.textContent += '\n\nFetch Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

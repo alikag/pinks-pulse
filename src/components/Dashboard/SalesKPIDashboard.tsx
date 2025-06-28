@@ -44,6 +44,10 @@ const SalesKPIDashboard: React.FC = () => {
 
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
+    console.log('SalesKPIDashboard - Full data object:', data);
+    console.log('SalesKPIDashboard - Data keys:', data ? Object.keys(data) : 'No data');
+    console.log('SalesKPIDashboard - Has timeSeries?', data?.timeSeries);
+    
     if (!data || !data.timeSeries) {
       console.log('No data or timeSeries available, using mock data');
       return getMockKPIs()
