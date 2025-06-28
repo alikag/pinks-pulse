@@ -1,0 +1,12 @@
+# Netlify redirects
+# Serve static HTML files
+/test-bigquery-status /test-bigquery-status.html 200
+/check-env /check-env.html 200
+/soundforge-dashboard /soundforge-dashboard.html 200
+/soundforge-standalone /soundforge-standalone.html 200
+
+# API redirects (already handled by netlify.toml but included for completeness)
+/api/* /.netlify/functions/:splat 200
+
+# SPA fallback - all other routes go to index.html
+/* /index.html 200

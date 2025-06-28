@@ -1494,68 +1494,6 @@ const SalesKPIDashboard: React.FC = () => {
   )
 }
 
-// Mock KPIs fallback
-function getMockKPIs(): KPI[] {
-  return [
-    {
-      id: 'quotes-sent-today',
-      label: 'Quotes Sent Today',
-      subtitle: 'Target: 12',
-      value: 0,
-      target: 12,
-      format: 'number',
-      status: 'danger',
-      isLive: true
-    },
-    {
-      id: 'converted-today',
-      label: 'Converted Today',
-      subtitle: 'total_dollars',
-      value: 17208.18,
-      target: 20000,
-      format: 'currency',
-      status: 'warning',
-      isLive: true
-    },
-    {
-      id: 'converted-week',
-      label: 'Converted This Week',
-      subtitle: 'total_dollars',
-      value: 17208.18,
-      target: 100000,
-      format: 'currency',
-      status: 'danger'
-    },
-    {
-      id: 'cvr-week',
-      label: 'CVR This Week',
-      subtitle: 'Target: 45%',
-      value: 29,
-      target: 45,
-      format: 'percentage',
-      status: 'warning'
-    },
-    {
-      id: 'recurring-2026',
-      label: '2026 Recurring',
-      subtitle: 'Total: $85k',
-      value: 111160,
-      target: 85000,
-      format: 'currency',
-      status: 'success'
-    },
-    {
-      id: 'next-month-otb',
-      label: 'Next Month OTB',
-      subtitle: 'Target: $125k',
-      value: 73052.50,
-      target: 125000,
-      format: 'currency',
-      status: 'danger'
-    }
-  ]
-}
-
 function getSecondRowMockKPIs(): KPI[] {
   return [
     {
