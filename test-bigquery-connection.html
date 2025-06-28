@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test BigQuery Connection</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .container {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        h1, h2 {
+            color: #60a5fa;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .loading {
+            color: #fbbf24;
+        }
+        .success {
+            color: #34d399;
+        }
+        .error {
+            color: #f87171;
+        }
+        pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+        .result {
+            margin-top: 10px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>BigQuery Connection Test for Pink's Pulse</h1>
+    
+    <div class="container">
+        <h2>Live Site: https://pinkspulse.netlify.app/</h2>
+        <p>Click the buttons below to test each endpoint:</p>
+        
+        <button onclick="testEndpoint('test-bigquery')">Test Basic Connection</button>
+        <button onclick="testEndpoint('dashboard-data')">Test Dashboard Data</button>
+        <button onclick="testEndpoint('dashboard-data-debug')">Test Debug Data</button>
+        <button onclick="testEndpoint('dashboard-data-nofilter')">Test No Filter Data</button>
+        <button onclick="testAllEndpoints()">Test All Endpoints</button>
+    </div>
+
+    <div id="results" class="grid"></div>
+
+    <script>
+        const BASE_URL = 'https://pinkspulse.netlify.app/.netlify/functions';
+        
+        async function testEndpoint(endpoint) {
+            const resultDiv = document.getElementById('results');
+            const testId = `test-${endpoint}-${Date.now()}`;
+            
+            // Add test container
+            const container = document.createElement('div');
+            container.className = 'container';
+            container.id = testId;
+            container.innerHTML = `
+                <h3>Testing: ${endpoint}</h3>
+                <div class="loading">Loading...</div>
+                <div class="result"></div>
+            `;
+            resultDiv.prepend(container);
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${BASE_URL}/${endpoint}`);
+                const data = await response.json();
+                const endTime = Date.now();
+                
+                const resultHtml = `
+                    <div class="${response.ok ? 'success' : 'error'}">
+                        Status: ${response.status} ${response.ok ? '✓ Success' : '✗ Failed'}
+                    </div>
+                    <div>Response time: ${endTime - startTime}ms</div>
+                    <h4>Response:</h4>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                document.querySelector(`#${testId} .loading`).style.display = 'none';
+                document.querySelector(`#${testId} .result`).innerHTML = resultHtml;
+                
+                // Check for specific BigQuery indicators
+                if (data.error && data.error.includes('credentials')) {
+                    document.querySelector(`#${testId} .result`).innerHTML += `
+                        <div class="error">
+                            <h4>⚠️ BigQuery Authentication Issue</h4>
+                            <p>Make sure GOOGLE_APPLICATION_CREDENTIALS_JSON is set in Netlify environment variables.</p>
+                        </div>
+                    `;
+                } else if (data.kpis || data.data || data.debug) {
+                    document.querySelector(`#${testId} .result`).innerHTML += `
+                        <div class="success">
+                            <h4>✓ BigQuery Connection Working!</h4>
+                            <p>Data is being successfully retrieved from BigQuery.</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                const endTime = Date.now();
+                document.querySelector(`#${testId} .loading`).style.display = 'none';
+                document.querySelector(`#${testId} .result`).innerHTML = `
+                    <div class="error">
+                        Error: ${error.message}
+                    </div>
+                    <div>Response time: ${endTime - startTime}ms</div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+        
+        async function testAllEndpoints() {
+            const endpoints = ['test-bigquery', 'dashboard-data', 'dashboard-data-debug', 'dashboard-data-nofilter'];
+            for (const endpoint of endpoints) {
+                await testEndpoint(endpoint);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between tests
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            console.log('Testing BigQuery connection for Pink\'s Pulse...');
+        });
+    </script>
+</body>
+</html>
