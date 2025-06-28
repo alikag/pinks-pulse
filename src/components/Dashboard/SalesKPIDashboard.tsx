@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, Bell, HelpCircle, TrendingUp, Activity, BarChart3, XCircle, Trophy, Users, Target, Clock, AlertCircle, CheckCircle } from 'lucide-react'
+import { Menu, TrendingUp, Activity, XCircle, Trophy, Users, Target, Clock, AlertCircle, CheckCircle } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -42,7 +42,6 @@ interface RecentEvent {
 
 const SalesKPIDashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [selectedPeriod, setSelectedPeriod] = useState<'Today' | 'Week' | 'Month' | 'Quarter'>('Today')
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const { data, loading, error } = useDashboardData()
   
@@ -165,7 +164,7 @@ const SalesKPIDashboard: React.FC = () => {
     return [
       {
         id: 'speed-to-lead',
-        label: '30D Speed to Lead',
+        label: 'Response Time (30D Avg)',
         subtitle: 'Target: 30 min',
         value: metrics.speedToLead30Days || 0,
         target: 30,
@@ -183,7 +182,7 @@ const SalesKPIDashboard: React.FC = () => {
       },
       {
         id: 'avg-qpd',
-        label: '30D AVG QPD',
+        label: 'Avg Quotes/Day (30D)',
         subtitle: 'Target: 12',
         value: metrics.avgQPD,
         target: 12,
@@ -355,22 +354,8 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)')
         gradient.addColorStop(1, 'rgba(14, 165, 233, 0)')
         
-        // Map UI period to data period for chart
-        let chartPeriodKey: keyof typeof data.timeSeries
-        switch (selectedPeriod) {
-          case 'Today':
-          case 'Week':
-            chartPeriodKey = 'week'
-            break
-          case 'Month':
-            chartPeriodKey = 'month'
-            break
-          case 'Quarter':
-            chartPeriodKey = 'year'
-            break
-          default:
-            chartPeriodKey = 'week'
-        }
+        // Default to week view
+        const chartPeriodKey: keyof typeof data.timeSeries = 'week'
         const chartData = data.timeSeries[chartPeriodKey]
         const revenueData = chartData.quotesConverted.map((_, index) => {
           // Use actual converted dollars from the period
@@ -492,16 +477,17 @@ const SalesKPIDashboard: React.FC = () => {
         // Adjust data based on selected period
         const now = new Date()
         const currentMonth = now.getMonth()
-        if (selectedPeriod === 'Today' || selectedPeriod === 'Week') {
-          // Show only current month
-          monthLabels = [monthLabels[currentMonth]]
-          monthlyOTB = [data.kpiMetrics?.thisMonthOTB || monthlyOTB[currentMonth]]
-        } else if (selectedPeriod === 'Month') {
+        // Always show week view
+        // Show only current month
+        monthLabels = [monthLabels[currentMonth]]
+        monthlyOTB = [data.kpiMetrics?.thisMonthOTB || monthlyOTB[currentMonth]]
+        
+        if (false) {
           // Show current month and next month
           monthLabels = monthLabels.slice(currentMonth, currentMonth + 2)
           monthlyOTB = [
-            data.kpiMetrics?.thisMonthOTB || monthlyOTB[currentMonth],
-            data.kpiMetrics?.nextMonthOTB || monthlyOTB[currentMonth + 1]
+            data?.kpiMetrics?.thisMonthOTB || monthlyOTB[currentMonth],
+            data?.kpiMetrics?.nextMonthOTB || monthlyOTB[currentMonth + 1]
           ]
         }
         
@@ -563,11 +549,12 @@ const SalesKPIDashboard: React.FC = () => {
         let weeklyOTB = [25785, 19975.56, 19875.56, 5536, 12496.5, 30544.5, 18052, 5636, 18052, 4557.8]
         
         // Adjust data for current period
-        if (selectedPeriod === 'Today' || selectedPeriod === 'Week') {
-          // Show this week's OTB
-          weekLabels = ['This Week']
-          weeklyOTB = [data.kpiMetrics?.thisWeekOTB || 0]
-        } else if (selectedPeriod === 'Month') {
+        // Always show week view
+        // Show this week's OTB
+        weekLabels = ['This Week']
+        weeklyOTB = [data.kpiMetrics?.thisWeekOTB || 0]
+        
+        if (false) {
           // Show last 4 weeks
           weekLabels = weekLabels.slice(-4)
           weeklyOTB = weeklyOTB.slice(-4)
@@ -891,7 +878,7 @@ const SalesKPIDashboard: React.FC = () => {
       cohortInstance.current?.destroy()
       Object.values(kpiSparklineInstances.current).forEach(chart => chart?.destroy())
     }
-  }, [data, loading, selectedPeriod, kpis])
+  }, [data, loading, kpis])
 
   if (loading) {
     return (
@@ -937,11 +924,8 @@ const SalesKPIDashboard: React.FC = () => {
         {/* Sidebar */}
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg grid place-content-center relative">
-              <BarChart3 className="h-5 w-5" />
-              <div className="absolute -inset-1 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg blur opacity-50"></div>
-            </div>
-            <span className="text-lg font-semibold tracking-tight">Sales Pulse</span>
+            <img src="/logo.jpeg" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
+            <span className="text-lg font-semibold tracking-tight">Pink's Pulse</span>
           </div>
 
           <nav className="flex flex-col gap-1 text-sm">
@@ -993,91 +977,15 @@ const SalesKPIDashboard: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="lg:hidden w-8"></div>
               <div>
-                <h1 className="text-base lg:text-lg font-medium">Sales Analytics</h1>
-                <p className="text-xs lg:text-sm text-white/60">Real-time performance metrics</p>
+                <h1 className="text-base lg:text-lg font-medium">Pink's Pulse - Hudson Valley KPI Report</h1>
               </div>
             </div>
             
-            {/* Period Selector */}
-            <div className="flex gap-2">
-              {(['Today', 'Week', 'Month', 'Quarter'] as const).map(period => (
-                <button
-                  key={period}
-                  onClick={() => setSelectedPeriod(period)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedPeriod === period 
-                      ? 'bg-blue-500/20 text-blue-300 ring-2 ring-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.5)]' 
-                      : 'bg-gray-800/50 hover:bg-gray-700/50 text-gray-400'
-                  }`}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button className="relative hidden sm:block">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-cyan-500 animate-pulse"></span>
-              </button>
-              <HelpCircle className="h-5 w-5 hidden sm:block" />
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <span className="text-xs font-semibold">JD</span>
-              </div>
-            </div>
+            <div className="flex-1"></div>
           </header>
 
           {/* Main Content */}
           <section className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
-            {/* Forecast Indicators */}
-            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-4 border border-white/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Target className="h-5 w-5 text-blue-400" />
-                  <h3 className="font-medium">Today's Forecast</h3>
-                </div>
-                <span className="text-xs text-gray-400">Based on current pace</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Projected Quotes by EOD</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-white">
-                      {Math.round((kpis[0]?.value || 0) * (24 / new Date().getHours()))}
-                    </span>
-                    <span className={`text-sm ${
-                      (kpis[0]?.value || 0) * (24 / new Date().getHours()) >= 12 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {(kpis[0]?.value || 0) * (24 / new Date().getHours()) >= 12 ? '↑ On track' : '↓ Behind'}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Projected Revenue by EOD</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-white">
-                      {formatValue((kpis[1]?.value || 0) * (24 / new Date().getHours()), 'currency')}
-                    </span>
-                    <span className={`text-sm ${
-                      (kpis[1]?.value || 0) * (24 / new Date().getHours()) >= 22500 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {(kpis[1]?.value || 0) * (24 / new Date().getHours()) >= 22500 ? '↑ On track' : '↓ Behind'}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Week-End Projection</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-white">
-                      {formatValue((kpis[2]?.value || 0) * (7 / new Date().getDay()), 'currency')}
-                    </span>
-                    <span className="text-sm text-gray-400">
-                      vs {formatValue(157500, 'currency')} target
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
             {/* First Row KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {kpis.map((kpi) => (

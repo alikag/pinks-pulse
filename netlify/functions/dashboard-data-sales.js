@@ -134,8 +134,20 @@ exports.handler = async (event, context) => {
 };
 
 function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
+  // Find the most recent quote date to use as reference
+  let referenceDate = new Date();
+  const quotesWithDates = quotesData.filter(q => q.sent_date).sort((a, b) => 
+    new Date(b.sent_date) - new Date(a.sent_date)
+  );
+  
+  if (quotesWithDates.length > 0) {
+    // Use the most recent quote date as our "today"
+    referenceDate = new Date(quotesWithDates[0].sent_date);
+    console.log('[dashboard-data-sales] Using reference date from most recent quote:', referenceDate);
+  }
+  
   // Set timezone to EST and use Sunday-Saturday weeks
-  const now = new Date();
+  const now = referenceDate;
   const estOffset = -5; // EST offset from UTC
   now.setHours(0 - estOffset, 0, 0, 0);
   
@@ -306,6 +318,13 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   });
   
   // Calculate final KPI metrics
+  console.log('[dashboard-data-sales] Metrics summary:', {
+    quotesToday: metrics.quotesToday,
+    quotesThisWeek: metrics.quotesThisWeek,
+    quotes30Days: metrics.quotes30Days,
+    referenceDate: now.toISOString()
+  });
+  
   const kpiMetrics = {
     quotesToday: metrics.quotesToday,
     convertedToday: metrics.convertedToday,
