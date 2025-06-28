@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Menu, Bell, HelpCircle, Music, HardDrive, Activity, DollarSign, TrendingUp, Circle, MoreHorizontal, Plus, LayoutDashboard, Radio, FileAudio, Users, SlidersHorizontal, AudioWaveform } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
+import styles from './SoundForgeDashboard.module.css'
 
 const SoundForgeDashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -20,23 +21,27 @@ const SoundForgeDashboard: React.FC = () => {
   const spectrumChartInstance = useRef<Chart | null>(null)
 
   useEffect(() => {
-    if (!data || loading) return
-
-    // Setup charts with data from BigQuery
+    // Setup charts
     Chart.defaults.color = 'rgba(255, 255, 255, 0.6)'
     Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'
 
+    // Destroy existing charts
+    if (revenueChartInstance.current) revenueChartInstance.current.destroy()
+    if (genreChartInstance.current) genreChartInstance.current.destroy()
+    if (usageChartInstance.current) usageChartInstance.current.destroy()
+    if (spectrumChartInstance.current) spectrumChartInstance.current.destroy()
+
     // Revenue Chart
-    if (revenueChartRef.current && !revenueChartInstance.current) {
+    if (revenueChartRef.current) {
       const ctx = revenueChartRef.current.getContext('2d')
       if (ctx) {
         revenueChartInstance.current = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: data.timeSeries?.[selectedPeriod || 'month']?.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             datasets: [{
               label: 'Revenue',
-              data: data.timeSeries?.[selectedPeriod || 'month']?.quotesConverted?.map(q => q * 500) || [8500, 9200, 11800, 10400, 12600, 13900],
+              data: [8500, 9200, 11800, 10400, 12600, 13900, 15200, 14100, 16800, 18200, 17500, 19800],
               borderColor: '#06b6d4',
               backgroundColor: 'rgba(6, 182, 212, 0.1)',
               fill: true,
@@ -47,7 +52,7 @@ const SoundForgeDashboard: React.FC = () => {
               pointRadius: 4
             }, {
               label: 'Target',
-              data: data.timeSeries?.[selectedPeriod || 'month']?.quotesSent?.map(q => q * 600) || [10000, 10500, 11000, 11500, 12000, 12500],
+              data: [10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500],
               borderColor: 'rgba(139, 92, 246, 0.5)',
               backgroundColor: 'transparent',
               borderDash: [5, 5],
@@ -68,11 +73,15 @@ const SoundForgeDashboard: React.FC = () => {
             scales: {
               y: {
                 beginAtZero: false,
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
                   callback: function(value) {
                     return '$' + (Number(value) / 1000) + 'k'
                   }
                 }
+              },
+              x: {
+                grid: { color: 'rgba(255, 255, 255, 0.05)' }
               }
             }
           }
@@ -81,15 +90,15 @@ const SoundForgeDashboard: React.FC = () => {
     }
 
     // Genre Distribution
-    if (genreChartRef.current && !genreChartInstance.current) {
+    if (genreChartRef.current) {
       const ctx = genreChartRef.current.getContext('2d')
       if (ctx) {
         genreChartInstance.current = new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: data.salespersons?.map(s => s.name) || ['Hip-Hop', 'Electronic', 'Pop', 'Jazz', 'Rock'],
+            labels: ['Hip-Hop', 'Electronic', 'Pop', 'Jazz', 'Rock'],
             datasets: [{
-              data: data.salespersons?.map(s => s.quotesConverted) || [30, 25, 20, 15, 10],
+              data: [30, 25, 20, 15, 10],
               backgroundColor: ['#3b82f6', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'],
               borderWidth: 0
             }]
@@ -109,7 +118,7 @@ const SoundForgeDashboard: React.FC = () => {
     }
 
     // Studio Usage Chart
-    if (usageChartRef.current && !usageChartInstance.current) {
+    if (usageChartRef.current) {
       const ctx = usageChartRef.current.getContext('2d')
       if (ctx) {
         usageChartInstance.current = new Chart(ctx, {
@@ -117,7 +126,7 @@ const SoundForgeDashboard: React.FC = () => {
           data: {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [{
-              data: data.timeSeries?.week?.quotesSent || [8, 12, 6, 15, 10, 14, 9],
+              data: [8, 12, 6, 15, 10, 14, 9],
               backgroundColor: 'rgba(59, 130, 246, 0.8)',
               borderRadius: 4
             }]
@@ -127,7 +136,14 @@ const SoundForgeDashboard: React.FC = () => {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-              y: { beginAtZero: true, ticks: { stepSize: 5 } }
+              y: { 
+                beginAtZero: true, 
+                ticks: { stepSize: 5 },
+                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              },
+              x: {
+                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              }
             }
           }
         })
@@ -135,7 +151,7 @@ const SoundForgeDashboard: React.FC = () => {
     }
 
     // Frequency Spectrum
-    if (spectrumChartRef.current && !spectrumChartInstance.current) {
+    if (spectrumChartRef.current) {
       const ctx = spectrumChartRef.current.getContext('2d')
       if (ctx) {
         const frequencies = Array.from({length: 11}, () => Math.random() * 100)
@@ -157,8 +173,15 @@ const SoundForgeDashboard: React.FC = () => {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-              x: { title: { display: true, text: 'Frequency (Hz)' } },
-              y: { title: { display: true, text: 'Amplitude (dB)' }, beginAtZero: true }
+              x: { 
+                title: { display: true, text: 'Frequency (Hz)' },
+                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              },
+              y: { 
+                title: { display: true, text: 'Amplitude (dB)' }, 
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              }
             }
           }
         })
@@ -174,41 +197,21 @@ const SoundForgeDashboard: React.FC = () => {
     }
   }, [data, loading])
 
-  // Calculate KPIs from BigQuery data
-  const currentPeriod = data?.timeSeries?.[selectedPeriod || 'month'];
-  const kpis = {
-    totalTracks: currentPeriod?.totalSent || 247,
-    storageUsed: '84GB',
-    activeSessions: 12,
-    revenue: currentPeriod?.totalConverted ? `$${(currentPeriod.totalConverted * 500 / 1000).toFixed(1)}K` : '$12.4K'
-  }
-
-  const artists = data?.salespersons?.map((person, idx) => ({
-    name: person.name,
-    genre: ['Electronic', 'Hip-Hop', 'Pop', 'Jazz'][idx % 4],
-    status: person.conversionRate > 30 ? 'Online' : person.conversionRate > 20 ? 'Recording' : 'Away',
-    location: ['Tokyo', 'LA', 'Seoul', 'Paris'][idx % 4],
-    avatar: `https://randomuser.me/api/portraits/${idx % 2 === 0 ? 'women' : 'men'}/${32 + idx}.jpg`
-  })) || [
-    { name: 'Maya Chen', genre: 'Electronic', status: 'Online', location: 'Tokyo', avatar: 'https://randomuser.me/api/portraits/women/32.jpg' },
-    { name: 'Marcus Rivera', genre: 'Hip-Hop', status: 'Recording', location: 'LA', avatar: 'https://randomuser.me/api/portraits/men/85.jpg' },
-    { name: 'Zara Kim', genre: 'Pop', status: 'Online', location: 'Seoul', avatar: 'https://randomuser.me/api/portraits/women/29.jpg' },
-    { name: 'Luna Dubois', genre: 'Jazz', status: 'Away', location: 'Paris', avatar: 'https://randomuser.me/api/portraits/women/91.jpg' }
-  ]
-
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0c1425]">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Error loading dashboard</p>
-          <p className="text-white/60">Using mock data</p>
+      <div className={styles.dashboard}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">Error loading dashboard</p>
+            <p className="text-white/60">Using mock data</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0c1425] text-white font-inter">
+    <div className={styles.dashboard}>
       <div className="flex h-full">
         {/* Mobile Menu Button */}
         <button 
@@ -219,9 +222,9 @@ const SoundForgeDashboard: React.FC = () => {
         </button>
 
         {/* Sidebar */}
-        <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-slate-900/50 backdrop-blur-lg p-6`}>
+        <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 ${styles.sidebar} p-6`}>
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg grid place-content-center">
+            <div className={`h-8 w-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg grid place-content-center`}>
               <AudioWaveform className="h-5 w-5" />
             </div>
             <span className="text-lg font-semibold tracking-tight">SoundForge</span>
@@ -236,20 +239,20 @@ const SoundForgeDashboard: React.FC = () => {
           </button>
 
           <nav className="flex flex-col gap-1 text-sm">
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
+            <a href="#" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${styles.hoverGlow}`}>
               <LayoutDashboard className="h-4 w-4" />
               Studio
             </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
+            <a href="#" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${styles.hoverGlow}`}>
               <Music className="h-4 w-4" />
               Beats
             </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
+            <a href="#" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${styles.hoverGlow}`}>
               <Radio className="h-4 w-4" />
               <span className="flex-1">Streaming</span>
-              <span className="ml-auto text-xs bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-md">LIVE</span>
+              <span className={styles.liveBadge}>LIVE</span>
             </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
+            <a href="#" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${styles.hoverGlow}`}>
               <FileAudio className="h-4 w-4" />
               Samples
             </a>
@@ -257,13 +260,13 @@ const SoundForgeDashboard: React.FC = () => {
               <Users className="h-4 w-4" />
               Artists
             </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition">
+            <a href="#" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${styles.hoverGlow}`}>
               <SlidersHorizontal className="h-4 w-4" />
               Mixer Settings
             </a>
           </nav>
 
-          <div className="mt-auto bg-gradient-to-br from-blue-600/20 to-cyan-600/20 p-4 rounded-xl">
+          <div className={`mt-auto ${styles.upgradeBox}`}>
             <p className="text-sm leading-snug">Upgrade to Studio PRO for up to <span className="font-semibold text-cyan-400">100GB</span> storage and unlimited tracks!</p>
             <div className="flex items-center justify-between mt-4 text-sm">
               <button className="hover:underline text-white/70">Maybe Later</button>
@@ -276,14 +279,14 @@ const SoundForgeDashboard: React.FC = () => {
         {isSidebarOpen && (
           <div 
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+            className={`${styles.overlay} lg:hidden`}
           />
         )}
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top bar */}
-          <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-slate-900/30 backdrop-blur-lg">
+          <header className={`flex items-center justify-between gap-4 px-4 lg:px-6 py-4 ${styles.topbar}`}>
             <div className="flex items-center gap-4">
               <div className="lg:hidden w-8"></div>
               <div>
@@ -305,46 +308,46 @@ const SoundForgeDashboard: React.FC = () => {
           <section className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+              <div className={styles.card}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/60">Total Tracks</p>
-                    <p className="text-2xl font-semibold">{kpis.totalTracks}</p>
+                    <p className="text-2xl font-semibold">247</p>
                   </div>
-                  <div className="h-10 w-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                  <div className={`h-10 w-10 ${styles.iconBox} ${styles.iconBoxBlue}`}>
                     <Music className="h-5 w-5 text-blue-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+              <div className={styles.card}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/60">Storage Used</p>
-                    <p className="text-2xl font-semibold">{kpis.storageUsed}</p>
+                    <p className="text-2xl font-semibold">84GB</p>
                   </div>
-                  <div className="h-10 w-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
+                  <div className={`h-10 w-10 ${styles.iconBox} ${styles.iconBoxCyan}`}>
                     <HardDrive className="h-5 w-5 text-cyan-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+              <div className={styles.card}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/60">Active Sessions</p>
-                    <p className="text-2xl font-semibold">{kpis.activeSessions}</p>
+                    <p className="text-2xl font-semibold">12</p>
                   </div>
-                  <div className="h-10 w-10 bg-green-600/20 rounded-lg flex items-center justify-center">
+                  <div className={`h-10 w-10 ${styles.iconBox} ${styles.iconBoxGreen}`}>
                     <Activity className="h-5 w-5 text-green-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+              <div className={styles.card}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/60">Revenue</p>
-                    <p className="text-2xl font-semibold">{kpis.revenue}</p>
+                    <p className="text-2xl font-semibold">$12.4K</p>
                   </div>
-                  <div className="h-10 w-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
+                  <div className={`h-10 w-10 ${styles.iconBox} ${styles.iconBoxPurple}`}>
                     <DollarSign className="h-5 w-5 text-purple-400" />
                   </div>
                 </div>
@@ -353,7 +356,7 @@ const SoundForgeDashboard: React.FC = () => {
 
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Monthly Revenue Trends */}
-              <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+              <div className={`lg:col-span-2 ${styles.cardLarge}`}>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium">Monthly Revenue Trends</h2>
                   <div className="flex items-center gap-2">
@@ -367,15 +370,15 @@ const SoundForgeDashboard: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                <div className="h-48">
+                <div className={styles.chartContainer}>
                   <canvas ref={revenueChartRef}></canvas>
                 </div>
               </div>
 
               {/* Genre Distribution */}
-              <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+              <div className={styles.cardLarge}>
                 <h2 className="font-medium mb-4">Genre Distribution</h2>
-                <div className="h-48">
+                <div className={styles.chartContainer}>
                   <canvas ref={genreChartRef}></canvas>
                 </div>
               </div>
@@ -384,15 +387,15 @@ const SoundForgeDashboard: React.FC = () => {
             {/* Studio Usage & Artists table */}
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Studio Usage Chart */}
-              <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+              <div className={styles.cardLarge}>
                 <h2 className="font-medium mb-4">Studio Usage (7 days)</h2>
-                <div className="h-48">
+                <div className={styles.chartContainer}>
                   <canvas ref={usageChartRef}></canvas>
                 </div>
               </div>
 
               {/* Artists table */}
-              <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+              <div className={`lg:col-span-2 ${styles.card} overflow-hidden`}>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead className="text-left text-white/60 border-b border-white/10">
@@ -405,31 +408,66 @@ const SoundForgeDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {artists.slice(0, 4).map((artist, index) => (
-                        <tr key={index} className="hover:bg-white/5 transition">
-                          <td className="py-3 px-3 lg:px-5 flex items-center gap-2">
-                            <img src={artist.avatar} className="h-6 w-6 rounded-full" alt="" />
-                            <span className="truncate">{artist.name}</span>
-                          </td>
-                          <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">
-                            {artist.genre} {index % 2 === 1 && <span className="text-cyan-400">★</span>}
-                          </td>
-                          <td className="py-3 px-3 lg:px-5 hidden md:table-cell">
-                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
-                              artist.status === 'Online' ? 'bg-green-500/20 text-green-300' :
-                              artist.status === 'Recording' ? 'bg-yellow-500/20 text-yellow-300' :
-                              'bg-gray-500/20 text-gray-300'
-                            }`}>
-                              <Circle className="h-2 w-2 fill-current" />
-                              {artist.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 lg:px-5 hidden lg:table-cell">{artist.location}</td>
-                          <td className="py-3 px-3 lg:px-5 text-right">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </td>
-                        </tr>
-                      ))}
+                      <tr className={`${styles.hoverGlow} transition`}>
+                        <td className="py-3 px-3 lg:px-5 flex items-center gap-2">
+                          <img src="https://randomuser.me/api/portraits/women/32.jpg" className="h-6 w-6 rounded-full" alt="" />
+                          <span className="truncate">Maya Chen</span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">Electronic</td>
+                        <td className="py-3 px-3 lg:px-5 hidden md:table-cell">
+                          <span className={styles.statusBadge + ' ' + styles.statusOnline}>
+                            <Circle className="h-2 w-2 fill-current" />
+                            Online
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden lg:table-cell">Tokyo</td>
+                        <td className="py-3 px-3 lg:px-5 text-right"><MoreHorizontal className="h-4 w-4" /></td>
+                      </tr>
+                      <tr className={`${styles.hoverGlow} transition`}>
+                        <td className="py-3 px-3 lg:px-5 flex items-center gap-2">
+                          <img src="https://randomuser.me/api/portraits/men/85.jpg" className="h-6 w-6 rounded-full" alt="" />
+                          <span className="truncate">Marcus Rivera</span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">Hip-Hop <span className="text-cyan-400">★</span></td>
+                        <td className="py-3 px-3 lg:px-5 hidden md:table-cell">
+                          <span className={styles.statusBadge + ' ' + styles.statusRecording}>
+                            <Circle className="h-2 w-2 fill-current" />
+                            Recording
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden lg:table-cell">LA</td>
+                        <td className="py-3 px-3 lg:px-5 text-right"><MoreHorizontal className="h-4 w-4" /></td>
+                      </tr>
+                      <tr className={`${styles.hoverGlow} transition`}>
+                        <td className="py-3 px-3 lg:px-5 flex items-center gap-2">
+                          <img src="https://randomuser.me/api/portraits/women/29.jpg" className="h-6 w-6 rounded-full" alt="" />
+                          <span className="truncate">Zara Kim</span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">Pop</td>
+                        <td className="py-3 px-3 lg:px-5 hidden md:table-cell">
+                          <span className={styles.statusBadge + ' ' + styles.statusOnline}>
+                            <Circle className="h-2 w-2 fill-current" />
+                            Online
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden lg:table-cell">Seoul</td>
+                        <td className="py-3 px-3 lg:px-5 text-right"><MoreHorizontal className="h-4 w-4" /></td>
+                      </tr>
+                      <tr className={`${styles.hoverGlow} transition`}>
+                        <td className="py-3 px-3 lg:px-5 flex items-center gap-2">
+                          <img src="https://randomuser.me/api/portraits/women/91.jpg" className="h-6 w-6 rounded-full" alt="" />
+                          <span className="truncate">Luna Dubois</span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden sm:table-cell">Jazz <span className="text-cyan-400">★</span></td>
+                        <td className="py-3 px-3 lg:px-5 hidden md:table-cell">
+                          <span className={styles.statusBadge + ' ' + styles.statusAway}>
+                            <Circle className="h-2 w-2 fill-current" />
+                            Away
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 lg:px-5 hidden lg:table-cell">Paris</td>
+                        <td className="py-3 px-3 lg:px-5 text-right"><MoreHorizontal className="h-4 w-4" /></td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -437,12 +475,12 @@ const SoundForgeDashboard: React.FC = () => {
             </div>
 
             {/* Frequency Spectrum */}
-            <div className="bg-slate-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+            <div className={styles.cardLarge}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-medium">Frequency Spectrum Analysis</h2>
                 <button className="text-xs text-white/60 hover:text-white transition">View Details</button>
               </div>
-              <div className="h-64">
+              <div className={styles.chartContainerLarge}>
                 <canvas ref={spectrumChartRef}></canvas>
               </div>
             </div>
