@@ -3,6 +3,10 @@
   functions = "netlify/functions"
   publish = "dist"
 
+[build.environment]
+  NODE_VERSION = "18"
+  SECRETS_SCAN_OMIT_KEYS = "BIGQUERY_PROJECT_ID,BIGQUERY_DATASET"
+
 [dev]
   command = "npm run dev"
   port = 5173
