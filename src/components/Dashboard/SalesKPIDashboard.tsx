@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, Bell, HelpCircle, TrendingUp, Activity, Users, Target, Zap, BarChart3, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Menu, Bell, HelpCircle, TrendingUp, Activity, Users, Target, BarChart3, XCircle } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -12,9 +12,21 @@ interface KPI {
   target: number
   format: 'currency' | 'percentage' | 'number'
   status: 'success' | 'warning' | 'danger' | 'normal'
-  trend: number
+  trend?: number
   isLive?: boolean
   lastUpdated?: Date
+  subtitle?: string
+}
+
+interface ConvertedQuote {
+  dateConverted: string
+  jobNumber: string
+  date: string
+  jobType: string
+  salesPerson: string
+  jobberLink: string
+  visitTitle: string
+  totalDollars: number
 }
 
 interface RecentEvent {
@@ -79,54 +91,138 @@ const SalesKPIDashboard: React.FC = () => {
     
     const timeData = data.timeSeries[periodKey]
     
-    const totalRevenue = timeData.quotesConverted.reduce((sum, val) => sum + val * 5000, 0)
     const totalQuotes = timeData.quotesSent.reduce((sum, val) => sum + val, 0)
     const totalConversions = timeData.quotesConverted.reduce((sum, val) => sum + val, 0)
-    const conversionRate = totalQuotes > 0 ? (totalConversions / totalQuotes) * 100 : 0
+    
+    // Calculate today's data
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayQuotes = timeData.quotesSent[timeData.quotesSent.length - 1] || 0
+    const todayConverted = timeData.quotesConverted[timeData.quotesConverted.length - 1] || 0
+    const todayRevenue = todayConverted * 5000
+    
+    // Calculate week totals
+    const weekRevenue = timeData.quotesConverted.reduce((sum, val) => sum + val * 5000, 0)
+    const weekCVR = totalQuotes > 0 ? (totalConversions / totalQuotes) * 100 : 0
+    
+    // Mock recurring and OTB values (these would come from BigQuery)
+    const recurringRevenue = 111160
+    const nextMonthOTB = 73052.50
     
     return [
       {
-        id: 'revenue',
-        label: 'Total Revenue',
-        value: totalRevenue,
-        target: totalRevenue * 1.15,
-        format: 'currency',
-        status: totalRevenue > totalRevenue * 0.9 ? 'success' : 'warning',
-        trend: 12.5,
-        isLive: true
-      },
-      {
-        id: 'conversion',
-        label: 'Conversion Rate',
-        value: conversionRate,
-        target: 25,
-        format: 'percentage',
-        status: conversionRate > 20 ? 'success' : conversionRate > 15 ? 'warning' : 'danger',
-        trend: -2.3,
-        isLive: true
-      },
-      {
-        id: 'quotes',
-        label: 'Quotes Sent',
-        value: totalQuotes,
-        target: Math.ceil(totalQuotes * 1.1),
+        id: 'quotes-sent-today',
+        label: 'Quotes Sent Today',
+        subtitle: 'Target: 12',
+        value: todayQuotes,
+        target: 12,
         format: 'number',
-        status: 'normal',
-        trend: 8.7,
-        isLive: false
+        status: todayQuotes >= 12 ? 'success' : todayQuotes >= 8 ? 'warning' : 'danger',
+        isLive: true
       },
       {
-        id: 'avg-deal',
-        label: 'Avg Deal Size',
-        value: totalConversions > 0 ? totalRevenue / totalConversions : 0,
-        target: 5500,
+        id: 'converted-today',
+        label: 'Converted Today',
+        subtitle: 'total_dollars',
+        value: todayRevenue,
+        target: 20000,
         format: 'currency',
-        status: 'success',
-        trend: 5.2,
-        isLive: false
+        status: todayRevenue > 0 ? 'success' : 'normal',
+        isLive: true
+      },
+      {
+        id: 'converted-week',
+        label: 'Converted This Week',
+        subtitle: 'total_dollars',
+        value: weekRevenue,
+        target: 100000,
+        format: 'currency',
+        status: weekRevenue > 80000 ? 'success' : weekRevenue > 50000 ? 'warning' : 'danger'
+      },
+      {
+        id: 'cvr-week',
+        label: 'CVR This Week',
+        subtitle: 'Target: 45%',
+        value: weekCVR,
+        target: 45,
+        format: 'percentage',
+        status: weekCVR >= 45 ? 'success' : weekCVR >= 30 ? 'warning' : 'danger'
+      },
+      {
+        id: 'recurring-2026',
+        label: '2026 Recurring',
+        subtitle: 'Total: $85k',
+        value: recurringRevenue,
+        target: 85000,
+        format: 'currency',
+        status: recurringRevenue >= 85000 ? 'success' : 'warning'
+      },
+      {
+        id: 'next-month-otb',
+        label: 'Next Month OTB',
+        subtitle: 'Target: $125k',
+        value: nextMonthOTB,
+        target: 125000,
+        format: 'currency',
+        status: nextMonthOTB >= 125000 ? 'success' : nextMonthOTB >= 100000 ? 'warning' : 'danger'
       }
     ]
   }, [data, selectedPeriod, loading])
+
+  // Calculate second row KPIs
+  const secondRowKpis = useMemo<KPI[]>(() => {
+    if (loading || !data) {
+      return getSecondRowMockKPIs()
+    }
+    
+    // Mock values for now - these would come from BigQuery
+    return [
+      {
+        id: 'speed-to-lead',
+        label: '30D Speed to Lead',
+        subtitle: 'Target: 30%',
+        value: 21.78,
+        target: 30,
+        format: 'percentage',
+        status: 'warning'
+      },
+      {
+        id: 'recurring-cvr',
+        label: '30D Recurring CVR',
+        value: 0,
+        target: 20,
+        format: 'percentage',
+        status: 'normal'
+      },
+      {
+        id: 'avg-qpd',
+        label: '30D AVG QPD',
+        subtitle: 'Target: 12',
+        value: 3.45,
+        target: 12,
+        format: 'number',
+        status: 'danger'
+      },
+      {
+        id: 'reviews-week',
+        label: 'Reviews This Week',
+        subtitle: 'Target: 4',
+        value: 3,
+        target: 4,
+        format: 'number',
+        status: 'warning'
+      },
+      {
+        id: 'cvr-30d',
+        label: '30D CVR',
+        subtitle: 'Target: 45%',
+        value: 53,
+        target: 45,
+        format: 'percentage',
+        status: 'success'
+      }
+    ]
+  }, [data, loading])
 
   // Mock recent events
   const recentEvents: RecentEvent[] = [
@@ -155,32 +251,6 @@ const SalesKPIDashboard: React.FC = () => {
     }
   }
 
-  const getStatusColor = (status: KPI['status']) => {
-    switch (status) {
-      case 'success': return 'bg-green-500'
-      case 'warning': return 'bg-yellow-500'
-      case 'danger': return 'bg-red-500'
-      default: return 'bg-blue-500'
-    }
-  }
-
-  const getGradientColor = (status: KPI['status']) => {
-    switch (status) {
-      case 'success': return 'from-green-500/20 to-green-500/5'
-      case 'warning': return 'from-yellow-500/20 to-yellow-500/5'
-      case 'danger': return 'from-red-500/20 to-red-500/5'
-      default: return 'from-blue-500/20 to-blue-500/5'
-    }
-  }
-
-  const getProgressColor = (status: KPI['status']) => {
-    switch (status) {
-      case 'success': return 'bg-gradient-to-r from-green-500 to-green-400'
-      case 'warning': return 'bg-gradient-to-r from-yellow-500 to-yellow-400'
-      case 'danger': return 'bg-gradient-to-r from-red-500 to-red-400'
-      default: return 'bg-gradient-to-r from-blue-500 to-blue-400'
-    }
-  }
 
   // Setup charts
   useEffect(() => {
@@ -568,51 +638,58 @@ const SalesKPIDashboard: React.FC = () => {
 
           {/* Main Content */}
           <section className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
-            {/* KPI Cards with Live Updates */}
-            <div className="space-y-3">
+            {/* First Row KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {kpis.map((kpi) => (
-                <motion.div
+                <div
                   key={kpi.id}
-                  className="group relative bg-gray-800/50 backdrop-blur-lg rounded-lg p-4 hover:bg-gray-700/50 transition-all cursor-pointer overflow-hidden"
-                  onClick={() => setSelectedMetric(kpi)}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all"
                 >
-                  {/* Animated background gradient */}
-                  <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 bg-gradient-to-r ${getGradientColor(kpi.status)} transition-opacity duration-300`} />
-                  
-                  <div className="relative flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {/* Pulsing status indicator */}
-                      <div className={`w-2 h-2 rounded-full ${kpi.isLive ? 'animate-pulse' : ''} ${getStatusColor(kpi.status)}`} />
-                      <span className="text-gray-300">{kpi.label}</span>
-                      {kpi.trend !== 0 && (
-                        <span className={`text-xs ${kpi.trend > 0 ? 'text-green-400' : 'text-red-400'} flex items-center gap-1`}>
-                          {kpi.trend > 0 ? '↑' : '↓'} {Math.abs(kpi.trend)}%
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl font-bold text-white">
-                        {formatValue(kpi.value, kpi.format)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        / {formatValue(kpi.target, kpi.format)}
-                      </span>
-                    </div>
+                  <div className="space-y-2">
+                    <h3 className="text-sm text-gray-400">{kpi.label}</h3>
+                    {kpi.subtitle && (
+                      <p className="text-xs text-gray-500">{kpi.subtitle}</p>
+                    )}
+                    <p className={`text-2xl font-bold ${
+                      kpi.value === 0 && kpi.id.includes('today') ? 'text-gray-500' : 'text-white'
+                    }`}>
+                      {kpi.value === 0 && kpi.id.includes('today') ? 'No data' : formatValue(kpi.value, kpi.format)}
+                    </p>
+                    {kpi.isLive && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-xs text-gray-500">Live</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Mini progress bar */}
-                  <div className="mt-3 h-1 bg-gray-700 rounded-full overflow-hidden">
-                    <motion.div 
-                      className={`h-full ${getProgressColor(kpi.status)}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((kpi.value / kpi.target) * 100, 100)}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                    />
+                </div>
+              ))}
+            </div>
+
+            {/* Second Row KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {secondRowKpis.map((kpi) => (
+                <div
+                  key={kpi.id}
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all"
+                >
+                  <div className="space-y-2">
+                    <h3 className="text-sm text-gray-400">{kpi.label}</h3>
+                    {kpi.subtitle && (
+                      <p className="text-xs text-gray-500">{kpi.subtitle}</p>
+                    )}
+                    <p className={`text-2xl font-bold ${
+                      kpi.status === 'success' ? 'text-green-400' :
+                      kpi.status === 'warning' ? 'text-yellow-400' :
+                      kpi.status === 'danger' ? 'text-red-400' : 'text-white'
+                    }`}>
+                      {formatValue(kpi.value, kpi.format)}
+                    </p>
+                    {kpi.id === 'speed-to-lead' && (
+                      <a href="#" className="text-xs text-blue-400 hover:underline">See details</a>
+                    )}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
 
@@ -632,14 +709,21 @@ const SalesKPIDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Revenue Trend Chart */}
-              <div className="lg:col-span-2 bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-shadow">
+            {/* Charts Row 1 */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Converted This Week Chart */}
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium">Revenue Trend</h2>
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-yellow-400 animate-pulse" />
-                    <span className="text-xs text-gray-400">Live data</span>
+                  <h2 className="font-medium">Converted This Week</h2>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-orange-400 rounded"></div>
+                      <span className="text-gray-400">Sent Quotes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                      <span className="text-gray-400">Converted</span>
+                    </div>
                   </div>
                 </div>
                 <div className="h-48">
@@ -647,32 +731,78 @@ const SalesKPIDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Performance Radar */}
+              {/* Weekly Historical Conversions */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">Performance Metrics</h2>
+                <h2 className="font-medium mb-4">Weekly Historical Conversions</h2>
                 <div className="h-48">
-                  <canvas ref={performanceChartRef}></canvas>
+                  <canvas ref={conversionChartRef}></canvas>
                 </div>
               </div>
             </div>
 
-            {/* Conversion Funnel */}
-            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-medium">Conversion Funnel</h2>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-gray-400">28 closed</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-400" />
-                    <span className="text-gray-400">45 in progress</span>
-                  </span>
+            {/* Charts Row 2 */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* On The Books by Month */}
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-medium">On The Books by Month (Excluding Sales Tax)</h2>
+                </div>
+                <div className="h-48">
+                  <canvas ref={performanceChartRef}></canvas>
                 </div>
               </div>
-              <div className="h-64">
-                <canvas ref={conversionChartRef}></canvas>
+
+              {/* On the Books by Week */}
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-shadow">
+                <h2 className="font-medium mb-4">On the Books by Week</h2>
+                <div className="h-48">
+                  <canvas ref={sparklineRef}></canvas>
+                </div>
+              </div>
+            </div>
+
+            {/* Converted Quotes Table */}
+            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+              <h2 className="font-medium mb-4">Converted Quotes</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-sm text-gray-400 border-b border-white/10">
+                      <th className="pb-3 pr-4">Date Converted</th>
+                      <th className="pb-3 pr-4">Job Number</th>
+                      <th className="pb-3 pr-4">Date</th>
+                      <th className="pb-3 pr-4">Job Type</th>
+                      <th className="pb-3 pr-4">Sales Person</th>
+                      <th className="pb-3 pr-4">JobberLink</th>
+                      <th className="pb-3 pr-4">Visit Title</th>
+                      <th className="pb-3 text-right">Total Dollars</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {getConvertedQuotes().map((quote, index) => (
+                      <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="py-3 pr-4">{quote.dateConverted}</td>
+                        <td className="py-3 pr-4">{quote.jobNumber}</td>
+                        <td className="py-3 pr-4">{quote.date}</td>
+                        <td className="py-3 pr-4">
+                          <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
+                            {quote.jobType}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">{quote.salesPerson}</td>
+                        <td className="py-3 pr-4">
+                          <a href={quote.jobberLink} className="text-blue-400 hover:underline">
+                            View
+                          </a>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-300">{quote.visitTitle}</td>
+                        <td className="py-3 text-right font-medium">
+                          {formatValue(quote.totalDollars, 'currency')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>
@@ -759,44 +889,174 @@ const SalesKPIDashboard: React.FC = () => {
 function getMockKPIs(): KPI[] {
   return [
     {
-      id: 'revenue',
-      label: 'Total Revenue',
-      value: 487500,
-      target: 500000,
-      format: 'currency',
-      status: 'success',
-      trend: 12.5,
-      isLive: true
-    },
-    {
-      id: 'conversion',
-      label: 'Conversion Rate',
-      value: 22.8,
-      target: 25,
-      format: 'percentage',
-      status: 'warning',
-      trend: -2.3,
-      isLive: true
-    },
-    {
-      id: 'quotes',
-      label: 'Quotes Sent',
-      value: 156,
-      target: 175,
+      id: 'quotes-sent-today',
+      label: 'Quotes Sent Today',
+      subtitle: 'Target: 12',
+      value: 0,
+      target: 12,
       format: 'number',
-      status: 'normal',
-      trend: 8.7,
-      isLive: false
+      status: 'danger',
+      isLive: true
     },
     {
-      id: 'avg-deal',
-      label: 'Avg Deal Size',
-      value: 5250,
-      target: 5500,
+      id: 'converted-today',
+      label: 'Converted Today',
+      subtitle: 'total_dollars',
+      value: 17208.18,
+      target: 20000,
       format: 'currency',
-      status: 'success',
-      trend: 5.2,
-      isLive: false
+      status: 'warning',
+      isLive: true
+    },
+    {
+      id: 'converted-week',
+      label: 'Converted This Week',
+      subtitle: 'total_dollars',
+      value: 17208.18,
+      target: 100000,
+      format: 'currency',
+      status: 'danger'
+    },
+    {
+      id: 'cvr-week',
+      label: 'CVR This Week',
+      subtitle: 'Target: 45%',
+      value: 29,
+      target: 45,
+      format: 'percentage',
+      status: 'warning'
+    },
+    {
+      id: 'recurring-2026',
+      label: '2026 Recurring',
+      subtitle: 'Total: $85k',
+      value: 111160,
+      target: 85000,
+      format: 'currency',
+      status: 'success'
+    },
+    {
+      id: 'next-month-otb',
+      label: 'Next Month OTB',
+      subtitle: 'Target: $125k',
+      value: 73052.50,
+      target: 125000,
+      format: 'currency',
+      status: 'danger'
+    }
+  ]
+}
+
+function getSecondRowMockKPIs(): KPI[] {
+  return [
+    {
+      id: 'speed-to-lead',
+      label: '30D Speed to Lead',
+      subtitle: 'Target: 30%',
+      value: 21.78,
+      target: 30,
+      format: 'percentage',
+      status: 'warning'
+    },
+    {
+      id: 'recurring-cvr',
+      label: '30D Recurring CVR',
+      value: 0,
+      target: 20,
+      format: 'percentage',
+      status: 'normal'
+    },
+    {
+      id: 'avg-qpd',
+      label: '30D AVG QPD',
+      subtitle: 'Target: 12',
+      value: 3.45,
+      target: 12,
+      format: 'number',
+      status: 'danger'
+    },
+    {
+      id: 'reviews-week',
+      label: 'Reviews This Week',
+      subtitle: 'Target: 4',
+      value: 3,
+      target: 4,
+      format: 'number',
+      status: 'warning'
+    },
+    {
+      id: 'cvr-30d',
+      label: '30D CVR',
+      subtitle: 'Target: 45%',
+      value: 53,
+      target: 45,
+      format: 'percentage',
+      status: 'success'
+    }
+  ]
+}
+
+function getConvertedQuotes(): ConvertedQuote[] {
+  return [
+    {
+      dateConverted: 'Jun 27, 2025',
+      jobNumber: '325',
+      date: 'Jul 11, 2025',
+      jobType: 'ONE_OFF',
+      salesPerson: 'Christian Ruddy',
+      jobberLink: 'https://secure.getjobber.com',
+      visitTitle: 'null',
+      totalDollars: 1175.00
+    },
+    {
+      dateConverted: 'Jun 25, 2025',
+      jobNumber: '324',
+      date: 'Aug 13, 2025',
+      jobType: 'ONE_OFF',
+      salesPerson: 'Michael Squires',
+      jobberLink: 'https://secure.getjobber.com',
+      visitTitle: 'null',
+      totalDollars: 1600.00
+    },
+    {
+      dateConverted: 'Jun 25, 2025',
+      jobNumber: '322',
+      date: 'Jul 23, 2025',
+      jobType: 'ONE_OFF',
+      salesPerson: 'Michael Squires',
+      jobberLink: 'https://secure.getjobber.com',
+      visitTitle: 'null',
+      totalDollars: 1200.00
+    },
+    {
+      dateConverted: 'Jun 25, 2025',
+      jobNumber: '323',
+      date: 'Aug 11, 2025',
+      jobType: 'ONE_OFF',
+      salesPerson: 'Michael Squires',
+      jobberLink: 'https://secure.getjobber.com',
+      visitTitle: 'null',
+      totalDollars: 1200.00
+    },
+    {
+      dateConverted: 'Jun 25, 2025',
+      jobNumber: '318',
+      date: 'Aug 6, 2025',
+      jobType: 'ONE_OFF',
+      salesPerson: 'Michael Squires',
+      jobberLink: 'https://secure.getjobber.com',
+      visitTitle: 'Eileen Geller',
+      totalDollars: 999.80
+    },
+    {
+      dateConverted: 'Jun 25, 2025',
+      jobNumber: '316',
+      date: 'Jun 30, 2025',
+      jobType: 'ONE_OFF',
+      salesPerson: 'Christian Ruddy',
+      jobberLink: 'https://secure.getjobber.com',
+      visitTitle: 'Elizabeth Moore',
+      totalDollars: 695.00
     }
   ]
 }
