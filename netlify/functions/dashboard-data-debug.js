@@ -30,7 +30,54 @@ exports.handler = async (event, context) => {
 
     const bigquery = new BigQuery(bigqueryConfig);
 
-    // Query v_quotes view - get last 90 days of data
+    // Debug information
+    const debugInfo = {
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      now: new Date().toISOString(),
+      localNow: new Date().toString(),
+    };
+
+    // Query v_quotes view with debug - get recent data and date range
+    const quotesDebugQuery = `
+      WITH date_range AS (
+        SELECT 
+          MIN(created_at) as min_created,
+          MAX(created_at) as max_created,
+          MIN(sent_date) as min_sent,
+          MAX(sent_date) as max_sent,
+          MIN(converted_date) as min_converted,
+          MAX(converted_date) as max_converted,
+          COUNT(*) as total_count,
+          COUNT(DISTINCT DATE(created_at)) as distinct_created_days,
+          COUNT(DISTINCT DATE(sent_date)) as distinct_sent_days,
+          COUNT(DISTINCT DATE(converted_date)) as distinct_converted_days
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
+      )
+      SELECT * FROM date_range
+    `;
+
+    const jobsDebugQuery = `
+      WITH date_range AS (
+        SELECT 
+          MIN(Date) as min_date,
+          MAX(Date) as max_date,
+          COUNT(*) as total_count,
+          COUNT(DISTINCT DATE(Date)) as distinct_days
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
+      )
+      SELECT * FROM date_range
+    `;
+
+    // Get date ranges first
+    const [quotesDateRange, jobsDateRange] = await Promise.all([
+      bigquery.query(quotesDebugQuery),
+      bigquery.query(jobsDebugQuery)
+    ]);
+
+    debugInfo.quotesDateRange = quotesDateRange[0][0] || {};
+    debugInfo.jobsDateRange = jobsDateRange[0][0] || {};
+
+    // Query v_quotes view - get last 90 days of data to ensure we have enough
     const quotesQuery = `
       SELECT 
         quote_number,
@@ -77,64 +124,20 @@ exports.handler = async (event, context) => {
 
     console.log(`Found ${quotesData.length} quotes and ${jobsData.length} jobs`);
     
-    // Debug: Show sample data and date ranges
-    let debugInfo = {
-      totalQuotes: quotesData.length,
-      totalJobs: jobsData.length,
-      sampleQuote: null,
-      dateRanges: {
-        quotes: { min: null, max: null },
-        jobs: { min: null, max: null }
-      },
-      todayData: { quotes: 0, jobs: 0 },
-      weekData: { quotes: 0, jobs: 0 },
-      last30Data: { quotes: 0, jobs: 0 }
-    };
-    
-    if (quotesData.length > 0) {
-      debugInfo.sampleQuote = {
-        sent_date: quotesData[0].sent_date,
-        converted_date: quotesData[0].converted_date,
-        total_dollars: quotesData[0].total_dollars,
-        status: quotesData[0].status
-      };
-      
-      // Find date ranges in quotes
-      const quoteDates = quotesData
-        .map(q => [q.created_at, q.sent_date, q.converted_date])
-        .flat()
-        .filter(d => d)
-        .map(d => new Date(d))
-        .filter(d => !isNaN(d.getTime()));
-      
-      if (quoteDates.length > 0) {
-        debugInfo.dateRanges.quotes.min = new Date(Math.min(...quoteDates));
-        debugInfo.dateRanges.quotes.max = new Date(Math.max(...quoteDates));
-      }
-    }
-    
-    if (jobsData.length > 0) {
-      // Find date ranges in jobs
-      const jobDates = jobsData
-        .map(j => j.Date)
-        .filter(d => d)
-        .map(d => new Date(d))
-        .filter(d => !isNaN(d.getTime()));
-      
-      if (jobDates.length > 0) {
-        debugInfo.dateRanges.jobs.min = new Date(Math.min(...jobDates));
-        debugInfo.dateRanges.jobs.max = new Date(Math.max(...jobDates));
-      }
-    }
-    
-    console.log('Debug info:', JSON.stringify(debugInfo, null, 2));
-    
-    // Get all-time totals for debugging
-    const allTimeQuotes = quotesData.length;
-    const allTimeConverted = quotesData.filter(q => q.converted_date !== null).length;
-    const allTimeRevenue = quotesData
-      .filter(q => q.status === 'converted' || q.status === 'approved')
-      .reduce((sum, q) => sum + (parseFloat(q.total_dollars) || 0), 0);
+    // Debug: Show sample data
+    debugInfo.sampleQuotes = quotesData.slice(0, 5).map(q => ({
+      sent_date: q.sent_date,
+      converted_date: q.converted_date,
+      created_at: q.created_at,
+      total_dollars: q.total_dollars,
+      status: q.status
+    }));
+
+    debugInfo.sampleJobs = jobsData.slice(0, 5).map(j => ({
+      Date: j.Date,
+      Calculated_Value: j.Calculated_Value,
+      Job_Status: j.Job_Status
+    }));
 
     // Process the data with timezone awareness
     const now = new Date();
@@ -152,7 +155,7 @@ exports.handler = async (event, context) => {
       return new Date(dateValue);
     };
 
-    // Calculate date boundaries
+    // Calculate date boundaries in UTC
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
@@ -163,6 +166,13 @@ exports.handler = async (event, context) => {
     
     const thirtyDaysAgo = new Date(todayStart);
     thirtyDaysAgo.setDate(todayStart.getDate() - 30);
+
+    debugInfo.dateCalculations = {
+      todayStart: todayStart.toISOString(),
+      todayEnd: todayEnd.toISOString(),
+      weekStart: weekStart.toISOString(),
+      thirtyDaysAgo: thirtyDaysAgo.toISOString()
+    };
 
     // Helper functions with better date handling
     const isToday = (dateValue) => {
@@ -181,6 +191,21 @@ exports.handler = async (event, context) => {
       const date = parseBQDate(dateValue);
       if (!date || isNaN(date.getTime())) return false;
       return date >= thirtyDaysAgo && date <= now;
+    };
+
+    // Debug: Test date filtering
+    const todayQuotes = quotesData.filter(q => q.sent_date && isToday(q.sent_date));
+    const weekQuotes = quotesData.filter(q => q.sent_date && isThisWeek(q.sent_date));
+    const thirtyDayQuotes = quotesData.filter(q => q.sent_date && isLast30Days(q.sent_date));
+
+    debugInfo.dateFilteringTest = {
+      todayQuotesCount: todayQuotes.length,
+      weekQuotesCount: weekQuotes.length,
+      thirtyDayQuotesCount: thirtyDayQuotes.length,
+      todayQuotesSample: todayQuotes.slice(0, 3).map(q => ({
+        sent_date: q.sent_date,
+        parsed_date: parseBQDate(q.sent_date)?.toISOString()
+      }))
     };
 
     // Calculate KPIs
@@ -205,7 +230,7 @@ exports.handler = async (event, context) => {
 
     // Calculate speed to lead (using days_to_convert as proxy)
     const speedToLead = quotesLast30Days
-      .filter(q => q.days_to_convert !== null)
+      .filter(q => q.days_to_convert !== null && q.days_to_convert > 0)
       .reduce((sum, q, _, arr) => sum + q.days_to_convert / arr.length, 0);
     const speedToLeadHours = (speedToLead * 24).toFixed(1);
 
@@ -279,35 +304,21 @@ exports.handler = async (event, context) => {
           { month: 'Sep 2025', projected: 115000, confidence: 'medium' },
           { month: 'Oct 2025', projected: 125000, confidence: 'medium' },
         ],
-        // Add debug info to help diagnose
-        _debug: {
-          allTimeQuotes,
-          allTimeConverted,
-          allTimeRevenue: formatCurrency(allTimeRevenue),
-          dateRanges: {
-            quotes: debugInfo.dateRanges.quotes,
-            jobs: debugInfo.dateRanges.jobs
-          },
-          currentTime: now.toISOString(),
-          todayBounds: {
-            start: todayStart.toISOString(),
-            end: todayEnd.toISOString()
-          }
-        }
       },
+      debugInfo,
       lastUpdated: new Date().toISOString(),
     };
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify(data, null, 2),
     };
   } catch (error) {
     console.error('BigQuery error:', error);
     
-    // Return mock data on error
-    const mockData = {
+    // Return error with debug info
+    const errorData = {
       kpis: {
         quotesSentToday: 0,
         convertedToday: 0,
@@ -326,13 +337,17 @@ exports.handler = async (event, context) => {
         monthlyProjections: [],
       },
       lastUpdated: new Date().toISOString(),
-      error: error.message
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      }
     };
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(mockData),
+      body: JSON.stringify(errorData, null, 2),
     };
   }
 };

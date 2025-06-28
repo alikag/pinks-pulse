@@ -171,6 +171,23 @@ const PremiumMobileDashboard: React.FC = () => {
           {error}
         </div>
       )}
+      
+      {/* Debug Info Banner */}
+      {data?.kpis?._debug && (
+        <div className="fixed top-0 left-0 right-0 bg-blue-600/20 backdrop-blur-sm px-4 py-2 text-xs text-blue-300 z-50 overflow-auto max-h-32">
+          <details>
+            <summary className="cursor-pointer">Debug Info (click to expand)</summary>
+            <pre className="mt-2 text-[10px]">
+              All-time quotes: {data.kpis._debug.allTimeQuotes}
+              All-time converted: {data.kpis._debug.allTimeConverted}
+              All-time revenue: {data.kpis._debug.allTimeRevenue}
+              Current time: {data.kpis._debug.currentTime}
+              Quotes date range: {data.kpis._debug.dateRanges.quotes?.min ? `${new Date(data.kpis._debug.dateRanges.quotes.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.quotes.max).toLocaleDateString()}` : 'No dates'}
+              Jobs date range: {data.kpis._debug.dateRanges.jobs?.min ? `${new Date(data.kpis._debug.dateRanges.jobs.min).toLocaleDateString()} - ${new Date(data.kpis._debug.dateRanges.jobs.max).toLocaleDateString()}` : 'No dates'}
+            </pre>
+          </details>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-6 justify-center">
         {/* Phone 1 - Analytics Dashboard */}
