@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
   try {
     // Initialize BigQuery
     let bigqueryConfig = {
-      projectId: process.env.BIGQUERY_PROJECT_ID || 'jobber-data-warehouse-462721'
+      projectId: process.env.BIGQUERY_PROJECT_ID
     };
 
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
@@ -44,7 +44,7 @@ exports.handler = async (event, context) => {
         approved_date,
         converted_date,
         days_to_convert
-      FROM \`jobber-data-warehouse-462721.jobber_data.v_quotes\`
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
       WHERE created_at IS NOT NULL
       ORDER BY created_at DESC
       LIMIT 1000
@@ -60,7 +60,7 @@ exports.handler = async (event, context) => {
         Job_Status,
         SalesPerson,
         Date_Converted
-      FROM \`jobber-data-warehouse-462721.jobber_data.v_jobs\`
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       WHERE Date IS NOT NULL
       ORDER BY Date DESC
       LIMIT 1000
