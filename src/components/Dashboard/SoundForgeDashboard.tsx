@@ -5,7 +5,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 
 const SoundForgeDashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const { data, loading, error, selectedPeriod } = useDashboardData()
+  const { data, loading, error } = useDashboardData()
   
   // Chart refs
   const revenueChartRef = useRef<HTMLCanvasElement>(null)
