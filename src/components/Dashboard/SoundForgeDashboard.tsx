@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Menu, Bell, HelpCircle, Music, HardDrive, Activity, DollarSign, TrendingUp, Circle, MoreHorizontal, Plus, LayoutDashboard, Radio, FileAudio, Users, SlidersHorizontal, Waveform } from 'lucide-react'
+import { Menu, Bell, HelpCircle, Music, HardDrive, Activity, DollarSign, TrendingUp, Circle, MoreHorizontal, Plus, LayoutDashboard, Radio, FileAudio, Users, SlidersHorizontal, AudioWaveform } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 
 const SoundForgeDashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const { data, isLoading, error } = useDashboardData()
+  const { data, loading, error, selectedPeriod } = useDashboardData()
   
   // Chart refs
   const revenueChartRef = useRef<HTMLCanvasElement>(null)
@@ -20,7 +20,7 @@ const SoundForgeDashboard: React.FC = () => {
   const spectrumChartInstance = useRef<Chart | null>(null)
 
   useEffect(() => {
-    if (!data || isLoading) return
+    if (!data || loading) return
 
     // Setup charts with data from BigQuery
     Chart.defaults.color = 'rgba(255, 255, 255, 0.6)'
@@ -33,10 +33,10 @@ const SoundForgeDashboard: React.FC = () => {
         revenueChartInstance.current = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: data.timeSeries?.map(item => item.month) || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            labels: data.timeSeries?.[selectedPeriod || 'month']?.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
             datasets: [{
               label: 'Revenue',
-              data: data.timeSeries?.map(item => item.revenue) || [8500, 9200, 11800, 10400, 12600, 13900],
+              data: data.timeSeries?.[selectedPeriod || 'month']?.quotesConverted?.map(q => q * 500) || [8500, 9200, 11800, 10400, 12600, 13900],
               borderColor: '#06b6d4',
               backgroundColor: 'rgba(6, 182, 212, 0.1)',
               fill: true,
@@ -47,7 +47,7 @@ const SoundForgeDashboard: React.FC = () => {
               pointRadius: 4
             }, {
               label: 'Target',
-              data: data.timeSeries?.map(item => item.target) || [10000, 10500, 11000, 11500, 12000, 12500],
+              data: data.timeSeries?.[selectedPeriod || 'month']?.quotesSent?.map(q => q * 600) || [10000, 10500, 11000, 11500, 12000, 12500],
               borderColor: 'rgba(139, 92, 246, 0.5)',
               backgroundColor: 'transparent',
               borderDash: [5, 5],
@@ -87,9 +87,9 @@ const SoundForgeDashboard: React.FC = () => {
         genreChartInstance.current = new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: data.categories?.map(c => c.name) || ['Hip-Hop', 'Electronic', 'Pop', 'Jazz', 'Rock'],
+            labels: data.salespersons?.map(s => s.name) || ['Hip-Hop', 'Electronic', 'Pop', 'Jazz', 'Rock'],
             datasets: [{
-              data: data.categories?.map(c => c.value) || [30, 25, 20, 15, 10],
+              data: data.salespersons?.map(s => s.quotesConverted) || [30, 25, 20, 15, 10],
               backgroundColor: ['#3b82f6', '#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'],
               borderWidth: 0
             }]
@@ -117,7 +117,7 @@ const SoundForgeDashboard: React.FC = () => {
           data: {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [{
-              data: data.weeklyUsage || [8, 12, 6, 15, 10, 14, 9],
+              data: data.timeSeries?.week?.quotesSent || [8, 12, 6, 15, 10, 14, 9],
               backgroundColor: 'rgba(59, 130, 246, 0.8)',
               borderRadius: 4
             }]
@@ -172,22 +172,23 @@ const SoundForgeDashboard: React.FC = () => {
       usageChartInstance.current?.destroy()
       spectrumChartInstance.current?.destroy()
     }
-  }, [data, isLoading])
+  }, [data, loading])
 
   // Calculate KPIs from BigQuery data
+  const currentPeriod = data?.timeSeries?.[selectedPeriod || 'month'];
   const kpis = {
-    totalTracks: data?.kpis?.totalRecords || 247,
-    storageUsed: data?.kpis?.storageGB || '84GB',
-    activeSessions: data?.kpis?.activeSessions || 12,
-    revenue: data?.kpis?.totalRevenue ? `$${(data.kpis.totalRevenue / 1000).toFixed(1)}K` : '$12.4K'
+    totalTracks: currentPeriod?.totalSent || 247,
+    storageUsed: '84GB',
+    activeSessions: 12,
+    revenue: currentPeriod?.totalConverted ? `$${(currentPeriod.totalConverted * 500 / 1000).toFixed(1)}K` : '$12.4K'
   }
 
-  const artists = data?.recentItems?.map(item => ({
-    name: item.client_name || item.name,
-    genre: item.category || 'Electronic',
-    status: item.status === 'approved' ? 'Online' : item.status === 'sent' ? 'Recording' : 'Away',
-    location: item.location || 'LA',
-    avatar: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'women' : 'men'}/${Math.floor(Math.random() * 100)}.jpg`
+  const artists = data?.salespersons?.map((person, idx) => ({
+    name: person.name,
+    genre: ['Electronic', 'Hip-Hop', 'Pop', 'Jazz'][idx % 4],
+    status: person.conversionRate > 30 ? 'Online' : person.conversionRate > 20 ? 'Recording' : 'Away',
+    location: ['Tokyo', 'LA', 'Seoul', 'Paris'][idx % 4],
+    avatar: `https://randomuser.me/api/portraits/${idx % 2 === 0 ? 'women' : 'men'}/${32 + idx}.jpg`
   })) || [
     { name: 'Maya Chen', genre: 'Electronic', status: 'Online', location: 'Tokyo', avatar: 'https://randomuser.me/api/portraits/women/32.jpg' },
     { name: 'Marcus Rivera', genre: 'Hip-Hop', status: 'Recording', location: 'LA', avatar: 'https://randomuser.me/api/portraits/men/85.jpg' },
@@ -221,7 +222,7 @@ const SoundForgeDashboard: React.FC = () => {
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-slate-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg grid place-content-center">
-              <Waveform className="h-5 w-5" />
+              <AudioWaveform className="h-5 w-5" />
             </div>
             <span className="text-lg font-semibold tracking-tight">SoundForge</span>
           </div>
