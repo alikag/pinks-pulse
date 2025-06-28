@@ -21,9 +21,12 @@ export class BigQueryService {
       }
       
       if (response.data?.dataSource === 'mock') {
-        console.warn('[BigQueryService] WARNING: Server is returning mock data!');
+        console.warn('[BigQueryService] ⚠️ WARNING: Server is returning mock data!');
+        console.warn('[BigQueryService] This means BigQuery connection failed on the server');
+        console.warn('[BigQueryService] Check Netlify environment variables and function logs');
       } else if (response.data?.dataSource === 'bigquery') {
-        console.log('[BigQueryService] SUCCESS: Server returned BigQuery data');
+        console.log('[BigQueryService] ✅ SUCCESS: Server returned BigQuery data');
+        console.log('[BigQueryService] KPI Metrics:', response.data?.kpiMetrics);
       }
       
       // Remove the dataSource and error fields before returning

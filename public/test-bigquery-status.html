@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Connection Status</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .endpoint {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .endpoint h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .mock {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-bigquery { background-color: #28a745; }
+        .status-mock { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        .summary {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .summary h2 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BigQuery Connection Status Test</h1>
+        
+        <div class="summary">
+            <h2>Quick Status Check</h2>
+            <p>This page tests all Netlify Functions that connect to BigQuery to verify the data flow is working correctly.</p>
+            <ul>
+                <li><span class="status-indicator status-bigquery"></span><strong>Green</strong> = Connected to BigQuery (Live Data)</li>
+                <li><span class="status-indicator status-mock"></span><strong>Yellow</strong> = Using Mock Data (BigQuery connection failed)</li>
+                <li><span class="status-indicator status-error"></span><strong>Red</strong> = Function Error</li>
+            </ul>
+        </div>
+
+        <div class="endpoint">
+            <h3>1. Dashboard Data Sales (Main Endpoint)</h3>
+            <p>Primary endpoint for sales dashboard data</p>
+            <button onclick="testEndpoint('dashboard-data-sales', 'sales')">Test Endpoint</button>
+            <div id="sales-result"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>2. Check BigQuery Environment</h3>
+            <p>Verifies environment variables are set</p>
+            <button onclick="testEndpoint('check-bigquery-env', 'env')">Test Environment</button>
+            <div id="env-result"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>3. Test BigQuery Connection</h3>
+            <p>Direct BigQuery connection test</p>
+            <button onclick="testEndpoint('test-bigquery', 'test')">Test Connection</button>
+            <div id="test-result"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>4. Dashboard Data (Legacy)</h3>
+            <p>Original dashboard data endpoint</p>
+            <button onclick="testEndpoint('dashboard-data', 'legacy')">Test Endpoint</button>
+            <div id="legacy-result"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>5. Debug Dashboard Data</h3>
+            <p>Debug version with detailed logging</p>
+            <button onclick="testEndpoint('dashboard-data-debug', 'debug')">Test Debug</button>
+            <div id="debug-result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testEndpoint(endpoint, resultId) {
+            const resultDiv = document.getElementById(`${resultId}-result`);
+            resultDiv.innerHTML = '<div class="result loading">Loading...</div>';
+            
+            try {
+                const response = await fetch(`/.netlify/functions/${endpoint}`);
+                const data = await response.json();
+                
+                let statusClass = 'error';
+                let statusText = 'ERROR';
+                let dataSource = data.dataSource || 'unknown';
+                
+                if (response.ok) {
+                    if (dataSource === 'bigquery') {
+                        statusClass = 'success';
+                        statusText = '✅ BIGQUERY';
+                    } else if (dataSource === 'mock') {
+                        statusClass = 'mock';
+                        statusText = '⚠️ MOCK DATA';
+                    }
+                }
+                
+                let displayData = {
+                    status: response.status,
+                    dataSource: dataSource,
+                    error: data.error,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Add specific data based on endpoint
+                if (endpoint === 'dashboard-data-sales' && data.kpiMetrics) {
+                    displayData.kpiMetrics = {
+                        quotesToday: data.kpiMetrics.quotesToday,
+                        quotesThisWeek: data.kpiMetrics.quotesThisWeek,
+                        convertedThisWeek: data.kpiMetrics.convertedThisWeek,
+                        cvr30Days: data.kpiMetrics.cvr30Days
+                    };
+                    displayData.salespersonCount = data.salespersons?.length || 0;
+                }
+                
+                if (endpoint === 'check-bigquery-env') {
+                    displayData = data;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="result ${statusClass}">
+                        <strong>${statusText}</strong>
+                        <pre>${JSON.stringify(displayData, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ REQUEST FAILED</strong>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        // Auto-test all endpoints on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testEndpoint('dashboard-data-sales', 'sales');
+                testEndpoint('check-bigquery-env', 'env');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
