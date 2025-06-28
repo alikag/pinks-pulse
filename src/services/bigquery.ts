@@ -6,15 +6,32 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/.netlify/functions';
 export class BigQueryService {
   static async fetchDashboardData(): Promise<DashboardData> {
     try {
+      console.log('[BigQueryService] Fetching dashboard data from:', `${API_BASE_URL}/dashboard-data-sales`);
       const response = await axios.get(`${API_BASE_URL}/dashboard-data-sales`);
-      console.log('Raw response from API:', response);
-      console.log('Response data:', response.data);
-      console.log('Response data type:', typeof response.data);
-      console.log('Response data keys:', Object.keys(response.data || {}));
-      console.log('Has timeSeries?', response.data?.timeSeries);
-      return response.data;
+      
+      console.log('[BigQueryService] Response status:', response.status);
+      console.log('[BigQueryService] Response data:', response.data);
+      console.log('[BigQueryService] Data source:', response.data?.dataSource || 'unknown');
+      console.log('[BigQueryService] Response data keys:', Object.keys(response.data || {}));
+      console.log('[BigQueryService] Has timeSeries?', !!response.data?.timeSeries);
+      console.log('[BigQueryService] Has salespersons?', !!response.data?.salespersons);
+      
+      if (response.data?.error) {
+        console.error('[BigQueryService] Server returned error:', response.data.error);
+      }
+      
+      if (response.data?.dataSource === 'mock') {
+        console.warn('[BigQueryService] WARNING: Server is returning mock data!');
+      } else if (response.data?.dataSource === 'bigquery') {
+        console.log('[BigQueryService] SUCCESS: Server returned BigQuery data');
+      }
+      
+      // Remove the dataSource and error fields before returning
+      const { dataSource, error, ...cleanData } = response.data;
+      return cleanData;
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('[BigQueryService] Error fetching dashboard data:', error);
+      console.error('[BigQueryService] Falling back to client-side mock data');
       return this.getMockData();
     }
   }

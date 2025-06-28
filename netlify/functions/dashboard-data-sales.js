@@ -17,17 +17,42 @@ exports.handler = async (event, context) => {
     };
   }
 
+  console.log('[dashboard-data-sales] Starting handler execution');
+  console.log('[dashboard-data-sales] Environment check:', {
+    hasProjectId: !!process.env.BIGQUERY_PROJECT_ID,
+    projectId: process.env.BIGQUERY_PROJECT_ID,
+    hasCredentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+    credentialsLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
+  });
+
   try {
     // Initialize BigQuery
     let bigqueryConfig = {
       projectId: process.env.BIGQUERY_PROJECT_ID
     };
 
+    console.log('[dashboard-data-sales] Initializing BigQuery with project:', process.env.BIGQUERY_PROJECT_ID);
+
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-      const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-      bigqueryConfig.credentials = credentials;
+      console.log('[dashboard-data-sales] Parsing Google credentials JSON...');
+      try {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+        console.log('[dashboard-data-sales] Credentials parsed successfully:', {
+          type: credentials.type,
+          projectId: credentials.project_id,
+          clientEmail: credentials.client_email?.substring(0, 20) + '...',
+          hasPrivateKey: !!credentials.private_key
+        });
+      } catch (parseError) {
+        console.error('[dashboard-data-sales] Failed to parse credentials JSON:', parseError.message);
+        throw new Error('Invalid Google credentials JSON format');
+      }
+    } else {
+      console.log('[dashboard-data-sales] WARNING: No Google credentials found in environment');
     }
 
+    console.log('[dashboard-data-sales] Creating BigQuery client...');
     const bigquery = new BigQuery(bigqueryConfig);
 
     // Query v_quotes view
@@ -51,34 +76,78 @@ exports.handler = async (event, context) => {
       ORDER BY COALESCE(created_at, sent_date, converted_date) DESC
     `;
 
-    const [quotesData] = await bigquery.query(quotesQuery);
+    console.log('[dashboard-data-sales] Executing BigQuery query...');
+    console.log('[dashboard-data-sales] Query target:', `${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes`);
     
-    console.log(`Found ${quotesData.length} quotes from BigQuery`);
+    const startTime = Date.now();
+    const [quotesData] = await bigquery.query(quotesQuery);
+    const queryTime = Date.now() - startTime;
+    
+    console.log('[dashboard-data-sales] BigQuery query completed successfully:', {
+      rowCount: quotesData.length,
+      queryTimeMs: queryTime,
+      sampleData: quotesData.length > 0 ? {
+        firstRow: {
+          quote_number: quotesData[0].quote_number,
+          client_name: quotesData[0].client_name,
+          salesperson: quotesData[0].salesperson,
+          status: quotesData[0].status,
+          total_dollars: quotesData[0].total_dollars,
+          hasSentDate: !!quotesData[0].sent_date,
+          hasConvertedDate: !!quotesData[0].converted_date
+        }
+      } : 'No data returned'
+    });
 
     // Process data into the DashboardData format expected by SalesKPIDashboard
+    console.log('[dashboard-data-sales] Processing data into dashboard format...');
     const dashboardData = processIntoDashboardFormat(quotesData);
+    
+    console.log('[dashboard-data-sales] Dashboard data processed:', {
+      salespersonCount: dashboardData.salespersons.length,
+      hasTimeSeries: !!dashboardData.timeSeries,
+      weekTotalSent: dashboardData.timeSeries?.week?.totalSent,
+      weekTotalConverted: dashboardData.timeSeries?.week?.totalConverted,
+      lastUpdated: dashboardData.lastUpdated
+    });
 
+    console.log('[dashboard-data-sales] Returning BigQuery data successfully');
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(dashboardData),
+      body: JSON.stringify({
+        ...dashboardData,
+        dataSource: 'bigquery' // Add indicator for debugging
+      }),
     };
   } catch (error) {
-    console.error('BigQuery error:', error);
+    console.error('[dashboard-data-sales] BigQuery error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      stack: error.stack
+    });
     
+    console.log('[dashboard-data-sales] Falling back to mock data due to error');
     // Return mock data in the correct format
     const mockData = getMockDashboardData();
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(mockData),
+      body: JSON.stringify({
+        ...mockData,
+        dataSource: 'mock', // Add indicator for debugging
+        error: error.message // Include error for debugging
+      }),
     };
   }
 };
 
 function processIntoDashboardFormat(quotesData) {
   const now = new Date();
+  
+  console.log('[processIntoDashboardFormat] Starting data processing with', quotesData.length, 'quotes');
   
   // Helper to parse BigQuery date/timestamp
   const parseBQDate = (dateValue) => {
@@ -91,7 +160,10 @@ function processIntoDashboardFormat(quotesData) {
 
   // Group quotes by salesperson
   const salespersonStats = {};
-  quotesData.forEach(quote => {
+  let sentCount = 0;
+  let convertedCount = 0;
+  
+  quotesData.forEach((quote, index) => {
     const sp = quote.salesperson || 'Unknown';
     if (!salespersonStats[sp]) {
       salespersonStats[sp] = {
@@ -104,14 +176,35 @@ function processIntoDashboardFormat(quotesData) {
     }
     
     if (quote.sent_date) {
+      sentCount++;
       salespersonStats[sp].quotesSent++;
       salespersonStats[sp].valueSent += parseFloat(quote.total_dollars) || 0;
     }
     
     if (quote.converted_date) {
+      convertedCount++;
       salespersonStats[sp].quotesConverted++;
       salespersonStats[sp].valueConverted += parseFloat(quote.total_dollars) || 0;
     }
+    
+    // Log sample data for first few quotes
+    if (index < 3) {
+      console.log(`[processIntoDashboardFormat] Sample quote ${index}:`, {
+        quote_number: quote.quote_number,
+        salesperson: quote.salesperson,
+        sent_date: quote.sent_date,
+        converted_date: quote.converted_date,
+        total_dollars: quote.total_dollars,
+        status: quote.status
+      });
+    }
+  });
+  
+  console.log('[processIntoDashboardFormat] Quote summary:', {
+    totalQuotes: quotesData.length,
+    sentQuotes: sentCount,
+    convertedQuotes: convertedCount,
+    salespersonCount: Object.keys(salespersonStats).length
   });
 
   // Calculate conversion rates and assign colors

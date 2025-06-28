@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Environment Check</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        pre {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .status { margin: 20px 0; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .warning { color: #fbbf24; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>BigQuery Environment Check</h1>
+    
+    <button onclick="checkEnvironment()">Check Environment</button>
+    <button onclick="testDashboardAPI()">Test Dashboard API</button>
+    
+    <div class="status" id="status"></div>
+    <pre id="output"></pre>
+
+    <script>
+        async function checkEnvironment() {
+            const status = document.getElementById('status');
+            const output = document.getElementById('output');
+            
+            status.textContent = 'Checking environment...';
+            status.className = 'status warning';
+            
+            try {
+                const response = await fetch('/.netlify/functions/check-bigquery-env');
+                const data = await response.json();
+                
+                output.textContent = JSON.stringify(data, null, 2);
+                
+                // Analyze results
+                if (data.hasProjectId && data.hasCredentials && data.credentialsValid) {
+                    status.textContent = '✅ Environment looks good!';
+                    status.className = 'status success';
+                } else {
+                    let issues = [];
+                    if (!data.hasProjectId) issues.push('Missing BIGQUERY_PROJECT_ID');
+                    if (!data.hasCredentials) issues.push('Missing GOOGLE_APPLICATION_CREDENTIALS_JSON');
+                    if (data.hasCredentials && !data.credentialsValid) issues.push('Invalid credentials JSON');
+                    
+                    status.textContent = `❌ Issues found: ${issues.join(', ')}`;
+                    status.className = 'status error';
+                }
+            } catch (error) {
+                status.textContent = '❌ Error checking environment';
+                status.className = 'status error';
+                output.textContent = error.toString();
+            }
+        }
+        
+        async function testDashboardAPI() {
+            const status = document.getElementById('status');
+            const output = document.getElementById('output');
+            
+            status.textContent = 'Testing dashboard API...';
+            status.className = 'status warning';
+            
+            try {
+                const response = await fetch('/.netlify/functions/dashboard-data-sales');
+                const data = await response.json();
+                
+                // Check data source
+                const dataSource = data.dataSource || 'unknown';
+                
+                if (dataSource === 'bigquery') {
+                    status.textContent = '✅ Successfully fetching from BigQuery!';
+                    status.className = 'status success';
+                } else if (dataSource === 'mock') {
+                    status.textContent = '⚠️ Using mock data (BigQuery connection failed)';
+                    status.className = 'status warning';
+                } else {
+                    status.textContent = '❓ Unknown data source';
+                    status.className = 'status warning';
+                }
+                
+                output.textContent = JSON.stringify({
+                    dataSource: data.dataSource,
+                    hasTimeSeries: !!data.timeSeries,
+                    hasSalespersons: !!data.salespersons,
+                    salespersonCount: data.salespersons?.length || 0,
+                    sampleData: {
+                        weekTotalSent: data.timeSeries?.week?.totalSent,
+                        weekTotalConverted: data.timeSeries?.week?.totalConverted
+                    }
+                }, null, 2);
+            } catch (error) {
+                status.textContent = '❌ Error testing API';
+                status.className = 'status error';
+                output.textContent = error.toString();
+            }
+        }
+        
+        // Auto-check on load
+        window.addEventListener('load', checkEnvironment);
+    </script>
+</body>
+</html>
