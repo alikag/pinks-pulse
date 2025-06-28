@@ -36,6 +36,50 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Scrolling animation for activity ticker */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Glow effects for KPI cards */
+.glow-success {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.glow-warning {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.glow-active {
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.6);
+}
+
+/* Data pulse animation */
+@keyframes dataPulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+/* Rotating gradient for active metrics */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* Loading animation */
 @keyframes pulse {
   0%, 100% {
@@ -120,4 +164,48 @@
 /* Smooth number transitions */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Scrolling animation for activity ticker */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Glow effects for KPI cards */
+.glow-success {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.glow-warning {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.glow-active {
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.6);
+}
+
+/* Data pulse animation */
+@keyframes dataPulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+/* Rotating gradient for active metrics */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
