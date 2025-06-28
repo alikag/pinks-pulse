@@ -20,31 +20,16 @@ interface KPI {
 
 interface ConvertedQuote {
   dateConverted: string
-  jobNumber: string
-  date: string
-  jobType: string
+  quoteNumber?: string
+  jobNumber?: string
+  date?: string
+  jobType?: string
   salesPerson: string
-  jobberLink: string
-  visitTitle: string
+  jobberLink?: string
+  visitTitle?: string
+  clientName?: string
   totalDollars: number
-}
-
-interface KPIMetrics {
-  quotesToday: number
-  convertedToday: number
-  convertedTodayDollars: number
-  quotesThisWeek: number
-  convertedThisWeek: number
-  convertedThisWeekDollars: number
-  cvrThisWeek: number
-  quotes30Days: number
-  converted30Days: number
-  cvr30Days: number
-  avgQPD: number
-  speedToLead30Days: number
-  recurringRevenue2026: number
-  nextMonthOTB: number
-  reviewsThisWeek: number
+  status?: string
 }
 
 interface RecentEvent {
@@ -761,10 +746,10 @@ const SalesKPIDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {(data?.recentConvertedQuotes || getConvertedQuotes()).map((quote, index) => (
+                    {(data?.recentConvertedQuotes || getConvertedQuotes()).map((quote: any, index) => (
                       <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
                         <td className="py-3 pr-4">{quote.dateConverted}</td>
-                        <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber}</td>
+                        <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
                         <td className="py-3 pr-4">{quote.date || '-'}</td>
                         <td className="py-3 pr-4">
                           <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
