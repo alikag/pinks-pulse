@@ -150,10 +150,9 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     console.log('[dashboard-data-sales] Using reference date from most recent activity:', referenceDate);
   }
   
-  // Set timezone to EST and use Sunday-Saturday weeks
-  const now = referenceDate;
-  const estOffset = -5; // EST offset from UTC
-  now.setHours(0 - estOffset, 0, 0, 0);
+  // Use the reference date and normalize to start of day
+  const now = new Date(referenceDate);
+  now.setHours(0, 0, 0, 0);
   
   // Helper functions
   const parseDate = (dateStr) => {
@@ -412,6 +411,8 @@ function processWeekData(quotesData, referenceDate) {
   };
 
   // Process last 7 days from reference date
+  console.log('[processWeekData] Reference date:', referenceDate.toISOString());
+  
   for (let i = 6; i >= 0; i--) {
     const date = new Date(referenceDate);
     date.setDate(date.getDate() - i);
@@ -429,6 +430,11 @@ function processWeekData(quotesData, referenceDate) {
     
     const sent = dayQuotes.length;
     const converted = dayQuotesConverted;
+    
+    // Debug logging
+    if (i === 0) { // Most recent day
+      console.log(`[processWeekData] ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
+    }
     
     weekData.labels.push(weekDays[date.getDay()]);
     weekData.quotesSent.push(sent);

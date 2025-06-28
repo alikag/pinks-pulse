@@ -402,16 +402,17 @@ const SalesKPIDashboard: React.FC = () => {
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 callbacks: {
-                  label: (context) => `Revenue: $${context.parsed.y.toLocaleString()}`
+                  label: (context) => `${context.dataset.label}: ${context.parsed.y}`
                 }
               }
             },
             scales: {
               y: {
-                beginAtZero: false,
+                beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => `$${Number(value) / 1000}k`
+                  callback: (value) => value.toString(),
+                  stepSize: 1
                 }
               },
               x: {
