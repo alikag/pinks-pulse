@@ -101,6 +101,15 @@ exports.handler = async (event, context) => {
     ]);
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${requestsData.length} requests`);
+    
+    // Debug: Check sample dates from BigQuery
+    if (quotesData.length > 0) {
+      console.log('[dashboard-data-sales] Sample quote dates from BigQuery:', {
+        firstQuote: quotesData[0],
+        lastQuote: quotesData[quotesData.length - 1],
+        recentDates: quotesData.slice(-5).map(q => ({ sent: q.sent_date, converted: q.converted_date }))
+      });
+    }
 
     // Process data into dashboard format
     let dashboardData;
@@ -194,7 +203,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   const isThisWeek = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    // Sunday-Saturday weeks - use actual today for consistency
+    // Sunday-Saturday weeks
     const weekStart = new Date(actualToday);
     weekStart.setDate(actualToday.getDate() - actualToday.getDay()); // Sunday
     weekStart.setHours(0, 0, 0, 0);
@@ -398,6 +407,19 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     .slice(0, 10);
   
   // Count quotes for this week
+  const weekStart = new Date(actualToday);
+  weekStart.setDate(actualToday.getDate() - actualToday.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+  
+  console.log('[dashboard-data-sales] Week calculation:', {
+    actualToday: actualToday.toISOString(),
+    dayOfWeek: actualToday.getDay(),
+    weekStart: weekStart.toISOString(),
+    weekEnd: weekEnd.toISOString()
+  });
+  
   const thisWeekQuotes = quotesData.filter(q => {
     const sentDate = q.sent_date ? new Date(q.sent_date) : null;
     return sentDate && isThisWeek(sentDate);
@@ -405,8 +427,6 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   
   console.log('[dashboard-data-sales] This week quotes:', {
     count: thisWeekQuotes.length,
-    actualToday: actualToday.toISOString(),
-    weekStart: new Date(actualToday.getTime() - actualToday.getDay() * 24 * 60 * 60 * 1000).toISOString(),
     sampleDates: thisWeekQuotes.slice(0, 3).map(q => q.sent_date)
   });
   
