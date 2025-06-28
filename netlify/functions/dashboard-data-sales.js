@@ -103,7 +103,13 @@ exports.handler = async (event, context) => {
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${requestsData.length} requests`);
 
     // Process data into dashboard format
-    const dashboardData = processIntoDashboardFormat(quotesData, jobsData, requestsData);
+    let dashboardData;
+    try {
+      dashboardData = processIntoDashboardFormat(quotesData, jobsData, requestsData);
+    } catch (processError) {
+      console.error('[dashboard-data-sales] Error processing data:', processError);
+      throw processError;
+    }
     
     console.log('[dashboard-data-sales] Dashboard data processed:', {
       kpiMetrics: dashboardData.kpiMetrics,
@@ -139,8 +145,22 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   const allDates = [];
   
   quotesData.forEach(q => {
-    if (q.sent_date) allDates.push(new Date(q.sent_date));
-    if (q.converted_date) allDates.push(new Date(q.converted_date));
+    try {
+      if (q.sent_date) {
+        const sentDate = new Date(q.sent_date);
+        if (!isNaN(sentDate.getTime())) {
+          allDates.push(sentDate);
+        }
+      }
+      if (q.converted_date) {
+        const convertedDate = new Date(q.converted_date);
+        if (!isNaN(convertedDate.getTime())) {
+          allDates.push(convertedDate);
+        }
+      }
+    } catch (e) {
+      console.log('[dashboard-data-sales] Error parsing date:', e.message, 'Quote:', q.quote_number);
+    }
   });
   
   if (allDates.length > 0) {
@@ -590,10 +610,10 @@ function getMockDashboardData() {
   return {
     timeSeries: {
       week: {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        quotesSent: [3, 5, 2, 4, 6, 1, 2],
-        quotesConverted: [1, 2, 1, 2, 3, 0, 1],
-        conversionRate: [33, 40, 50, 50, 50, 0, 50],
+        labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        quotesSent: [2, 3, 5, 2, 4, 6, 0],
+        quotesConverted: [1, 1, 2, 1, 2, 3, 0],
+        conversionRate: [50, 33, 40, 50, 50, 50, 0],
         totalSent: 23,
         totalConverted: 10,
         avgConversionRate: '43.5%',
