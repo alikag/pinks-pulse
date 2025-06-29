@@ -70,10 +70,7 @@ const SalesKPIDashboard: React.FC = () => {
   const cohortInstance = useRef<Chart | null>(null)
   const kpiSparklineInstances = useRef<{ [key: string]: Chart | null }>({})
 
-  // Helper function to generate sparkline data
-  const generateSparklineData = () => {
-    return Array.from({ length: 7 }, () => Math.random() * 50 + 25)
-  }
+  // Sparkline data removed - real data needed from backend
 
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
@@ -99,7 +96,7 @@ const SalesKPIDashboard: React.FC = () => {
         status: metrics.quotesToday >= 12 ? 'success' : metrics.quotesToday >= 8 ? 'warning' : 'danger',
         isLive: true,
         trend: 12.5,
-        sparklineData: generateSparklineData()
+        sparklineData: undefined
       },
       {
         id: 'converted-today',
@@ -111,7 +108,7 @@ const SalesKPIDashboard: React.FC = () => {
         status: metrics.convertedTodayDollars >= 22500 ? 'success' : metrics.convertedTodayDollars > 15000 ? 'warning' : 'normal',
         isLive: true,
         trend: -5.3,
-        sparklineData: generateSparklineData()
+        sparklineData: undefined
       },
       {
         id: 'converted-week',
@@ -174,7 +171,7 @@ const SalesKPIDashboard: React.FC = () => {
         target: 30,
         format: 'time',
         status: metrics.speedToLead30Days <= 30 ? 'success' : metrics.speedToLead30Days <= 60 ? 'warning' : 'danger',
-        sparklineData: generateSparklineData()
+        sparklineData: undefined
       },
       {
         id: 'recurring-cvr',
@@ -311,7 +308,7 @@ const SalesKPIDashboard: React.FC = () => {
           data: {
             labels: Array.from({length: 24}, (_, i) => i),
             datasets: [{
-              data: Array.from({length: 24}, () => Math.random() * 100 + 50),
+              data: Array.from({length: 24}, () => 0), // TODO: Need hourly quotes data from backend
               borderColor: '#06b6d4',
               backgroundColor: gradient,
               fill: true,
@@ -897,11 +894,11 @@ const SalesKPIDashboard: React.FC = () => {
         const heatmapData: any[] = []
         days.forEach((_, dayIndex) => {
           hours.forEach((_, hourIndex) => {
-            const activity = Math.random() * 10 + (dayIndex < 5 ? 5 : 2) // Higher on weekdays
+            // TODO: Need real quote activity data by hour/day from backend
             heatmapData.push({
               x: hourIndex,
               y: dayIndex,
-              v: Math.round(activity)
+              v: 0
             })
           })
         })

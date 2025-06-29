@@ -118,12 +118,24 @@ exports.handler = async (event, context) => {
       AND minutes_to_quote < 10080  -- Exclude anything over 7 days as likely data issues
     `;
 
+    // Query for reviews count this week
+    const reviewsQuery = `
+      SELECT COUNT(*) as reviews_count
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.google_reviews\`
+      WHERE DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', created_at)) >= DATE_SUB(CURRENT_DATE(), INTERVAL EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) - 1 DAY)
+        AND DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', created_at)) < DATE_ADD(DATE_SUB(CURRENT_DATE(), INTERVAL EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) - 1 DAY), INTERVAL 7 DAY)
+    `;
+
     console.log('[dashboard-data-sales] Executing queries...');
     
-    const [[quotesData], [jobsData], [speedToLeadData]] = await Promise.all([
+    const [[quotesData], [jobsData], [speedToLeadData], [reviewsData]] = await Promise.all([
       bigquery.query(quotesQuery),
       bigquery.query(jobsQuery),
-      bigquery.query(speedToLeadQuery)
+      bigquery.query(speedToLeadQuery),
+      bigquery.query(reviewsQuery).catch(err => {
+        console.log('[dashboard-data-sales] Reviews query failed:', err.message);
+        return [[{ reviews_count: 0 }]];
+      })
     ]);
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
@@ -152,7 +164,8 @@ exports.handler = async (event, context) => {
     // Process data into dashboard format
     let dashboardData;
     try {
-      dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData);
+      const reviewsThisWeek = reviewsData[0]?.reviews_count || 0;
+      dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek);
     } catch (processError) {
       console.error('[dashboard-data-sales] Error processing data:', processError);
       throw processError;
@@ -172,21 +185,20 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('[dashboard-data-sales] Error:', error);
     
-    // Return mock data on error
-    const mockData = getMockDashboardData();
+    // Return error for production - no mock data
     return {
-      statusCode: 200,
+      statusCode: 500,
       headers,
       body: JSON.stringify({
-        ...mockData,
-        dataSource: 'mock',
-        error: error.message
+        error: 'Failed to fetch dashboard data',
+        message: error.message,
+        dataSource: 'error'
       }),
     };
   }
 };
 
-function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
+function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
   // Find the most recent activity date (either sent or converted) to use as reference
   let referenceDate = new Date();
   const allDates = [];
@@ -640,7 +652,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     thisWeekOTB: metrics.thisWeekOTB,
     weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
     monthlyOTBData: metrics.monthlyOTBData,
-    reviewsThisWeek: 0 // Real reviews count not available from BigQuery yet
+    reviewsThisWeek: reviewsThisWeek
   };
   
   // Log weekly OTB breakdown with more detail
@@ -1020,7 +1032,8 @@ function processAllTimeData(quotesData, referenceDate, parseDate) {
   };
 }
 
-function getMockDashboardData() {
+// Mock data function removed for production
+function getMockDashboardData_REMOVED() {
   return {
     timeSeries: {
       week: {
