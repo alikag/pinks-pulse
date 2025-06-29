@@ -1302,6 +1302,15 @@ const SalesKPIDashboard: React.FC = () => {
                               <span>{sp.quotesSent} sent</span>
                               <span>•</span>
                               <span>{sp.quotesConverted} won</span>
+                              {sp.avgSpeedToLead !== null && sp.avgSpeedToLead !== undefined && (
+                                <>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {sp.avgSpeedToLead} min avg
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

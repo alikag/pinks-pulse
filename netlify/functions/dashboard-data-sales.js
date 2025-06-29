@@ -94,6 +94,7 @@ exports.handler = async (event, context) => {
           r.quote_number,
           r.requested_on_date,
           q.sent_date,
+          q.salesperson,
           TIMESTAMP_DIFF(
             CAST(q.sent_date AS TIMESTAMP), 
             CAST(r.requested_on_date AS TIMESTAMP), 
@@ -110,6 +111,7 @@ exports.handler = async (event, context) => {
         quote_number,
         requested_on_date,
         sent_date,
+        salesperson,
         minutes_to_quote
       FROM speed_data
       WHERE minutes_to_quote >= 0
@@ -339,7 +341,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
         quotesSent: 0,
         quotesConverted: 0,
         valueSent: 0,
-        valueConverted: 0
+        valueConverted: 0,
+        speedToLeadSum: 0,
+        speedToLeadCount: 0
       };
     }
     
@@ -362,7 +366,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
             quotesConverted: 0,
             valueSent: 0,
             valueConverted: 0,
-            conversionRate: 0
+            conversionRate: 0,
+            speedToLeadSum: 0,
+            speedToLeadCount: 0
           };
         }
         salespersonWeekStats[sp].quotesSent++;
@@ -428,11 +434,25 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
   
   speedToLeadData.forEach(record => {
     const minutesToQuote = record.minutes_to_quote;
+    const salesperson = record.salesperson || 'Unknown';
+    const requestDate = parseDate(record.requested_on_date);
     
     if (minutesToQuote !== null && minutesToQuote !== undefined && minutesToQuote >= 0) {
       speedToLeadDebug.validRecords++;
       metrics.speedToLeadSum += minutesToQuote;
       metrics.speedToLeadCount++;
+      
+      // Add to salesperson stats
+      if (salespersonStats[salesperson]) {
+        salespersonStats[salesperson].speedToLeadSum += minutesToQuote;
+        salespersonStats[salesperson].speedToLeadCount++;
+      }
+      
+      // Add to weekly stats if this request was this week
+      if (requestDate && isThisWeek(requestDate) && salespersonWeekStats[salesperson]) {
+        salespersonWeekStats[salesperson].speedToLeadSum += minutesToQuote;
+        salespersonWeekStats[salesperson].speedToLeadCount++;
+      }
     }
   });
   
@@ -592,6 +612,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     .map((sp, index) => ({
       ...sp,
       conversionRate: sp.quotesSent > 0 ? (sp.quotesConverted / sp.quotesSent) * 100 : 0,
+      avgSpeedToLead: sp.speedToLeadCount > 0 ? Math.round(sp.speedToLeadSum / sp.speedToLeadCount) : null,
       color: colors[index % colors.length]
     }))
     .sort((a, b) => b.valueConverted - a.valueConverted)
@@ -602,6 +623,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     .map((sp, index) => ({
       ...sp,
       conversionRate: sp.quotesSent > 0 ? (sp.quotesConverted / sp.quotesSent) * 100 : 0,
+      avgSpeedToLead: sp.speedToLeadCount > 0 ? Math.round(sp.speedToLeadSum / sp.speedToLeadCount) : null,
       color: colors[index % colors.length]
     }))
     .filter(sp => sp.quotesSent > 0) // Only show salespeople who sent quotes this week

@@ -18,6 +18,7 @@ export interface SalespersonData {
   valueSent: number;
   valueConverted: number;
   color: string;
+  avgSpeedToLead?: number | null;
 }
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
