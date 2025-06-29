@@ -1266,17 +1266,56 @@ const SalesKPIDashboard: React.FC = () => {
                   View on Google
                 </a>
               </div>
-              <div className="relative overflow-hidden">
+              <div 
+                className="relative overflow-x-auto overflow-y-hidden scrollbar-hide"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  scrollBehavior: 'smooth'
+                }}
+                onMouseEnter={(e) => {
+                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                  if (container) {
+                    container.style.animationPlayState = 'paused';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                  if (container) {
+                    container.style.animationPlayState = 'running';
+                  }
+                }}
+                onTouchStart={(e) => {
+                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                  if (container) {
+                    container.style.animationPlayState = 'paused';
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                  if (container) {
+                    setTimeout(() => {
+                      container.style.animationPlayState = 'running';
+                    }, 3000); // Resume after 3 seconds
+                  }
+                }}
+              >
                 <style>
                   {`
                     @keyframes scroll {
                       0% { transform: translateX(0); }
                       100% { transform: translateX(-50%); }
                     }
+                    .scrollbar-hide {
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    }
+                    .scrollbar-hide::-webkit-scrollbar {
+                      display: none;
+                    }
                   `}
                 </style>
                 <div 
-                  className="flex transition-transform duration-500 ease-in-out"
+                  className="reviews-scroll-container flex transition-transform duration-500 ease-in-out"
                   style={{
                     animation: googleReviews.length > 1 ? 'scroll 20s linear infinite' : 'none',
                   }}
