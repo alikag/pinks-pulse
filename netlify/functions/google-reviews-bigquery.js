@@ -69,7 +69,7 @@ exports.handler = async (event, context) => {
       
       reviews = rows.map(row => ({
         reviewerName: row.author_name,
-        rating: row.rating,
+        rating: parseInt(row.rating) || 5,
         text: row.text,
         date: row.time || 'Recently'
       }));
@@ -86,7 +86,7 @@ exports.handler = async (event, context) => {
         
         // Calculate average rating from all reviews
         const avgQuery = `
-          SELECT AVG(rating) as avg_rating
+          SELECT AVG(CAST(rating AS FLOAT64)) as avg_rating
           FROM \`jobber-data-warehouse-462721.jobber_data.google_reviews\`
         `;
         const [avgRows] = await bigquery.query(avgQuery);
@@ -99,6 +99,8 @@ exports.handler = async (event, context) => {
     }
 
     // If no reviews found, return empty array
+    
+    console.log('[Google Reviews BigQuery] Returning', reviews.length, 'reviews');
 
     return {
       statusCode: 200,

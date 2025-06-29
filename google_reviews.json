@@ -1,0 +1,36 @@
+[{
+  "id": "review_003",
+  "author_name": "Jennifer Rodriguez",
+  "rating": "5",
+  "text": "Exceptional service! The crew was courteous and efficient. Our home\u0027s windows have never looked better.",
+  "time": "2 weeks ago",
+  "created_at": "2025-06-29 15:52:35.425060 UTC"
+}, {
+  "id": "review_001",
+  "author_name": "Sarah Mitchell",
+  "rating": "5",
+  "text": "Pink\u0027s team did an amazing job on our storefront windows. Professional, punctual, and the results speak for themselves!",
+  "time": "2 days ago",
+  "created_at": "2025-06-29 15:52:35.425060 UTC"
+}, {
+  "id": "review_002",
+  "author_name": "Michael Chen",
+  "rating": "5",
+  "text": "Best window cleaning service in the Hudson Valley. They\u0027ve been maintaining our office building for 2 years now.",
+  "time": "1 week ago",
+  "created_at": "2025-06-29 15:52:35.425060 UTC"
+}, {
+  "id": "review_005",
+  "author_name": "Lisa Anderson",
+  "rating": "5",
+  "text": "Regular commercial client here. Always reliable, always professional. Highly recommend!",
+  "time": "1 month ago",
+  "created_at": "2025-06-29 15:52:35.425060 UTC"
+}, {
+  "id": "review_004",
+  "author_name": "David Thompson",
+  "rating": "5",
+  "text": "Pink\u0027s Windows cleaned all 47 windows in our Victorian home. Attention to detail was impressive!",
+  "time": "3 weeks ago",
+  "created_at": "2025-06-29 15:52:35.425060 UTC"
+}]
