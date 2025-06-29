@@ -435,8 +435,43 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
       metrics.thisMonthOTB += jobValue;
       
       // Calculate which week of the month this job falls into
-      const weekOfMonth = Math.ceil(jobDate.getDate() / 7);
-      const weekKey = `week${weekOfMonth}`;
+      // Week 1 starts on the 1st of the month and goes through the first Saturday
+      // Week 2 starts on the first Sunday, etc.
+      const dayOfMonth = jobDate.getDate();
+      const dayOfWeek = jobDate.getDay(); // 0 = Sunday, 6 = Saturday
+      
+      // Find which Sunday-Saturday week this date falls in
+      let weekNumber;
+      if (dayOfMonth <= 7 && dayOfWeek >= 0) {
+        // First week of month (1st through first Saturday)
+        weekNumber = 1;
+      } else {
+        // Calculate based on Sundays
+        const firstOfMonth = new Date(jobDate.getFullYear(), jobDate.getMonth(), 1);
+        let sundayCount = 0;
+        let checkDate = new Date(firstOfMonth);
+        
+        // Count Sundays from start of month to job date
+        while (checkDate <= jobDate) {
+          if (checkDate.getDay() === 0) { // Sunday
+            sundayCount++;
+          }
+          checkDate.setDate(checkDate.getDate() + 1);
+        }
+        
+        weekNumber = sundayCount > 0 ? sundayCount : 1;
+      }
+      
+      const weekKey = `week${weekNumber}`;
+      
+      console.log('[OTB Week Debug]', {
+        jobDate: jobDate.toLocaleDateString(),
+        dayOfMonth,
+        dayOfWeek,
+        weekNumber,
+        jobValue
+      });
+      
       if (!metrics.weeklyOTBBreakdown[weekKey]) {
         metrics.weeklyOTBBreakdown[weekKey] = 0;
       }
@@ -484,6 +519,10 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     reviewsThisWeek: 3 // Mock value - would need reviews data
   };
   
+  // Log weekly OTB breakdown
+  console.log('[Weekly OTB Breakdown]:', metrics.weeklyOTBBreakdown);
+  console.log('[This Month OTB Total]:', metrics.thisMonthOTB);
+  
   // Debug logging
   console.log('Dashboard Data Debug:', {
     estToday: estToday.toISOString(),
@@ -497,7 +536,9 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
       convertedThisWeek: metrics.convertedThisWeek,
       convertedThisWeekDollars: metrics.convertedThisWeekDollars,
       cvrThisWeek: kpiMetrics.cvrThisWeek,
-      quotesThisWeekConverted: metrics.quotesThisWeekConverted
+      quotesThisWeekConverted: metrics.quotesThisWeekConverted,
+      weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
+      thisMonthOTB: metrics.thisMonthOTB
     },
     recentConvertedQuotesCount: recentConvertedQuotes.length
   });

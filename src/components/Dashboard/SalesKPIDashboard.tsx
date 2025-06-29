@@ -208,17 +208,6 @@ const SalesKPIDashboard: React.FC = () => {
         format: 'number',
         status: metrics.reviewsThisWeek >= 4 ? 'success' : 'warning',
         trend: -25
-      },
-      {
-        id: 'cvr-30d',
-        label: '30D CVR',
-        subtitle: 'Target: 45%',
-        value: metrics.cvr30Days,
-        target: 45,
-        format: 'percentage',
-        status: metrics.cvr30Days >= 45 ? 'success' : metrics.cvr30Days >= 30 ? 'warning' : 'danger',
-        trend: 3.1,
-        sparklineData: generateSparklineData()
       }
     ]
   }, [data, loading])
