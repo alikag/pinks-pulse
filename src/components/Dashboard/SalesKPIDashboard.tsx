@@ -1573,15 +1573,6 @@ function getSecondRowMockKPIs(): KPI[] {
       target: 4,
       format: 'number',
       status: 'warning'
-    },
-    {
-      id: 'cvr-30d',
-      label: '30D CVR',
-      subtitle: 'Target: 45%',
-      value: 53,
-      target: 45,
-      format: 'percentage',
-      status: 'success'
     }
   ]
 }
