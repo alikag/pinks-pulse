@@ -80,27 +80,44 @@ exports.handler = async (event, context) => {
       ORDER BY Date
     `;
 
-    // Query for requests data (for speed to lead calculations)
-    const requestsQuery = `
+    // Query for speed to lead calculations - join requests and quotes
+    const speedToLeadQuery = `
+      WITH speed_data AS (
+        SELECT 
+          r.quote_number,
+          r.requested_on_date,
+          q.sent_date,
+          TIMESTAMP_DIFF(
+            CAST(q.sent_date AS TIMESTAMP), 
+            CAST(r.requested_on_date AS TIMESTAMP), 
+            MINUTE
+          ) as minutes_to_quote
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
+        INNER JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+          ON r.quote_number = q.quote_number
+        WHERE r.requested_on_date IS NOT NULL 
+          AND q.sent_date IS NOT NULL
+          AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+      )
       SELECT 
         quote_number,
         requested_on_date,
-        quote_created_at,
-        minutes_to_quote_sent
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\`
-      WHERE minutes_to_quote_sent IS NOT NULL
-      AND requested_on_date IS NOT NULL
+        sent_date,
+        minutes_to_quote
+      FROM speed_data
+      WHERE minutes_to_quote >= 0
+      AND minutes_to_quote < 10080  -- Exclude anything over 7 days as likely data issues
     `;
 
     console.log('[dashboard-data-sales] Executing queries...');
     
-    const [[quotesData], [jobsData], [requestsData]] = await Promise.all([
+    const [[quotesData], [jobsData], [speedToLeadData]] = await Promise.all([
       bigquery.query(quotesQuery),
       bigquery.query(jobsQuery),
-      bigquery.query(requestsQuery)
+      bigquery.query(speedToLeadQuery)
     ]);
     
-    console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${requestsData.length} requests`);
+    console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
     
     // Debug: Check sample dates from BigQuery
     if (quotesData.length > 0) {
@@ -114,7 +131,7 @@ exports.handler = async (event, context) => {
     // Process data into dashboard format
     let dashboardData;
     try {
-      dashboardData = processIntoDashboardFormat(quotesData, jobsData, requestsData);
+      dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData);
     } catch (processError) {
       console.error('[dashboard-data-sales] Error processing data:', processError);
       throw processError;
@@ -148,7 +165,7 @@ exports.handler = async (event, context) => {
   }
 };
 
-function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
+function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
   // Find the most recent activity date (either sent or converted) to use as reference
   let referenceDate = new Date();
   const allDates = [];
@@ -383,25 +400,18 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     }
   });
   
-  // Process requests data for speed to lead calculations
+  // Process speed to lead data
   let speedToLeadDebug = {
-    totalRequests: requestsData.length,
-    requestsWithValidDates: 0,
-    requestsInLast30Days: 0,
-    requestsWithValidMinutes: 0
+    totalRecords: speedToLeadData.length,
+    validRecords: 0,
+    sumMinutes: 0
   };
   
-  requestsData.forEach(request => {
-    const requestDate = parseDate(request.requested_on_date);
-    const minutesToQuote = request.minutes_to_quote_sent !== null && request.minutes_to_quote_sent !== undefined 
-      ? parseFloat(String(request.minutes_to_quote_sent)) 
-      : null;
+  speedToLeadData.forEach(record => {
+    const minutesToQuote = record.minutes_to_quote;
     
-    if (requestDate) speedToLeadDebug.requestsWithValidDates++;
-    if (requestDate && isLast30Days(requestDate)) speedToLeadDebug.requestsInLast30Days++;
-    if (!isNaN(minutesToQuote) && minutesToQuote > 0) speedToLeadDebug.requestsWithValidMinutes++;
-    
-    if (requestDate && isLast30Days(requestDate) && !isNaN(minutesToQuote) && minutesToQuote > 0) {
+    if (minutesToQuote !== null && minutesToQuote !== undefined && minutesToQuote >= 0) {
+      speedToLeadDebug.validRecords++;
       metrics.speedToLeadSum += minutesToQuote;
       metrics.speedToLeadCount++;
     }
@@ -414,14 +424,14 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     average: metrics.speedToLeadCount > 0 ? Math.round(metrics.speedToLeadSum / metrics.speedToLeadCount) : 0
   });
   
-  // Log some sample request data
-  const sampleRequests = requestsData.slice(0, 5).map(r => ({
-    date: r.requested_on_date,
-    minutes: r.minutes_to_quote_sent,
-    parsedDate: parseDate(r.requested_on_date),
-    isLast30Days: parseDate(r.requested_on_date) ? isLast30Days(parseDate(r.requested_on_date)) : false
+  // Log some sample speed to lead data
+  const sampleSpeedData = speedToLeadData.slice(0, 5).map(r => ({
+    quote_number: r.quote_number,
+    requested_on: r.requested_on_date,
+    sent_date: r.sent_date,
+    minutes: r.minutes_to_quote
   }));
-  console.log('[Sample Requests]:', sampleRequests);
+  console.log('[Sample Speed to Lead Data]:', sampleSpeedData);
   
   // Process jobs data for OTB calculations
   jobsData.forEach(job => {
