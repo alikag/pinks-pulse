@@ -1,14 +1,16 @@
-# Pinks Dashboard
+# Pink's Pulse Dashboard
 
-A comprehensive business analytics dashboard for tracking quotes, conversions, and sales performance.
+A comprehensive business analytics dashboard for Pink's Window Cleaning franchise, tracking quotes, conversions, and sales performance in the Hudson Valley region.
 
 ## Features
 
-- Real-time KPI tracking and analytics
-- Quote conversion metrics and trends
-- Sales performance visualization
+- Real-time KPI tracking and analytics for window cleaning business
+- Quote-to-job conversion metrics and trends
+- Sales performance visualization by individual GMs
+- Speed to lead tracking (response time to quote requests)
+- Weekly performance metrics (Sunday-Saturday)
+- On-the-books (OTB) revenue tracking
 - Responsive design for desktop and mobile
-- Password-protected access
 - Integration with BigQuery for data storage
 - Google Reviews scraper for business insights
 
@@ -155,12 +157,36 @@ curl https://your-domain/.netlify/functions/scrape-google-reviews
 curl https://your-domain/.netlify/functions/scrape-google-reviews-playwright
 ```
 
-### Recent Updates
+### Recent Updates (June 2025)
 
-- Fixed TypeScript build errors in SalesKPIDashboard component
-- Installed Playwright dependencies for Google Reviews scraper
-- Removed Puppeteer implementation to reduce complexity
-- Updated scraper timeout handling for better reliability
+#### Dashboard UI Improvements
+- Updated header to "Pink's Pulse - Hudson Valley KPI Report"
+- Replaced dashboard icon with Pink's logo
+- Removed period selector buttons (Today/Week/Month/Quarter)
+- Removed unused top navigation icons
+- Clearer KPI labels for window cleaning business context
+
+#### Data Accuracy Fixes
+- Fixed BigQuery date parsing (dates come as objects with `value` property)
+- Corrected CVR calculation to track quotes sent in a period that were converted
+- Fixed "Converted This Week" chart to show both sent and converted quotes
+- Updated week calculations to use Sunday-Saturday consistently
+- Salesperson Performance chart now shows only current week data
+
+#### Key Metrics Tracked
+- **Quotes Sent Today**: Daily quote volume with target of 12
+- **Converted Today**: Dollar value of quotes converted today
+- **Converted This Week**: Weekly conversion dollars and count
+- **CVR This Week**: Conversion rate percentage for quotes sent this week
+- **Speed to Lead**: Average response time to quote requests (30-day average)
+- **OTB (On The Books)**: Scheduled revenue for future periods
+
+#### Known Issues Resolved
+- "Invalid time value" error when parsing BigQuery dates
+- Empty "Converted This Week" chart
+- Incorrect salesperson data showing inactive employees
+- QPD (Quotes Per Day) showing as zero
+- Week calculations not matching BigQuery's week definition
 
 ## License
 

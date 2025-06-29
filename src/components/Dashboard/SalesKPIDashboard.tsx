@@ -174,11 +174,12 @@ const SalesKPIDashboard: React.FC = () => {
       },
       {
         id: 'recurring-cvr',
-        label: '30D Recurring CVR',
-        value: 0, // Would need recurring quotes data
-        target: 20,
+        label: '30D CVR',
+        subtitle: `${metrics.converted30Days || 0}/${metrics.quotes30Days || 0} converted`,
+        value: metrics.cvr30Days || 0,
+        target: 45,
         format: 'percentage',
-        status: 'normal'
+        status: metrics.cvr30Days >= 45 ? 'success' : metrics.cvr30Days >= 30 ? 'warning' : 'danger'
       },
       {
         id: 'avg-qpd',
@@ -946,17 +947,6 @@ const SalesKPIDashboard: React.FC = () => {
             </a>
           </nav>
 
-          {/* Daily Sparkline */}
-          <div className="mt-auto bg-gradient-to-br from-blue-600/10 to-cyan-600/10 p-4 rounded-xl relative overflow-hidden">
-            <div className="absolute inset-0 opacity-50">
-              <canvas ref={sparklineRef} className="w-full h-full"></canvas>
-            </div>
-            <div className="relative z-10 text-center">
-              <p className="text-xs text-white/60 mb-1">Today's Performance</p>
-              <p className="text-3xl font-bold">{formatValue(kpis[1]?.value || 0, 'currency')}</p>
-              <p className="text-xs text-cyan-400 mt-1">↑ 12.5% from yesterday</p>
-            </div>
-          </div>
         </aside>
 
         {/* Overlay for mobile */}
