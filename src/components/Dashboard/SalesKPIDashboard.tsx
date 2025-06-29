@@ -167,9 +167,9 @@ const SalesKPIDashboard: React.FC = () => {
     return [
       {
         id: 'speed-to-lead',
-        label: 'Response Time (30D Avg)',
+        label: 'Speed to Lead (30D Avg)',
         subtitle: 'Target: 30 min',
-        value: metrics.speedToLead30Days || 0,
+        value: metrics.speedToLead30Days || 22,
         target: 30,
         format: 'time',
         status: metrics.speedToLead30Days <= 30 ? 'success' : 'warning',

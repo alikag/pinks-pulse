@@ -369,14 +369,32 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   });
   
   // Process requests data for speed to lead calculations
+  let speedToLeadDebug = {
+    totalRequests: requestsData.length,
+    requestsWithValidDates: 0,
+    requestsInLast30Days: 0,
+    requestsWithValidMinutes: 0
+  };
+  
   requestsData.forEach(request => {
     const requestDate = parseDate(request.requested_on_date);
     const minutesToQuote = parseFloat(request.minutes_to_quote_sent);
     
-    if (requestDate && isLast30Days(requestDate) && !isNaN(minutesToQuote)) {
+    if (requestDate) speedToLeadDebug.requestsWithValidDates++;
+    if (requestDate && isLast30Days(requestDate)) speedToLeadDebug.requestsInLast30Days++;
+    if (!isNaN(minutesToQuote) && minutesToQuote > 0) speedToLeadDebug.requestsWithValidMinutes++;
+    
+    if (requestDate && isLast30Days(requestDate) && !isNaN(minutesToQuote) && minutesToQuote > 0) {
       metrics.speedToLeadSum += minutesToQuote;
       metrics.speedToLeadCount++;
     }
+  });
+  
+  console.log('Speed to Lead Debug:', speedToLeadDebug);
+  console.log('Speed to Lead Metrics:', {
+    sum: metrics.speedToLeadSum,
+    count: metrics.speedToLeadCount,
+    average: metrics.speedToLeadCount > 0 ? Math.round(metrics.speedToLeadSum / metrics.speedToLeadCount) : 0
   });
   
   // Process jobs data for OTB calculations
@@ -797,7 +815,7 @@ function getMockDashboardData() {
       converted30Days: 45,
       cvr30Days: 53,
       avgQPD: 3.45,
-      speedToLead30Days: 21.78,
+      speedToLead30Days: 22,
       recurringRevenue2026: 111160,
       nextMonthOTB: 73052.50,
       reviewsThisWeek: 3
