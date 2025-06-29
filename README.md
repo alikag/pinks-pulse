@@ -2,6 +2,11 @@
 
 A comprehensive business analytics dashboard for Pink's Window Cleaning franchise, tracking quotes, conversions, and sales performance in the Hudson Valley region.
 
+## Google Reviews Configuration
+- Place ID: `ChIJMWbbWoLovAVR7hKV-Oq4Kcw` (Pink's Windows Hudson Valley)
+- Reviews are fetched from Google Places API
+- Update GOOGLE_PLACE_ID in Netlify if business relocates
+
 ## Features
 
 - Real-time KPI tracking and analytics for window cleaning business
