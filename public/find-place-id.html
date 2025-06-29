@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Pink's Windows Place ID</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+        }
+        .error {
+            background: #ffebee;
+            border-color: #ef5350;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            border-color: #66bb6a;
+            color: #2e7d32;
+        }
+        .results {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+        }
+        .result.highlight {
+            border-color: #ec4899;
+            background: #fef2f8;
+        }
+        .place-id {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            user-select: all;
+        }
+        .rating {
+            color: #f59e0b;
+        }
+        button {
+            background: #ec4899;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #db2777;
+        }
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Find Pink's Windows Place ID</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click "Search for Pink's Windows" below</li>
+            <li>Look through the results to find your business</li>
+            <li>Copy the Place ID</li>
+            <li>Add it to Netlify: Settings → Environment variables → Add <code>GOOGLE_PLACE_ID</code></li>
+        </ol>
+    </div>
+
+    <button onclick="searchPlaces()">Search for Pink's Windows</button>
+    
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        async function searchPlaces() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            
+            statusEl.className = 'status';
+            statusEl.textContent = 'Searching for window cleaning services near Hudson Valley...';
+            resultsEl.innerHTML = '';
+            
+            try {
+                const response = await fetch('/.netlify/functions/find-place-id');
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusEl.className = 'status success';
+                    statusEl.innerHTML = `Found ${data.total_found} businesses. Look for <strong>Pink's Windows</strong> below:`;
+                    
+                    resultsEl.className = 'results';
+                    resultsEl.innerHTML = data.results.map(place => {
+                        const isPink = place.name.toLowerCase().includes('pink');
+                        return `
+                            <div class="result ${isPink ? 'highlight' : ''}">
+                                <h3>${place.name}</h3>
+                                <p>${place.address}</p>
+                                ${place.rating ? `<p class="rating">★ ${place.rating} (${place.user_ratings_total} reviews)</p>` : ''}
+                                <p><strong>Place ID:</strong> <span class="place-id">${place.place_id}</span></p>
+                                <p><small>Found with: ${place.search_query}</small></p>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    if (!data.results.some(r => r.name.toLowerCase().includes('pink'))) {
+                        resultsEl.innerHTML = `
+                            <div class="status error">
+                                <p><strong>Pink's Windows not found in these results.</strong></p>
+                                <p>Possible reasons:</p>
+                                <ul>
+                                    <li>Business name might be different on Google</li>
+                                    <li>Business might not be verified on Google Maps</li>
+                                    <li>Try searching manually on Google Maps and noting the exact name</li>
+                                </ul>
+                            </div>
+                        ` + resultsEl.innerHTML;
+                    }
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = 'Error: ' + (data.error || 'Failed to search');
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
