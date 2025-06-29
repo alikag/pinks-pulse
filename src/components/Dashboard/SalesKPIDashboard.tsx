@@ -707,7 +707,7 @@ const SalesKPIDashboard: React.FC = () => {
                   label: (context) => {
                     const value = context.parsed.y;
                     const label = context.label;
-                    const performanceMap = {
+                    const performanceMap: Record<string, string> = {
                       '0-1 hr': 'Excellent',
                       '1-4 hrs': 'Good',
                       '4-8 hrs': 'Fair',
