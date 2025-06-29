@@ -3,9 +3,10 @@
 A comprehensive business analytics dashboard for Pink's Window Cleaning franchise, tracking quotes, conversions, and sales performance in the Hudson Valley region.
 
 ## Google Reviews Configuration
-- Place ID: `ChIJMWbbWoLovAVR7hKV-Oq4Kcw` (Pink's Windows Hudson Valley)
-- Reviews are fetched from Google Places API
-- Update GOOGLE_PLACE_ID in Netlify if business relocates
+- Reviews are now stored in BigQuery table: `jobber_data.google_reviews`
+- Add new reviews directly to BigQuery for full control
+- No Google Maps verification required
+- Table created and populated with sample reviews
 
 ## Features
 
