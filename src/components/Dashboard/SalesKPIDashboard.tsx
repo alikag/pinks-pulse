@@ -219,6 +219,13 @@ const SalesKPIDashboard: React.FC = () => {
         const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
         const result = await response.json()
         
+        console.log('[Google Reviews] Fetch result:', {
+          success: result.success,
+          hasData: !!result.data,
+          reviewCount: result.data?.reviews?.length || 0,
+          error: result.error
+        })
+        
         if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews)) {
           // Take the latest 3 reviews and format them
           const latestReviews = result.data.reviews.slice(0, 3).map((review: any, index: number) => ({
@@ -1150,27 +1157,6 @@ const SalesKPIDashboard: React.FC = () => {
               )}
             </div>
             
-            {/* Latest Google Reviews */}
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-400">Latest Customer Reviews</h3>
-              <span className="text-xs text-gray-500">From Google Reviews</span>
-            </div>
-            <div className="relative h-10 overflow-hidden bg-gray-900/50 rounded-lg backdrop-blur-lg">
-              <div className="absolute whitespace-nowrap animate-[scroll_30s_linear_infinite]">
-                {[...googleReviews, ...googleReviews].map((review, i) => (
-                  <span key={`${review.id}-${i}`} className="inline-flex items-center gap-3 mx-12">
-                    <span className="flex items-center gap-1">
-                      {[...Array(5)].map((_, starIndex) => (
-                        <span key={starIndex} className={`text-xs ${starIndex < review.rating ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
-                      ))}
-                    </span>
-                    <span className="text-gray-400 text-sm font-medium">{review.author}</span>
-                    <span className="text-white text-sm">"{review.text}"</span>
-                    <span className="text-gray-500 text-xs">• {review.time}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
 
             {/* Charts Row 1 */}
             <div className="grid lg:grid-cols-2 gap-6">
