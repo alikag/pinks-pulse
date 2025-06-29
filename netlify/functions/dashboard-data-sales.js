@@ -452,14 +452,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     sumMinutes: 0
   };
   
-  // Initialize speed distribution buckets - Business Hours Focus
+  // Initialize speed distribution buckets - New ranges with 0-8 hours combined
   const speedDistribution = {
-    '0-60': 0,      // 0-1 hour (Excellent)
-    '60-240': 0,    // 1-4 hours (Good - same business day)
-    '240-480': 0,   // 4-8 hours (Fair - within business hours)
-    '480-1440': 0,  // 8-24 hours (Needs Improvement - next business day)
-    '1440-2880': 0, // 1-2 days (Poor)
-    '2880+': 0      // 2+ days (Critical)
+    '0-480': 0,      // 0-8 hours (Same business day)
+    '480-1440': 0,   // 8-24 hours (Next business day)
+    '1440-2880': 0,  // 1-2 days
+    '2880-5760': 0,  // 2-4 days
+    '5760-10080': 0, // 4-7 days
+    '10080+': 0      // 7+ days (1+ week)
   };
   
   speedToLeadData.forEach(record => {
@@ -473,18 +473,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
       metrics.speedToLeadCount++;
       
       // Add to distribution buckets
-      if (minutesToQuote < 60) {
-        speedDistribution['0-60']++;
-      } else if (minutesToQuote < 240) {
-        speedDistribution['60-240']++;
-      } else if (minutesToQuote < 480) {
-        speedDistribution['240-480']++;
+      if (minutesToQuote < 480) {
+        speedDistribution['0-480']++;      // 0-8 hours
       } else if (minutesToQuote < 1440) {
-        speedDistribution['480-1440']++;
+        speedDistribution['480-1440']++;   // 8-24 hours
       } else if (minutesToQuote < 2880) {
-        speedDistribution['1440-2880']++;
+        speedDistribution['1440-2880']++;  // 1-2 days
+      } else if (minutesToQuote < 5760) {
+        speedDistribution['2880-5760']++;  // 2-4 days
+      } else if (minutesToQuote < 10080) {
+        speedDistribution['5760-10080']++; // 4-7 days
       } else {
-        speedDistribution['2880+']++;
+        speedDistribution['10080+']++;     // 7+ days
       }
       
       // Add to salesperson stats
