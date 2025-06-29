@@ -19,21 +19,6 @@ interface KPI {
   sparklineData?: number[]
 }
 
-interface ConvertedQuote {
-  dateConverted: string
-  quoteNumber?: string
-  jobNumber?: string
-  date?: string
-  jobType?: string
-  salesPerson: string
-  jobberLink?: string
-  visitTitle?: string
-  clientName?: string
-  totalDollars: number
-  status?: string
-}
-
-
 interface GoogleReview {
   id: string
   author: string
