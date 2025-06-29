@@ -76,7 +76,14 @@ exports.handler = async (event, context) => {
         Job_type,
         Calculated_Value
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      WHERE PARSE_DATE('%Y-%m-%d', Date) >= CURRENT_DATE()
+      WHERE Date IS NOT NULL
+        AND (
+          -- Future jobs for "next month" and "this week" calculations
+          PARSE_DATE('%Y-%m-%d', Date) >= CURRENT_DATE()
+          -- All jobs in current month for "this month" calculation
+          OR (EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(YEAR FROM CURRENT_DATE())
+              AND EXTRACT(MONTH FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(MONTH FROM CURRENT_DATE()))
+        )
       ORDER BY Date
     `;
 
@@ -118,6 +125,18 @@ exports.handler = async (event, context) => {
     ]);
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
+    
+    // Debug: Check sample job dates
+    if (jobsData.length > 0) {
+      console.log('[dashboard-data-sales] Sample job dates from BigQuery:', {
+        totalJobs: jobsData.length,
+        first5Jobs: jobsData.slice(0, 5).map(j => ({
+          date: j.Date,
+          value: j.Calculated_Value,
+          type: j.Job_type
+        }))
+      });
+    }
     
     // Debug: Check sample dates from BigQuery
     if (quotesData.length > 0) {
@@ -529,9 +548,23 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     reviewsThisWeek: 3 // Mock value - would need reviews data
   };
   
-  // Log weekly OTB breakdown
+  // Log weekly OTB breakdown with more detail
   console.log('[Weekly OTB Breakdown]:', metrics.weeklyOTBBreakdown);
   console.log('[This Month OTB Total]:', metrics.thisMonthOTB);
+  console.log('[Current Month]:', now.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  
+  // Log job counts by week
+  const jobCountsByWeek = {};
+  jobsData.forEach(job => {
+    const jobDate = parseDate(job.Date);
+    if (isThisMonth(jobDate)) {
+      const dayOfMonth = jobDate.getDate();
+      const weekNumber = Math.ceil(dayOfMonth / 7);
+      const weekKey = `week${weekNumber}`;
+      jobCountsByWeek[weekKey] = (jobCountsByWeek[weekKey] || 0) + 1;
+    }
+  });
+  console.log('[Jobs Count by Week]:', jobCountsByWeek);
   
   // Debug logging
   console.log('Dashboard Data Debug:', {
