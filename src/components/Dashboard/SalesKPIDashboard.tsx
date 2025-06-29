@@ -722,11 +722,11 @@ const SalesKPIDashboard: React.FC = () => {
     }
     
     // Cohort Analysis Chart
-    if (cohortRef.current && !loading && data) {
+    if (cohortRef.current && !loading && data && data?.salespersonsThisWeek && data.salespersonsThisWeek.length > 0) {
       const ctx = cohortRef.current.getContext('2d')
       if (ctx) {
         // Use this week's salesperson data
-        const salespersonData = data?.salespersonsThisWeek || data?.salespersons || []
+        const salespersonData = data.salespersonsThisWeek
         
         console.log('Salesperson Performance Data:', {
           hasData: !!data,
@@ -1219,9 +1219,21 @@ const SalesKPIDashboard: React.FC = () => {
               {/* Salesperson Performance */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(251,146,60,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4">Salesperson Performance (This Week)</h2>
-                <div className="h-48">
-                  <canvas ref={cohortRef}></canvas>
-                </div>
+                {data?.salespersonsThisWeek && data.salespersonsThisWeek.length > 0 ? (
+                  <div className="h-48">
+                    <canvas ref={cohortRef}></canvas>
+                  </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-gray-400 mb-2">No quotes sent this week yet</p>
+                      <p className="text-xs text-gray-500">
+                        Week started {new Date().getDay() === 0 ? 'today' : 
+                          new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

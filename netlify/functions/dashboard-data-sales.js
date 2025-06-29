@@ -619,6 +619,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     .slice(0, 10);
     
   // Calculate this week's salesperson stats
+  console.log('[Salesperson Week Stats Before Mapping]:', salespersonWeekStats);
+  
   const salespersonsThisWeek = Object.values(salespersonWeekStats)
     .map((sp, index) => ({
       ...sp,
@@ -628,6 +630,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     }))
     .filter(sp => sp.quotesSent > 0) // Only show salespeople who sent quotes this week
     .sort((a, b) => b.valueConverted - a.valueConverted);
+    
+  console.log('[Salespersons This Week]:', salespersonsThisWeek.length, 'salespeople with activity');
   
   // Count quotes for this week
   const weekStart = new Date(actualToday);
@@ -639,6 +643,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
   console.log('[dashboard-data-sales] Week calculation:', {
     actualToday: actualToday.toISOString(),
     dayOfWeek: actualToday.getDay(),
+    dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][actualToday.getDay()],
     weekStart: weekStart.toISOString(),
     weekEnd: weekEnd.toISOString()
   });
