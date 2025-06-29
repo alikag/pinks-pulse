@@ -25,12 +25,7 @@ exports.handler = async (event, context) => {
       credentials: credentials
     });
 
-    // Query for reviews from BigQuery
-    // First, let's check if the table exists
-    const dataset = bigquery.dataset(process.env.BIGQUERY_DATASET || 'jobber_data');
-    const [tables] = await dataset.getTables();
-    const reviewsTableExists = tables.some(table => table.id === 'google_reviews');
-
+    // Query for reviews from BigQuery using the specific table
     let reviews = [];
     let businessInfo = {
       name: "Pink's Windows Hudson Valley",
@@ -38,38 +33,49 @@ exports.handler = async (event, context) => {
       totalReviews: 127
     };
 
-    if (reviewsTableExists) {
-      // If table exists, query real reviews
-      const query = `
-        SELECT 
-          author_name,
-          rating,
-          text,
-          time,
-          created_at
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.${process.env.BIGQUERY_DATASET}.google_reviews\`
-        ORDER BY created_at DESC
-        LIMIT 10
-      `;
+    // Query real reviews from the specified BigQuery table
+    const query = `
+      SELECT 
+        author_name,
+        rating,
+        text,
+        time,
+        created_at
+      FROM \`jobber-data-warehouse-462721.jobber_data.google_reviews\`
+      ORDER BY created_at DESC
+      LIMIT 10
+    `;
 
-      try {
-        const [rows] = await bigquery.query(query);
-        reviews = rows.map(row => ({
-          reviewerName: row.author_name,
-          rating: row.rating,
-          text: row.text,
-          date: row.time || 'Recently'
-        }));
+    try {
+      const [rows] = await bigquery.query(query);
+      reviews = rows.map(row => ({
+        reviewerName: row.author_name,
+        rating: row.rating,
+        text: row.text,
+        date: row.time || 'Recently'
+      }));
 
-        // Calculate average rating
-        if (reviews.length > 0) {
-          const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-          businessInfo.rating = (totalRating / reviews.length).toFixed(1);
-          businessInfo.totalReviews = reviews.length;
-        }
-      } catch (queryError) {
-        console.log('Reviews table query failed:', queryError.message);
+      // Calculate average rating and get total count
+      if (reviews.length > 0) {
+        // Get total review count
+        const countQuery = `
+          SELECT COUNT(*) as total
+          FROM \`jobber-data-warehouse-462721.jobber_data.google_reviews\`
+        `;
+        const [countRows] = await bigquery.query(countQuery);
+        businessInfo.totalReviews = countRows[0].total;
+        
+        // Calculate average rating from all reviews
+        const avgQuery = `
+          SELECT AVG(rating) as avg_rating
+          FROM \`jobber-data-warehouse-462721.jobber_data.google_reviews\`
+        `;
+        const [avgRows] = await bigquery.query(avgQuery);
+        businessInfo.rating = parseFloat(avgRows[0].avg_rating).toFixed(1);
       }
+    } catch (queryError) {
+      console.log('Reviews table query failed:', queryError.message);
+      console.log('Make sure the table jobber-data-warehouse-462721.jobber_data.google_reviews exists and has the correct schema');
     }
 
     // If no reviews found, return empty array
@@ -87,8 +93,9 @@ exports.handler = async (event, context) => {
           rating: businessInfo.rating,
           totalReviews: businessInfo.totalReviews,
           reviews: reviews,
-          source: reviewsTableExists ? 'bigquery' : 'no_table',
-          message: reviewsTableExists ? 'Reviews from BigQuery' : 'No reviews table found - create google_reviews table in BigQuery',
+          source: reviews.length > 0 ? 'bigquery' : 'no_data',
+          message: reviews.length > 0 ? 'Reviews from BigQuery' : 'No reviews found in jobber-data-warehouse-462721.jobber_data.google_reviews',
+          tableId: 'jobber-data-warehouse-462721.jobber_data.google_reviews',
           scrapedAt: new Date().toISOString()
         }
       })

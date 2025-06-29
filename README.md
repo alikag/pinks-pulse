@@ -3,10 +3,11 @@
 A comprehensive business analytics dashboard for Pink's Window Cleaning franchise, tracking quotes, conversions, and sales performance in the Hudson Valley region.
 
 ## Google Reviews Configuration
-- Reviews are now stored in BigQuery table: `jobber_data.google_reviews`
+- Reviews are sourced from BigQuery table: `jobber-data-warehouse-462721.jobber_data.google_reviews`
 - Add new reviews directly to BigQuery for full control
-- No Google Maps verification required
-- Table created and populated with sample reviews
+- No Google Maps API required
+- Displays up to 10 most recent reviews with automatic scrolling
+- Shows average rating and total review count from all reviews in the table
 
 ## Features
 

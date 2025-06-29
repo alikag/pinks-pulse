@@ -664,15 +664,15 @@ const SalesKPIDashboard: React.FC = () => {
     if (speedDistributionRef.current && !loading && data) {
       const ctx = speedDistributionRef.current.getContext('2d')
       if (ctx) {
-        // Use real distribution data from BigQuery
+        // Use real distribution data from BigQuery with new business hours focus
         const speedDist = data.speedDistribution || {};
         const distribution = [
-          { range: '0-15 min', count: speedDist['0-15'] || 0 },
-          { range: '15-30 min', count: speedDist['15-30'] || 0 },
-          { range: '30-60 min', count: speedDist['30-60'] || 0 },
-          { range: '1-2 hrs', count: speedDist['60-120'] || 0 },
-          { range: '2-4 hrs', count: speedDist['120-240'] || 0 },
-          { range: '4+ hrs', count: speedDist['240+'] || 0 }
+          { range: '0-1 hr', count: speedDist['0-60'] || 0 },
+          { range: '1-4 hrs', count: speedDist['60-240'] || 0 },
+          { range: '4-8 hrs', count: speedDist['240-480'] || 0 },
+          { range: '8-24 hrs', count: speedDist['480-1440'] || 0 },
+          { range: '1-2 days', count: speedDist['1440-2880'] || 0 },
+          { range: '2+ days', count: speedDist['2880+'] || 0 }
         ]
         
         speedDistributionInstance.current = new Chart(ctx, {
@@ -683,12 +683,12 @@ const SalesKPIDashboard: React.FC = () => {
               label: 'Number of Quotes',
               data: distribution.map(d => d.count),
               backgroundColor: [
-                'rgba(236, 72, 153, 0.8)',
-                'rgba(244, 114, 182, 0.8)',
-                'rgba(251, 207, 232, 0.8)',
-                'rgba(252, 231, 243, 0.8)',
-                'rgba(253, 242, 248, 0.8)',
-                'rgba(254, 251, 252, 0.8)'
+                'rgba(16, 185, 129, 0.8)',   // Green - Excellent (0-1 hr)
+                'rgba(59, 130, 246, 0.8)',    // Blue - Good (1-4 hrs)
+                'rgba(251, 191, 36, 0.8)',    // Yellow - Fair (4-8 hrs)
+                'rgba(245, 158, 11, 0.8)',    // Orange - Needs Improvement (8-24 hrs)
+                'rgba(239, 68, 68, 0.8)',     // Red - Poor (1-2 days)
+                'rgba(127, 29, 29, 0.8)'      // Dark Red - Critical (2+ days)
               ],
               borderWidth: 0,
               borderRadius: 4
@@ -702,7 +702,22 @@ const SalesKPIDashboard: React.FC = () => {
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 1
+                borderWidth: 1,
+                callbacks: {
+                  label: (context) => {
+                    const value = context.parsed.y;
+                    const label = context.label;
+                    const performanceMap = {
+                      '0-1 hr': 'Excellent',
+                      '1-4 hrs': 'Good',
+                      '4-8 hrs': 'Fair',
+                      '8-24 hrs': 'Needs Improvement',
+                      '1-2 days': 'Poor',
+                      '2+ days': 'Critical'
+                    };
+                    return [`Count: ${value}`, `Performance: ${performanceMap[label] || 'N/A'}`];
+                  }
+                }
               }
             },
             scales: {

@@ -432,14 +432,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     sumMinutes: 0
   };
   
-  // Initialize speed distribution buckets
+  // Initialize speed distribution buckets - Business Hours Focus
   const speedDistribution = {
-    '0-15': 0,
-    '15-30': 0,
-    '30-60': 0,
-    '60-120': 0,  // 1-2 hours
-    '120-240': 0, // 2-4 hours
-    '240+': 0     // 4+ hours
+    '0-60': 0,      // 0-1 hour (Excellent)
+    '60-240': 0,    // 1-4 hours (Good - same business day)
+    '240-480': 0,   // 4-8 hours (Fair - within business hours)
+    '480-1440': 0,  // 8-24 hours (Needs Improvement - next business day)
+    '1440-2880': 0, // 1-2 days (Poor)
+    '2880+': 0      // 2+ days (Critical)
   };
   
   speedToLeadData.forEach(record => {
@@ -453,18 +453,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
       metrics.speedToLeadCount++;
       
       // Add to distribution buckets
-      if (minutesToQuote < 15) {
-        speedDistribution['0-15']++;
-      } else if (minutesToQuote < 30) {
-        speedDistribution['15-30']++;
-      } else if (minutesToQuote < 60) {
-        speedDistribution['30-60']++;
-      } else if (minutesToQuote < 120) {
-        speedDistribution['60-120']++;
+      if (minutesToQuote < 60) {
+        speedDistribution['0-60']++;
       } else if (minutesToQuote < 240) {
-        speedDistribution['120-240']++;
+        speedDistribution['60-240']++;
+      } else if (minutesToQuote < 480) {
+        speedDistribution['240-480']++;
+      } else if (minutesToQuote < 1440) {
+        speedDistribution['480-1440']++;
+      } else if (minutesToQuote < 2880) {
+        speedDistribution['1440-2880']++;
       } else {
-        speedDistribution['240+']++;
+        speedDistribution['2880+']++;
       }
       
       // Add to salesperson stats
