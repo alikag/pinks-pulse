@@ -31,15 +31,36 @@ exports.handler = async (event, context) => {
     if (!placeId) {
       // Search for the place using the Maps URL or business name
       // The Google Maps URL https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7 likely contains the place ID
-      const searchQuery = encodeURIComponent("Pink's Window Cleaning Hudson Valley NY");
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
+      // Try multiple search queries to find the business
+      const searchQueries = [
+        "Pink's Window Services Hudson Valley",
+        "Pinks Window Cleaning Hudson Valley", 
+        "Pink Window Cleaning Poughkeepsie NY",
+        "Pink's Window Services Poughkeepsie"
+      ];
       
-      console.log('[Google Reviews API] Searching for place...');
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
+      let searchData = null;
+      for (const query of searchQueries) {
+        const searchQuery = encodeURIComponent(query);
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
+        
+        console.log(`[Google Reviews API] Searching for: ${query}`);
+        const searchResponse = await fetch(searchUrl);
+        searchData = await searchResponse.json();
+        
+        console.log(`[Google Reviews API] Search results:`, {
+          status: searchData.status,
+          resultCount: searchData.results?.length || 0,
+          firstResult: searchData.results?.[0]?.name || 'No results'
+        });
+        
+        if (searchData.results && searchData.results.length > 0) {
+          break; // Found results
+        }
+      }
       
-      if (!searchData.results || searchData.results.length === 0) {
-        console.log('[Google Reviews API] No place found');
+      if (!searchData || !searchData.results || searchData.results.length === 0) {
+        console.log('[Google Reviews API] No place found after trying all queries');
         throw new Error('Place not found');
       }
       
@@ -95,9 +116,11 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('[Google Reviews API] Error:', error);
     
-    // Fallback to mock data if API fails
-    const fallbackData = {
-      success: true,
+    // Return a more informative error response
+    const errorResponse = {
+      success: false,
+      error: error.message,
+      suggestion: "Please check: 1) API key is valid, 2) Places API is enabled in Google Cloud Console, 3) Business name matches Google listing",
       data: {
         businessName: "Pink's Window Cleaning - Hudson Valley",
         rating: 4.8,
@@ -123,8 +146,8 @@ exports.handler = async (event, context) => {
           }
         ],
         scrapedAt: new Date().toISOString(),
-        error: error.message,
-        method: 'fallback-mock'
+        method: 'fallback-mock',
+        note: 'Using placeholder data while API connection is resolved'
       }
     };
     

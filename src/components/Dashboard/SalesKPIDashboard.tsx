@@ -1305,6 +1305,10 @@ const SalesKPIDashboard: React.FC = () => {
                       0% { transform: translateX(0); }
                       100% { transform: translateX(-50%); }
                     }
+                    @keyframes scroll-desktop {
+                      0% { transform: translateX(0); }
+                      100% { transform: translateX(calc(-100% / 3)); }
+                    }
                     .scrollbar-hide {
                       -ms-overflow-style: none;
                       scrollbar-width: none;
@@ -1312,18 +1316,23 @@ const SalesKPIDashboard: React.FC = () => {
                     .scrollbar-hide::-webkit-scrollbar {
                       display: none;
                     }
+                    .reviews-scroll-container {
+                      animation: scroll 15s linear infinite;
+                    }
+                    @media (min-width: 768px) {
+                      .reviews-scroll-container {
+                        animation: scroll-desktop 10s linear infinite;
+                      }
+                    }
                   `}
                 </style>
                 <div 
                   className="reviews-scroll-container flex transition-transform duration-500 ease-in-out"
-                  style={{
-                    animation: googleReviews.length > 1 ? 'scroll 20s linear infinite' : 'none',
-                  }}
                 >
                   {googleReviews.map((review) => (
                     <div 
                       key={review.id} 
-                      className="flex-shrink-0 w-full px-2"
+                      className="flex-shrink-0 w-full md:w-1/3 px-2"
                     >
                       <div className="bg-gray-800/50 rounded-lg p-4">
                         <div className="flex items-start gap-3 mb-3">
@@ -1356,7 +1365,40 @@ const SalesKPIDashboard: React.FC = () => {
                   {googleReviews.length > 1 && googleReviews.map((review) => (
                     <div 
                       key={`${review.id}-duplicate`} 
-                      className="flex-shrink-0 w-full px-2"
+                      className="flex-shrink-0 w-full md:w-1/3 px-2"
+                    >
+                      <div className="bg-gray-800/50 rounded-lg p-4">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="flex-1">
+                            <p className="font-medium text-white">{review.author}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <svg
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < review.rating ? 'text-yellow-400' : 'text-gray-600'
+                                    }`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                ))}
+                              </div>
+                              <span className="text-xs text-gray-400">{review.time}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Third duplicate for smoother desktop scrolling */}
+                  {googleReviews.length > 1 && googleReviews.map((review) => (
+                    <div 
+                      key={`${review.id}-duplicate-2`} 
+                      className="flex-shrink-0 w-full md:w-1/3 px-2"
                     >
                       <div className="bg-gray-800/50 rounded-lg p-4">
                         <div className="flex items-start gap-3 mb-3">
