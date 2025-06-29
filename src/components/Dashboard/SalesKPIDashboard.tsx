@@ -48,6 +48,17 @@ const SalesKPIDashboard: React.FC = () => {
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
   const { data, loading, error } = useDashboardData()
   
+  // Debug converted quotes
+  useEffect(() => {
+    if (data) {
+      console.log('[Converted Quotes Debug]', {
+        hasData: !!data,
+        recentConvertedQuotes: data.recentConvertedQuotes,
+        length: data.recentConvertedQuotes?.length || 0
+      })
+    }
+  }, [data])
+  
   // Chart refs
   const trendChartRef = useRef<HTMLCanvasElement>(null)
   const conversionChartRef = useRef<HTMLCanvasElement>(null)
@@ -1419,7 +1430,19 @@ const SalesKPIDashboard: React.FC = () => {
             {/* Converted Quotes Table */}
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
               <h2 className="font-medium mb-4">Converted Quotes - This Week</h2>
-              {data?.recentConvertedQuotes && data.recentConvertedQuotes.length > 0 ? (
+              {loading ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">Loading...</p>
+                </div>
+              ) : (!data || !data.recentConvertedQuotes || data.recentConvertedQuotes.length === 0) ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">No quotes converted this week</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Week started {new Date().getDay() === 0 ? 'today' : 
+                      new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+              ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1459,14 +1482,6 @@ const SalesKPIDashboard: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-400">No quotes converted this week</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Week started {new Date().getDay() === 0 ? 'today' : 
-                      new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                  </p>
                 </div>
               )}
             </div>
