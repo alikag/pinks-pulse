@@ -467,14 +467,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     sumMinutes: 0
   };
   
-  // Initialize speed distribution buckets - New ranges with 0-8 hours combined
+  // Initialize speed distribution buckets - 0-24 hours combined with more granular multi-day ranges
   const speedDistribution = {
-    '0-480': 0,      // 0-8 hours (Same business day)
-    '480-1440': 0,   // 8-24 hours (Next business day)
-    '1440-2880': 0,  // 1-2 days
-    '2880-5760': 0,  // 2-4 days
-    '5760-10080': 0, // 4-7 days
-    '10080+': 0      // 7+ days (1+ week)
+    '0-1440': 0,      // 0-24 hours
+    '1440-2880': 0,   // 1-2 days
+    '2880-4320': 0,   // 2-3 days
+    '4320-5760': 0,   // 3-4 days
+    '5760-7200': 0,   // 4-5 days
+    '7200-10080': 0,  // 5-7 days
+    '10080-20160': 0, // 7-14 days
+    '20160+': 0       // 14+ days
   };
   
   speedToLeadData.forEach(record => {
@@ -488,18 +490,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
       metrics.speedToLeadCount++;
       
       // Add to distribution buckets
-      if (minutesToQuote < 480) {
-        speedDistribution['0-480']++;      // 0-8 hours
-      } else if (minutesToQuote < 1440) {
-        speedDistribution['480-1440']++;   // 8-24 hours
+      if (minutesToQuote < 1440) {
+        speedDistribution['0-1440']++;      // 0-24 hours
       } else if (minutesToQuote < 2880) {
-        speedDistribution['1440-2880']++;  // 1-2 days
+        speedDistribution['1440-2880']++;   // 1-2 days
+      } else if (minutesToQuote < 4320) {
+        speedDistribution['2880-4320']++;   // 2-3 days
       } else if (minutesToQuote < 5760) {
-        speedDistribution['2880-5760']++;  // 2-4 days
+        speedDistribution['4320-5760']++;   // 3-4 days
+      } else if (minutesToQuote < 7200) {
+        speedDistribution['5760-7200']++;   // 4-5 days
       } else if (minutesToQuote < 10080) {
-        speedDistribution['5760-10080']++; // 4-7 days
+        speedDistribution['7200-10080']++;  // 5-7 days
+      } else if (minutesToQuote < 20160) {
+        speedDistribution['10080-20160']++; // 7-14 days
       } else {
-        speedDistribution['10080+']++;     // 7+ days
+        speedDistribution['20160+']++;      // 14+ days
       }
       
       // Add to salesperson stats

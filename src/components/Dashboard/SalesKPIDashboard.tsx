@@ -666,15 +666,17 @@ const SalesKPIDashboard: React.FC = () => {
     if (speedDistributionRef.current && !loading && data) {
       const ctx = speedDistributionRef.current.getContext('2d')
       if (ctx) {
-        // Use real distribution data from BigQuery with new business hours focus
+        // Use real distribution data from BigQuery with 0-24 hours combined
         const speedDist = data.speedDistribution || {};
         const distribution = [
-          { range: '0-8 hrs', count: speedDist['0-480'] || 0 },
-          { range: '8-24 hrs', count: speedDist['480-1440'] || 0 },
+          { range: '0-24 hrs', count: speedDist['0-1440'] || 0 },
           { range: '1-2 days', count: speedDist['1440-2880'] || 0 },
-          { range: '2-4 days', count: speedDist['2880-5760'] || 0 },
-          { range: '4-7 days', count: speedDist['5760-10080'] || 0 },
-          { range: '7+ days', count: speedDist['10080+'] || 0 }
+          { range: '2-3 days', count: speedDist['2880-4320'] || 0 },
+          { range: '3-4 days', count: speedDist['4320-5760'] || 0 },
+          { range: '4-5 days', count: speedDist['5760-7200'] || 0 },
+          { range: '5-7 days', count: speedDist['7200-10080'] || 0 },
+          { range: '7-14 days', count: speedDist['10080-20160'] || 0 },
+          { range: '14+ days', count: speedDist['20160+'] || 0 }
         ]
         
         speedDistributionInstance.current = new Chart(ctx, {
@@ -685,12 +687,14 @@ const SalesKPIDashboard: React.FC = () => {
               label: 'Number of Quotes',
               data: distribution.map(d => d.count),
               backgroundColor: [
-                'rgba(16, 185, 129, 0.8)',   // Green - Excellent (0-8 hrs)
-                'rgba(251, 191, 36, 0.8)',    // Yellow - Good (8-24 hrs)
-                'rgba(245, 158, 11, 0.8)',    // Orange - Fair (1-2 days)
-                'rgba(239, 68, 68, 0.8)',     // Red - Poor (2-4 days)
-                'rgba(159, 18, 57, 0.8)',     // Dark Red - Critical (4-7 days)
-                'rgba(67, 20, 7, 0.8)'        // Brown - Severe (7+ days)
+                'rgba(16, 185, 129, 0.8)',   // Green - Excellent (0-24 hrs)
+                'rgba(34, 197, 94, 0.8)',    // Light Green - Good (1-2 days)
+                'rgba(251, 191, 36, 0.8)',   // Yellow - Fair (2-3 days)
+                'rgba(245, 158, 11, 0.8)',   // Orange - Warning (3-4 days)
+                'rgba(239, 68, 68, 0.8)',    // Red - Poor (4-5 days)
+                'rgba(220, 38, 38, 0.8)',    // Dark Red - Critical (5-7 days)
+                'rgba(159, 18, 57, 0.8)',    // Darker Red - Severe (7-14 days)
+                'rgba(67, 20, 7, 0.8)'       // Brown - Extreme (14+ days)
               ],
               borderWidth: 0,
               borderRadius: 4
@@ -710,12 +714,14 @@ const SalesKPIDashboard: React.FC = () => {
                     const value = context.parsed.y;
                     const label = context.label;
                     const performanceMap: Record<string, string> = {
-                      '0-8 hrs': 'Excellent',
-                      '8-24 hrs': 'Good',
-                      '1-2 days': 'Fair',
-                      '2-4 days': 'Needs Improvement',
-                      '4-7 days': 'Poor',
-                      '7+ days': 'Critical'
+                      '0-24 hrs': 'Excellent',
+                      '1-2 days': 'Good',
+                      '2-3 days': 'Fair',
+                      '3-4 days': 'Warning',
+                      '4-5 days': 'Poor',
+                      '5-7 days': 'Critical',
+                      '7-14 days': 'Severe',
+                      '14+ days': 'Extreme'
                     };
                     return [`Count: ${value}`, `Performance: ${performanceMap[label] || 'N/A'}`];
                   }
