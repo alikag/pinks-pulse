@@ -155,7 +155,7 @@ const SalesKPIDashboard: React.FC = () => {
   // Calculate second row KPIs
   const secondRowKpis = useMemo<KPI[]>(() => {
     if (loading || !data || !data.kpiMetrics) {
-      return getSecondRowMockKPIs()
+      return [] // No mock data - return empty array
     }
     
     const metrics = data.kpiMetrics;
@@ -199,11 +199,11 @@ const SalesKPIDashboard: React.FC = () => {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 4',
-        value: metrics.reviewsThisWeek || 3,
+        value: metrics.reviewsThisWeek || 0,
         target: 4,
         format: 'number',
-        status: metrics.reviewsThisWeek >= 4 ? 'success' : 'warning',
-        trend: -25
+        status: (metrics.reviewsThisWeek || 0) >= 4 ? 'success' : 'warning',
+        trend: 0
       }
     ]
   }, [data, loading])
@@ -236,21 +236,13 @@ const SalesKPIDashboard: React.FC = () => {
           }))
           setGoogleReviews(latestReviews)
         } else {
-          // Use fallback reviews
-          setGoogleReviews([
-            { id: '1', author: 'Sarah M.', rating: 5, text: 'Excellent service! The team was professional and thorough.', time: '2 days ago' },
-            { id: '2', author: 'John D.', rating: 5, text: 'Best window cleaning service in Hudson Valley!', time: '1 week ago' },
-            { id: '3', author: 'Emily R.', rating: 5, text: 'Always reliable and does an amazing job.', time: '2 weeks ago' }
-          ])
+          // No reviews available
+          setGoogleReviews([])
         }
       } catch (error) {
         console.error('Failed to fetch Google reviews:', error)
-        // Fallback to mock reviews
-        setGoogleReviews([
-          { id: '1', author: 'Sarah M.', rating: 5, text: 'Excellent service! The team was professional and thorough.', time: '2 days ago' },
-          { id: '2', author: 'John D.', rating: 5, text: 'Best window cleaning service in Hudson Valley!', time: '1 week ago' },
-          { id: '3', author: 'Emily R.', rating: 5, text: 'Always reliable and does an amazing job.', time: '2 weeks ago' }
-        ])
+        // No reviews available
+        setGoogleReviews([])
       }
     }
     
@@ -605,14 +597,13 @@ const SalesKPIDashboard: React.FC = () => {
           
           weekRanges.push(`Week ${weekNum} (${monthName} ${weekStart}-${Math.min(endDate.getDate(), lastDay.getDate())})`)
           
-          // Use actual data from backend if available, otherwise use mock data
+          // Use actual data from backend if available
           if (data?.kpiMetrics?.weeklyOTBBreakdown) {
             const weekKey = `week${weekNum}`
             weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
           } else {
-            // Mock data with different values for each week
-            const weekOTBValues = [32000, 28500, 24300, 18750, 12500]
-            weeklyOTBData.push(weekOTBValues[weekNum - 1] || 8000)
+            // No data available
+            weeklyOTBData.push(0)
           }
           
           // Move to next week (next Sunday)
@@ -673,14 +664,15 @@ const SalesKPIDashboard: React.FC = () => {
     if (speedDistributionRef.current && !loading && data) {
       const ctx = speedDistributionRef.current.getContext('2d')
       if (ctx) {
-        // Mock distribution data - would come from actual speed to lead data
+        // Use real distribution data from BigQuery
+        const speedDist = data.speedDistribution || {};
         const distribution = [
-          { range: '0-15 min', count: 45 },
-          { range: '15-30 min', count: 38 },
-          { range: '30-60 min', count: 25 },
-          { range: '1-2 hrs', count: 15 },
-          { range: '2-4 hrs', count: 8 },
-          { range: '4+ hrs', count: 5 }
+          { range: '0-15 min', count: speedDist['0-15'] || 0 },
+          { range: '15-30 min', count: speedDist['15-30'] || 0 },
+          { range: '30-60 min', count: speedDist['30-60'] || 0 },
+          { range: '1-2 hrs', count: speedDist['60-120'] || 0 },
+          { range: '2-4 hrs', count: speedDist['120-240'] || 0 },
+          { range: '4+ hrs', count: speedDist['240+'] || 0 }
         ]
         
         speedDistributionInstance.current = new Chart(ctx, {
@@ -808,18 +800,11 @@ const SalesKPIDashboard: React.FC = () => {
     }
     
     // Revenue Waterfall Chart
-    if (waterfallRef.current && !loading && data) {
+    if (waterfallRef.current && !loading && data && data.waterfallData) {
       const ctx = waterfallRef.current.getContext('2d')
       if (ctx) {
-        // Q2 2025 (Apr-Jun) data
-        const waterfallData = [
-          { label: 'Q2 Start', value: 0, cumulative: 0 },
-          { label: 'Quotes Sent', value: 198000, cumulative: 198000 },
-          { label: 'Not Converted', value: -135000, cumulative: 63000 },
-          { label: 'Converted', value: 63000, cumulative: 63000 },
-          { label: 'Cancelled', value: -8500, cumulative: 54500 },
-          { label: 'Q2 Revenue', value: 54500, cumulative: 54500 }
-        ]
+        // Use actual waterfall data from backend
+        const waterfallData = data.waterfallData
         
         waterfallInstance.current = new Chart(ctx, {
           type: 'bar',
@@ -1269,39 +1254,47 @@ const SalesKPIDashboard: React.FC = () => {
                   View on Google
                 </a>
               </div>
-              <div 
-                className="relative overflow-x-auto overflow-y-hidden scrollbar-hide"
-                style={{
-                  WebkitOverflowScrolling: 'touch',
-                  scrollBehavior: 'smooth'
-                }}
-                onMouseEnter={(e) => {
-                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
-                  if (container) {
-                    container.style.animationPlayState = 'paused';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
-                  if (container) {
-                    container.style.animationPlayState = 'running';
-                  }
-                }}
-                onTouchStart={(e) => {
-                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
-                  if (container) {
-                    container.style.animationPlayState = 'paused';
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
-                  if (container) {
-                    setTimeout(() => {
+              {googleReviews.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <p className="text-gray-400">No reviews available</p>
+                    <p className="text-xs text-gray-500 mt-2">Reviews will appear here once added to BigQuery</p>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className="relative overflow-x-auto overflow-y-hidden scrollbar-hide"
+                  style={{
+                    WebkitOverflowScrolling: 'touch',
+                    scrollBehavior: 'smooth'
+                  }}
+                  onMouseEnter={(e) => {
+                    const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                    if (container) {
+                      container.style.animationPlayState = 'paused';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                    if (container) {
                       container.style.animationPlayState = 'running';
-                    }, 3000); // Resume after 3 seconds
-                  }
-                }}
-              >
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                    if (container) {
+                      container.style.animationPlayState = 'paused';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    const container = e.currentTarget.querySelector('.reviews-scroll-container') as HTMLElement;
+                    if (container) {
+                      setTimeout(() => {
+                        container.style.animationPlayState = 'running';
+                      }, 3000); // Resume after 3 seconds
+                    }
+                  }}
+                >
                 <style>
                   {`
                     @keyframes scroll {
@@ -1432,13 +1425,23 @@ const SalesKPIDashboard: React.FC = () => {
                   ))}
                 </div>
               </div>
+              )}
             </div>
 
             {/* Revenue Waterfall Chart */}
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-shadow">
               <h2 className="font-medium mb-4">Revenue Flow Waterfall - This Quarter</h2>
               <div className="h-64">
-                <canvas ref={waterfallRef}></canvas>
+                {!data?.waterfallData ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <p className="text-gray-400">No waterfall data available</p>
+                      <p className="text-xs text-gray-500 mt-2">Data will be available when quarterly revenue flow is processed</p>
+                    </div>
+                  </div>
+                ) : (
+                  <canvas ref={waterfallRef}></canvas>
+                )}
               </div>
             </div>
 

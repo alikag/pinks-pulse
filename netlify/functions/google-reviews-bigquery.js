@@ -72,29 +72,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // If no reviews found, use realistic placeholders
-    if (reviews.length === 0) {
-      reviews = [
-        {
-          reviewerName: "Sarah Mitchell",
-          rating: 5,
-          text: "Pink's team did an amazing job on our storefront windows. Professional, punctual, and the results speak for themselves!",
-          date: "2 days ago"
-        },
-        {
-          reviewerName: "Michael Chen",
-          rating: 5,
-          text: "Best window cleaning service in the Hudson Valley. They've been maintaining our office building for 2 years now.",
-          date: "1 week ago"
-        },
-        {
-          reviewerName: "Jennifer Rodriguez",
-          rating: 5,
-          text: "Exceptional service! The crew was courteous and efficient. Our home's windows have never looked better.",
-          date: "2 weeks ago"
-        }
-      ];
-    }
+    // If no reviews found, return empty array
 
     return {
       statusCode: 200,
@@ -109,8 +87,8 @@ exports.handler = async (event, context) => {
           rating: businessInfo.rating,
           totalReviews: businessInfo.totalReviews,
           reviews: reviews,
-          source: reviewsTableExists ? 'bigquery' : 'placeholder',
-          message: reviewsTableExists ? 'Reviews from BigQuery' : 'Using placeholder data - create google_reviews table in BigQuery',
+          source: reviewsTableExists ? 'bigquery' : 'no_table',
+          message: reviewsTableExists ? 'Reviews from BigQuery' : 'No reviews table found - create google_reviews table in BigQuery',
           scrapedAt: new Date().toISOString()
         }
       })
@@ -132,15 +110,8 @@ exports.handler = async (event, context) => {
           businessName: "Pink's Windows Hudson Valley",
           rating: 4.8,
           totalReviews: 127,
-          reviews: [
-            {
-              reviewerName: "Sarah Mitchell",
-              rating: 5,
-              text: "Pink's team did an amazing job on our storefront windows. Professional, punctual, and the results speak for themselves!",
-              date: "2 days ago"
-            }
-          ],
-          source: 'fallback'
+          reviews: [],
+          source: 'error'
         }
       })
     };

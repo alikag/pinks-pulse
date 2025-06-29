@@ -432,6 +432,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     sumMinutes: 0
   };
   
+  // Initialize speed distribution buckets
+  const speedDistribution = {
+    '0-15': 0,
+    '15-30': 0,
+    '30-60': 0,
+    '60-120': 0,  // 1-2 hours
+    '120-240': 0, // 2-4 hours
+    '240+': 0     // 4+ hours
+  };
+  
   speedToLeadData.forEach(record => {
     const minutesToQuote = record.minutes_to_quote;
     const salesperson = record.salesperson || 'Unknown';
@@ -441,6 +451,21 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
       speedToLeadDebug.validRecords++;
       metrics.speedToLeadSum += minutesToQuote;
       metrics.speedToLeadCount++;
+      
+      // Add to distribution buckets
+      if (minutesToQuote < 15) {
+        speedDistribution['0-15']++;
+      } else if (minutesToQuote < 30) {
+        speedDistribution['15-30']++;
+      } else if (minutesToQuote < 60) {
+        speedDistribution['30-60']++;
+      } else if (minutesToQuote < 120) {
+        speedDistribution['60-120']++;
+      } else if (minutesToQuote < 240) {
+        speedDistribution['120-240']++;
+      } else {
+        speedDistribution['240+']++;
+      }
       
       // Add to salesperson stats
       if (salespersonStats[salesperson]) {
@@ -565,7 +590,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     thisMonthOTB: metrics.thisMonthOTB,
     thisWeekOTB: metrics.thisWeekOTB,
     weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
-    reviewsThisWeek: 3 // Mock value - would need reviews data
+    reviewsThisWeek: 0 // Real reviews count not available from BigQuery yet
   };
   
   // Log weekly OTB breakdown with more detail
@@ -679,6 +704,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     salespersonsThisWeek, // Add this week's stats
     kpiMetrics,
     recentConvertedQuotes,
+    speedDistribution, // Add speed distribution data
     lastUpdated: new Date(),
     dataSource: 'bigquery'
   };
