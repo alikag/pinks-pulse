@@ -2,6 +2,8 @@
 
 ## IMPORTANT: Never commit API keys to code!
 
+## New API Key Available - Add to Netlify Environment Variables Only!
+
 ### Steps to Set Up Google Maps API Key Securely:
 
 1. **Regenerate Your API Key** (Since it was exposed):
@@ -24,8 +26,10 @@
    - Site settings > Environment variables
    - Add new variable:
      - Key: `GOOGLE_MAPS_API_KEY`
-     - Value: Your new API key
+     - Value: [Add your API key in Netlify only - NEVER in code]
    - Deploy or trigger a new build
+   
+   **DO NOT put the API key in any code files!**
 
 4. **Never Put API Keys in Code**:
    - Always use environment variables
