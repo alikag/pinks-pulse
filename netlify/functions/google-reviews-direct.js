@@ -18,7 +18,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('[Google Reviews Direct] Starting request with Place ID: ChIJMWbbWoLovAVR7hKV-Oq4Kcw');
+    console.log('[Google Reviews Direct] Starting request with configured Place ID');
     
     // Google Places API key from environment only - NEVER hardcode API keys
     const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
