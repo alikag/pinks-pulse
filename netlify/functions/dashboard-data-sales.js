@@ -265,7 +265,9 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     thisWeekOTB: 0,
     // For proper CVR calculation
     quotesThisWeekConverted: 0,
-    quotes30DaysConverted: 0
+    quotes30DaysConverted: 0,
+    // Weekly OTB breakdown for current month
+    weeklyOTBBreakdown: {}
   };
   
   // Process quotes data
@@ -387,6 +389,14 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     }
     if (isThisMonth(jobDate)) {
       metrics.thisMonthOTB += jobValue;
+      
+      // Calculate which week of the month this job falls into
+      const weekOfMonth = Math.ceil(jobDate.getDate() / 7);
+      const weekKey = `week${weekOfMonth}`;
+      if (!metrics.weeklyOTBBreakdown[weekKey]) {
+        metrics.weeklyOTBBreakdown[weekKey] = 0;
+      }
+      metrics.weeklyOTBBreakdown[weekKey] += jobValue;
     }
     if (isNextMonth(jobDate)) {
       metrics.nextMonthOTB += jobValue;
@@ -426,6 +436,7 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     nextMonthOTB: metrics.nextMonthOTB,
     thisMonthOTB: metrics.thisMonthOTB,
     thisWeekOTB: metrics.thisWeekOTB,
+    weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
     reviewsThisWeek: 3 // Mock value - would need reviews data
   };
   

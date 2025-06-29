@@ -576,9 +576,54 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
         gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
         
-        // Show all weeks for current month (June 2025)
-        let weekLabels = ['Week 1 (Jun 1-7)', 'Week 2 (Jun 8-14)', 'Week 3 (Jun 15-21)', 'Week 4 (Jun 22-28)', 'Week 5 (Jun 29-30)']
-        let weeklyOTB = [25785, 19975.56, 19875.56, 5536, 2500]
+        // Calculate weeks for current month dynamically
+        const now = new Date()
+        const currentMonth = now.getMonth()
+        const currentYear = now.getFullYear()
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const monthName = monthNames[currentMonth]
+        
+        // Get first and last day of current month
+        const firstDay = new Date(currentYear, currentMonth, 1)
+        const lastDay = new Date(currentYear, currentMonth + 1, 0)
+        
+        // Calculate week ranges for the month
+        const weekRanges: string[] = []
+        const weeklyOTBData: number[] = []
+        
+        let currentDate = new Date(firstDay)
+        let weekNum = 1
+        
+        while (currentDate <= lastDay) {
+          const weekStart = currentDate.getDate()
+          const weekEnd = Math.min(weekStart + 6, lastDay.getDate())
+          
+          // Find next Sunday or end of month
+          let endDate = new Date(currentDate)
+          while (endDate.getDay() !== 6 && endDate.getDate() < lastDay.getDate()) {
+            endDate.setDate(endDate.getDate() + 1)
+          }
+          
+          weekRanges.push(`Week ${weekNum} (${monthName} ${weekStart}-${Math.min(endDate.getDate(), lastDay.getDate())})`)
+          
+          // Use actual data from backend if available, otherwise use mock data
+          if (data?.kpiMetrics?.weeklyOTBBreakdown) {
+            const weekKey = `week${weekNum}`
+            weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
+          } else {
+            // Mock data with different values for each week
+            const weekOTBValues = [32000, 28500, 24300, 18750, 12500]
+            weeklyOTBData.push(weekOTBValues[weekNum - 1] || 8000)
+          }
+          
+          // Move to next week (next Sunday)
+          currentDate = new Date(endDate)
+          currentDate.setDate(currentDate.getDate() + 1)
+          weekNum++
+        }
+        
+        let weekLabels = weekRanges
+        let weeklyOTB = weeklyOTBData
         
         
         weeklyOTBChartInstance.current = new Chart(ctx, {
