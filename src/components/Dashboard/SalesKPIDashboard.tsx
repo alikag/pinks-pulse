@@ -212,14 +212,17 @@ const SalesKPIDashboard: React.FC = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch('/.netlify/functions/google-reviews-api')
+        const response = await fetch('/.netlify/functions/google-reviews-direct')
         const result = await response.json()
         
         console.log('[Google Reviews] Fetch result:', {
           success: result.success,
           hasData: !!result.data,
           reviewCount: result.data?.reviews?.length || 0,
-          error: result.error
+          error: result.error,
+          message: result.message,
+          instructions: result.instructions,
+          method: result.data?.method
         })
         
         if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews)) {
