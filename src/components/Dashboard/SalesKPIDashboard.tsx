@@ -1054,28 +1054,38 @@ const SalesKPIDashboard: React.FC = () => {
                     {kpi.subtitle && (
                       <p className="text-xs text-gray-500">{kpi.subtitle}</p>
                     )}
-                    <p className={`text-2xl font-bold ${
-                      kpi.value === 0 && kpi.id.includes('today') ? 'text-gray-500' : 'text-white'
+                    <p className={`font-bold ${
+                      kpi.value === 0 && (kpi.id.includes('today') || kpi.id.includes('week')) ? 'text-gray-500 text-sm' : 'text-white text-2xl'
                     }`}>
-                      {kpi.value === 0 && kpi.id.includes('today') ? 'No data' : formatValue(kpi.value, kpi.format)}
+                      {(() => {
+                        if (kpi.value === 0) {
+                          if (kpi.id === 'quotes-sent-today') return 'No quotes sent this week';
+                          if (kpi.id === 'converted-today') return 'No quotes converted today';
+                          if (kpi.id === 'converted-week') return 'No quotes converted this week';
+                          if (kpi.id === 'cvr-week') return 'No quotes converted this week';
+                        }
+                        return formatValue(kpi.value, kpi.format);
+                      })()}
                     </p>
                     {/* Goal Progress Bar */}
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-gray-500">Progress</span>
-                        <span className="text-gray-400">{Math.round((kpi.value / kpi.target) * 100)}%</span>
+                    {!(kpi.value === 0 && (kpi.id === 'quotes-sent-today' || kpi.id === 'converted-today' || kpi.id === 'converted-week' || kpi.id === 'cvr-week')) && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-gray-500">Progress</span>
+                          <span className="text-gray-400">{Math.round((kpi.value / kpi.target) * 100)}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-500 rounded-full ${
+                              kpi.status === 'success' ? 'bg-green-500' :
+                              kpi.status === 'warning' ? 'bg-yellow-500' :
+                              kpi.status === 'danger' ? 'bg-red-500' : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${Math.min((kpi.value / kpi.target) * 100, 100)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-500 rounded-full ${
-                            kpi.status === 'success' ? 'bg-green-500' :
-                            kpi.status === 'warning' ? 'bg-yellow-500' :
-                            kpi.status === 'danger' ? 'bg-red-500' : 'bg-blue-500'
-                          }`}
-                          style={{ width: `${Math.min((kpi.value / kpi.target) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
+                    )}
                     {kpi.isLive && (
                       <div className="flex items-center gap-2 mt-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
