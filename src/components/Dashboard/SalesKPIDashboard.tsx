@@ -688,7 +688,14 @@ const SalesKPIDashboard: React.FC = () => {
       const ctx = cohortRef.current.getContext('2d')
       if (ctx) {
         // Use this week's salesperson data
-        const salespersonData = data?.salespersonsThisWeek || []
+        const salespersonData = data?.salespersonsThisWeek || data?.salespersons || []
+        
+        console.log('Salesperson Performance Data:', {
+          hasData: !!data,
+          salespersonsThisWeek: data?.salespersonsThisWeek,
+          salespersons: data?.salespersons,
+          salespersonDataLength: salespersonData.length
+        })
         
         cohortInstance.current = new Chart(ctx, {
           type: 'bar',
@@ -712,7 +719,17 @@ const SalesKPIDashboard: React.FC = () => {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { display: false },
+              legend: { 
+                display: true,
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  padding: 10,
+                  font: {
+                    size: 11
+                  }
+                }
+              },
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -732,10 +749,9 @@ const SalesKPIDashboard: React.FC = () => {
             scales: {
               y: {
                 beginAtZero: true,
-                max: 50,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => `${value}%`
+                  stepSize: 5
                 }
               },
               x: {
@@ -1215,7 +1231,8 @@ const SalesKPIDashboard: React.FC = () => {
                     // Map salesperson names to their headshot images
                     const headshots: { [key: string]: string } = {
                       'Christian Ruddy': '/christian-ruddy.jpg',
-                      'Michael Squires': '/michael-squires.jpg'
+                      'Michael Squires': '/michael-squires.jpg',
+                      'Giovanni Femia': '/luigi.png'
                     }
                     
                     const avgQuoteValue = sp.quotesSent > 0 ? sp.valueSent / sp.quotesSent : 0
