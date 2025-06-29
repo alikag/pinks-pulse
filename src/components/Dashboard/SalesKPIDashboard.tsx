@@ -1206,7 +1206,7 @@ const SalesKPIDashboard: React.FC = () => {
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(236,72,153,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4 flex items-center gap-2">
                   <Clock className="h-5 w-5 text-pink-400" />
-                  Speed to Lead Distribution
+                  Speed to Lead Distribution (Last 30 Days)
                 </h2>
                 <div className="h-48">
                   <canvas ref={speedDistributionRef}></canvas>
