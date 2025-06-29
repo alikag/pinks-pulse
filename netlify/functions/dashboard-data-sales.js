@@ -118,25 +118,36 @@ exports.handler = async (event, context) => {
       AND minutes_to_quote < 10080  -- Exclude anything over 7 days as likely data issues
     `;
 
-    // Query for reviews count this week
+    // Query for reviews count this week - simplified for now
     const reviewsQuery = `
       SELECT COUNT(*) as reviews_count
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.google_reviews\`
-      WHERE DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', created_at)) >= DATE_SUB(CURRENT_DATE(), INTERVAL EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) - 1 DAY)
-        AND DATE(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', created_at)) < DATE_ADD(DATE_SUB(CURRENT_DATE(), INTERVAL EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) - 1 DAY), INTERVAL 7 DAY)
+      WHERE created_at >= FORMAT_TIMESTAMP('%Y-%m-%d', TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY))
     `;
 
     console.log('[dashboard-data-sales] Executing queries...');
     
-    const [[quotesData], [jobsData], [speedToLeadData], [reviewsData]] = await Promise.all([
-      bigquery.query(quotesQuery),
-      bigquery.query(jobsQuery),
-      bigquery.query(speedToLeadQuery),
-      bigquery.query(reviewsQuery).catch(err => {
-        console.log('[dashboard-data-sales] Reviews query failed:', err.message);
-        return [[{ reviews_count: 0 }]];
-      })
-    ]);
+    let quotesData, jobsData, speedToLeadData, reviewsData;
+    
+    try {
+      // Execute main queries
+      [[quotesData], [jobsData], [speedToLeadData]] = await Promise.all([
+        bigquery.query(quotesQuery),
+        bigquery.query(jobsQuery),
+        bigquery.query(speedToLeadQuery)
+      ]);
+      
+      // Try to get reviews count, but don't fail if it doesn't work
+      try {
+        [reviewsData] = await bigquery.query(reviewsQuery);
+      } catch (reviewErr) {
+        console.log('[dashboard-data-sales] Reviews query failed (non-critical):', reviewErr.message);
+        reviewsData = [{ reviews_count: 0 }];
+      }
+    } catch (queryError) {
+      console.error('[dashboard-data-sales] Critical query error:', queryError);
+      throw new Error(`BigQuery query failed: ${queryError.message}`);
+    }
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
     
