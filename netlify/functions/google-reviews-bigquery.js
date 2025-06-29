@@ -18,7 +18,14 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('[Google Reviews BigQuery] Starting query...');
+    console.log('[Google Reviews BigQuery] Project ID:', process.env.BIGQUERY_PROJECT_ID);
+    
     // Initialize BigQuery
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON not configured');
+    }
+    
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
     const bigquery = new BigQuery({
       projectId: process.env.BIGQUERY_PROJECT_ID,
@@ -47,7 +54,19 @@ exports.handler = async (event, context) => {
     `;
 
     try {
+      console.log('[Google Reviews BigQuery] Executing query for reviews...');
       const [rows] = await bigquery.query(query);
+      console.log('[Google Reviews BigQuery] Query returned', rows.length, 'reviews');
+      
+      if (rows.length > 0) {
+        console.log('[Google Reviews BigQuery] First review sample:', {
+          author_name: rows[0].author_name,
+          rating: rows[0].rating,
+          text: rows[0].text ? rows[0].text.substring(0, 50) + '...' : null,
+          time: rows[0].time
+        });
+      }
+      
       reviews = rows.map(row => ({
         reviewerName: row.author_name,
         rating: row.rating,
@@ -74,8 +93,9 @@ exports.handler = async (event, context) => {
         businessInfo.rating = parseFloat(avgRows[0].avg_rating).toFixed(1);
       }
     } catch (queryError) {
-      console.log('Reviews table query failed:', queryError.message);
-      console.log('Make sure the table jobber-data-warehouse-462721.jobber_data.google_reviews exists and has the correct schema');
+      console.log('[Google Reviews BigQuery] Query failed:', queryError.message);
+      console.log('[Google Reviews BigQuery] Table:', 'jobber-data-warehouse-462721.jobber_data.google_reviews');
+      console.log('[Google Reviews BigQuery] Error details:', queryError.toString());
     }
 
     // If no reviews found, return empty array
