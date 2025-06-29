@@ -62,8 +62,8 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full blur-lg opacity-50"></div>
               <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
                 <img 
-                  src="/icon.jpg" 
-                  alt="Pink's Window Cleaning" 
+                  src="/logo.png" 
+                  alt="Pink's Window Services" 
                   className="w-full h-full object-cover"
                 />
               </div>
