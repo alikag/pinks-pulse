@@ -1232,7 +1232,7 @@ const SalesKPIDashboard: React.FC = () => {
                     const headshots: { [key: string]: string } = {
                       'Christian Ruddy': '/christian-ruddy.jpg',
                       'Michael Squires': '/michael-squires.jpg',
-                      'Giovanni Femia': '/luigi.png'
+                      'Giovanni Femia': '/luigi.jpg'
                     }
                     
                     const avgQuoteValue = sp.quotesSent > 0 ? sp.valueSent / sp.quotesSent : 0
