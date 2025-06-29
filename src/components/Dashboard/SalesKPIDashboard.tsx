@@ -509,11 +509,13 @@ const SalesKPIDashboard: React.FC = () => {
         
         // Show all 12 months of 2025
         const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const monthlyJobValues = [0, 0, 1000, 33550, 50918.5, 78517.5, 73032.5, 52967.5, 4742.5, 4727.5, 5662.5, 2427.5]
         
-        // Use data from dashboard if available, otherwise use mock data
+        // Use real data from backend
         let monthLabels = allMonths
-        let monthlyOTB = monthlyJobValues
+        let monthlyOTB = allMonths.map((_, index) => {
+          const monthNumber = index + 1 // JavaScript months are 0-indexed
+          return data.kpiMetrics?.monthlyOTBData?.[monthNumber] || 0
+        })
         
         monthlyOTBChartInstance.current = new Chart(ctx, {
           type: 'bar',

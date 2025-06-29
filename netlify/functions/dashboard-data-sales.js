@@ -340,7 +340,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     quotesThisWeekConverted: 0,
     quotes30DaysConverted: 0,
     // Weekly OTB breakdown for current month
-    weeklyOTBBreakdown: {}
+    weeklyOTBBreakdown: {},
+    // Monthly OTB data for all 12 months of 2025
+    monthlyOTBData: {
+      1: 0,   // January
+      2: 0,   // February
+      3: 0,   // March
+      4: 0,   // April
+      5: 0,   // May
+      6: 0,   // June
+      7: 0,   // July
+      8: 0,   // August
+      9: 0,   // September
+      10: 0,  // October
+      11: 0,  // November
+      12: 0   // December
+    }
   };
   
   // Process quotes data
@@ -577,6 +592,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
       metrics.nextMonthOTB += jobValue;
     }
     
+    // Add to monthly OTB data for 2025
+    if (jobDate && jobDate.getFullYear() === 2025) {
+      const month = jobDate.getMonth() + 1; // JavaScript months are 0-indexed
+      metrics.monthlyOTBData[month] += jobValue;
+    }
+    
     // Check for recurring jobs in 2026
     if (jobDate && jobDate.getFullYear() === 2026 && job.Job_type === 'RECURRING') {
       metrics.recurringRevenue2026 += jobValue;
@@ -612,6 +633,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     thisMonthOTB: metrics.thisMonthOTB,
     thisWeekOTB: metrics.thisWeekOTB,
     weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
+    monthlyOTBData: metrics.monthlyOTBData,
     reviewsThisWeek: 0 // Real reviews count not available from BigQuery yet
   };
   
@@ -619,6 +641,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
   console.log('[Weekly OTB Breakdown]:', metrics.weeklyOTBBreakdown);
   console.log('[This Month OTB Total]:', metrics.thisMonthOTB);
   console.log('[Current Month]:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  console.log('[Monthly OTB Data for 2025]:', metrics.monthlyOTBData);
+  console.log('[Next Month OTB (July 2025)]:', metrics.nextMonthOTB);
   
   // Log week ranges for debugging
   const debugMonth = estToday.getMonth();
