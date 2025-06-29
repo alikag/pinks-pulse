@@ -28,9 +28,9 @@ exports.handler = async (event, context) => {
       throw new Error('GOOGLE_MAPS_API_KEY environment variable is not set');
     }
     
-    // Known Place IDs for Pink's Windows (you can find this from the Google Maps URL)
-    // When you visit https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7, look for the place ID in the URL
-    // or try these common searches
+    // Known Place IDs for Pink's Windows
+    // The Google Maps URL https://maps.app.goo.gl/zjLKMB1RRS6TqBe18 should contain the Place ID
+    // Look for a string starting with "ChIJ" in the full URL
     const placeId = process.env.GOOGLE_PLACE_ID || null;
     
     if (placeId) {
