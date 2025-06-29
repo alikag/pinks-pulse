@@ -722,7 +722,12 @@ function processWeekData(quotesData, referenceDate, parseDate) {
     // Debug logging
     console.log(`[processWeekData] Position ${6-i} (i=${i}): ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
     
-    weekData.labels.push(weekDays[date.getDay()]);
+    // Format label with day and date (e.g., "Mon 12/25")
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const dateLabel = `${weekDays[date.getDay()]} ${month}/${day}`;
+    
+    weekData.labels.push(dateLabel);
     weekData.quotesSent.push(sent);
     weekData.quotesConverted.push(converted);
     weekData.conversionRate.push(sent > 0 ? Math.round((converted / sent) * 100) : 0);
