@@ -1244,140 +1244,6 @@ const SalesKPIDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Revenue Waterfall Chart */}
-            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-shadow">
-              <h2 className="font-medium mb-4">Revenue Flow Waterfall - This Quarter</h2>
-              <div className="h-64">
-                <canvas ref={waterfallRef}></canvas>
-              </div>
-            </div>
-
-            {/* Salesperson Leaderboard Enhanced */}
-            {data?.salespersons && data.salespersons.length > 0 && (
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(147,51,234,0.3)] transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-400" />
-                    Sales Team Performance
-                  </h2>
-                  <span className="text-xs text-gray-400">Last 90 days</span>
-                </div>
-                <div className="space-y-3">
-                  {data.salespersons.slice(0, 5).map((sp, index) => {
-                    // Map salesperson names to their headshot images
-                    const headshots: { [key: string]: string } = {
-                      'Christian Ruddy': '/christian-ruddy.jpg',
-                      'Michael Squires': '/michael-squires.jpg',
-                      'Giovanni Femia': '/luigi.jpg'
-                    }
-                    
-                    const avgQuoteValue = sp.quotesSent > 0 ? sp.valueSent / sp.quotesSent : 0
-                    
-                    return (
-                      <div key={sp.name} className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition">
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                            {headshots[sp.name] ? (
-                              <img 
-                                src={headshots[sp.name]} 
-                                alt={sp.name}
-                                className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full object-cover border-2 border-gray-700 flex-shrink-0"
-                                style={{ aspectRatio: '1/1' }}
-                              />
-                            ) : (
-                              <div className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0" 
-                                style={{ backgroundColor: sp.color, aspectRatio: '1/1' }}>
-                                {sp.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                            )}
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center">
-                              <span className="text-xs font-bold text-white">{index + 1}</span>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="font-medium">{sp.name}</p>
-                            <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
-                              <span>{sp.quotesSent} sent</span>
-                              <span>•</span>
-                              <span>{sp.quotesConverted} won</span>
-                              {sp.avgSpeedToLead !== null && sp.avgSpeedToLead !== undefined && (
-                                <>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {sp.avgSpeedToLead} min avg
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-lg">{formatValue(sp.valueConverted, 'currency')}</p>
-                          <div className="flex items-center justify-end gap-3 text-xs mt-1">
-                            <span className={`font-medium ${
-                              sp.conversionRate >= 40 ? 'text-green-400' : 
-                              sp.conversionRate >= 30 ? 'text-yellow-400' : 'text-red-400'
-                            }`}>
-                              {sp.conversionRate.toFixed(1)}% CVR
-                            </span>
-                            <span className="text-gray-400">
-                              ${Math.round(avgQuoteValue).toLocaleString()} avg
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Converted Quotes Table */}
-            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-              <h2 className="font-medium mb-4">Converted Quotes - This Week</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-sm text-gray-400 border-b border-white/10">
-                      <th className="pb-3 pr-4">Date Converted</th>
-                      <th className="pb-3 pr-4">Job Number</th>
-                      <th className="pb-3 pr-4">Job Date</th>
-                      <th className="pb-3 pr-4">Job Type</th>
-                      <th className="pb-3 pr-4">Sales Person</th>
-                      <th className="pb-3 pr-4">JobberLink</th>
-                      <th className="pb-3 pr-4">Visit Title</th>
-                      <th className="pb-3 text-right">Total Dollars</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {(data?.recentConvertedQuotes || getConvertedQuotes()).map((quote: any, index) => (
-                      <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
-                        <td className="py-3 pr-4">{quote.dateConverted}</td>
-                        <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
-                        <td className="py-3 pr-4">{quote.date || '-'}</td>
-                        <td className="py-3 pr-4">
-                          <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
-                            {quote.jobType || 'ONE_OFF'}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4">{quote.salesPerson}</td>
-                        <td className="py-3 pr-4">
-                          <a href={quote.jobberLink || '#'} className="text-blue-400 hover:underline">
-                            View
-                          </a>
-                        </td>
-                        <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
-                        <td className="py-3 text-right font-medium">
-                          {formatValue(quote.totalDollars, 'currency')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
             {/* Latest Customer Reviews */}
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
               <h2 className="font-medium mb-4">Latest Customer Reviews</h2>
@@ -1458,6 +1324,140 @@ const SalesKPIDashboard: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Revenue Waterfall Chart */}
+            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-shadow">
+              <h2 className="font-medium mb-4">Revenue Flow Waterfall - This Quarter</h2>
+              <div className="h-64">
+                <canvas ref={waterfallRef}></canvas>
+              </div>
+            </div>
+
+            {/* Salesperson Leaderboard Enhanced */}
+            {data?.salespersons && data.salespersons.length > 0 && (
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(147,51,234,0.3)] transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-medium flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-400" />
+                    Sales Team Performance
+                  </h2>
+                  <span className="text-xs text-gray-400">Last 90 days</span>
+                </div>
+                <div className="space-y-3">
+                  {data.salespersons.slice(0, 5).map((sp, index) => {
+                    // Map salesperson names to their headshot images
+                    const headshots: { [key: string]: string } = {
+                      'Christian Ruddy': '/christian-ruddy.jpg',
+                      'Michael Squires': '/michael-squires.jpg',
+                      'Giovanni Femia': '/luigi.jpg'
+                    }
+                    
+                    const avgQuoteValue = sp.quotesSent > 0 ? sp.valueSent / sp.quotesSent : 0
+                    
+                    return (
+                      <div key={sp.name} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition gap-3">
+                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                          <div className="relative flex-shrink-0">
+                            {headshots[sp.name] ? (
+                              <img 
+                                src={headshots[sp.name]} 
+                                alt={sp.name}
+                                className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full object-cover border-2 border-gray-700"
+                                style={{ aspectRatio: '1/1' }}
+                              />
+                            ) : (
+                              <div className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" 
+                                style={{ backgroundColor: sp.color, aspectRatio: '1/1' }}>
+                                {sp.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                            )}
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center">
+                              <span className="text-xs font-bold text-white">{index + 1}</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{sp.name}</p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 mt-1">
+                              <span className="whitespace-nowrap">{sp.quotesSent} sent</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="whitespace-nowrap">{sp.quotesConverted} won</span>
+                              {sp.avgSpeedToLead !== null && sp.avgSpeedToLead !== undefined && (
+                                <>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="flex items-center gap-1 whitespace-nowrap">
+                                    <Clock className="h-3 w-3" />
+                                    {sp.avgSpeedToLead} min avg
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-left sm:text-right w-full sm:w-auto pl-[60px] sm:pl-0">
+                          <p className="font-medium text-base sm:text-lg">{formatValue(sp.valueConverted, 'currency')}</p>
+                          <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 sm:gap-3 text-xs mt-1">
+                            <span className={`font-medium whitespace-nowrap ${
+                              sp.conversionRate >= 40 ? 'text-green-400' : 
+                              sp.conversionRate >= 30 ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              {sp.conversionRate.toFixed(1)}% CVR
+                            </span>
+                            <span className="text-gray-400 whitespace-nowrap">
+                              ${Math.round(avgQuoteValue).toLocaleString()} avg
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Converted Quotes Table */}
+            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+              <h2 className="font-medium mb-4">Converted Quotes - This Week</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-sm text-gray-400 border-b border-white/10">
+                      <th className="pb-3 pr-4">Date Converted</th>
+                      <th className="pb-3 pr-4">Job Number</th>
+                      <th className="pb-3 pr-4">Job Date</th>
+                      <th className="pb-3 pr-4">Job Type</th>
+                      <th className="pb-3 pr-4">Sales Person</th>
+                      <th className="pb-3 pr-4">JobberLink</th>
+                      <th className="pb-3 pr-4">Visit Title</th>
+                      <th className="pb-3 text-right">Total Dollars</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {(data?.recentConvertedQuotes || getConvertedQuotes()).map((quote: any, index) => (
+                      <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="py-3 pr-4">{quote.dateConverted}</td>
+                        <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
+                        <td className="py-3 pr-4">{quote.date || '-'}</td>
+                        <td className="py-3 pr-4">
+                          <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
+                            {quote.jobType || 'ONE_OFF'}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">{quote.salesPerson}</td>
+                        <td className="py-3 pr-4">
+                          <a href={quote.jobberLink || '#'} className="text-blue-400 hover:underline">
+                            View
+                          </a>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
+                        <td className="py-3 text-right font-medium">
+                          {formatValue(quote.totalDollars, 'currency')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>
