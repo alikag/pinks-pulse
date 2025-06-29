@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Shield, Sparkles } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
 
 interface PasswordProtectProps {
   children: React.ReactNode;
@@ -60,8 +60,12 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
             {/* Logo area with gradient */}
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full blur-lg opacity-50"></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                <Shield className="w-10 h-10 text-white" />
+              <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
+                <img 
+                  src="/icon.jpg" 
+                  alt="Pink's Window Cleaning" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400" />
             </div>
@@ -125,7 +129,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-600">
-            © 2025 Pink's Window Cleaning • Hudson Valley
+            © 2025 Pink's Window Services • Hudson Valley
           </p>
         </div>
       </div>
