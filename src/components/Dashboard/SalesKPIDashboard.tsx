@@ -1274,7 +1274,6 @@ const SalesKPIDashboard: React.FC = () => {
                     }
                     
                     const avgQuoteValue = sp.quotesSent > 0 ? sp.valueSent / sp.quotesSent : 0
-                    const responseTime = Math.floor(Math.random() * 30 + 10) // Mock response time
                     
                     return (
                       <div key={sp.name} className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition">
@@ -1303,11 +1302,6 @@ const SalesKPIDashboard: React.FC = () => {
                               <span>{sp.quotesSent} sent</span>
                               <span>•</span>
                               <span>{sp.quotesConverted} won</span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {responseTime} min avg
-                              </span>
                             </div>
                           </div>
                         </div>
