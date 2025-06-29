@@ -55,6 +55,12 @@ export interface DashboardData {
       validJobs: number;
     };
   };
+  speedDistribution?: Record<string, number>;
+  waterfallData?: Array<{
+    label: string;
+    value: number;
+    cumulative: number;
+  }>;
   recentConvertedQuotes?: Array<{
     dateConverted: string;
     quoteNumber: string;

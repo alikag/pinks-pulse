@@ -809,11 +809,11 @@ const SalesKPIDashboard: React.FC = () => {
         waterfallInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: waterfallData.map(d => d.label),
+            labels: waterfallData.map((d: any) => d.label),
             datasets: [{
               label: 'Revenue Flow',
-              data: waterfallData.map(d => Math.abs(d.value)),
-              backgroundColor: waterfallData.map(d => 
+              data: waterfallData.map((d: any) => Math.abs(d.value)),
+              backgroundColor: waterfallData.map((d: any) => 
                 d.value > 0 ? 'rgba(168, 85, 247, 0.8)' : 'rgba(239, 68, 68, 0.8)'
               ),
               borderWidth: 0,
@@ -1663,46 +1663,5 @@ const SalesKPIDashboard: React.FC = () => {
     </div>
   )
 }
-
-function getSecondRowMockKPIs(): KPI[] {
-  return [
-    {
-      id: 'speed-to-lead',
-      label: '30D Speed to Lead',
-      subtitle: 'Target: 30 min',
-      value: 22,
-      target: 30,
-      format: 'number',
-      status: 'warning'
-    },
-    {
-      id: 'recurring-cvr',
-      label: '30D Recurring CVR',
-      value: 0,
-      target: 20,
-      format: 'percentage',
-      status: 'normal'
-    },
-    {
-      id: 'avg-qpd',
-      label: '30D AVG QPD',
-      subtitle: 'Target: 12',
-      value: 3.45,
-      target: 12,
-      format: 'number',
-      status: 'danger'
-    },
-    {
-      id: 'reviews-week',
-      label: 'Reviews This Week',
-      subtitle: 'Target: 4',
-      value: 3,
-      target: 4,
-      format: 'number',
-      status: 'warning'
-    }
-  ]
-}
-
 
 export default SalesKPIDashboard
