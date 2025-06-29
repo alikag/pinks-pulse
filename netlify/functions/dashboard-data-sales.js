@@ -193,17 +193,32 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   // Helper functions
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
-    // Handle BigQuery date objects that come as { value: "2025-06-27" }
-    if (typeof dateStr === 'object' && dateStr.value) {
-      // Parse as EST/EDT timezone
-      const date = new Date(dateStr.value + 'T00:00:00-05:00');
-      return date;
+    
+    try {
+      // Handle BigQuery date objects that come as { value: "2025-06-27" }
+      if (typeof dateStr === 'object' && dateStr.value) {
+        // Parse as EST/EDT timezone
+        const date = new Date(dateStr.value + 'T00:00:00-05:00');
+        return date;
+      }
+      
+      // Handle UTC timestamp strings like "2025-06-27 17:05:33.000000 UTC"
+      if (typeof dateStr === 'string' && dateStr.includes('UTC')) {
+        // Remove the microseconds and UTC suffix
+        const cleanedDate = dateStr.replace(/\.\d{6} UTC$/, '').replace(' ', 'T') + 'Z';
+        return new Date(cleanedDate);
+      }
+      
+      // For string dates without time, assume EST/EDT
+      if (typeof dateStr === 'string' && !dateStr.includes('T')) {
+        return new Date(dateStr + 'T00:00:00-05:00');
+      }
+      
+      return new Date(dateStr);
+    } catch (e) {
+      console.error('[parseDate] Error parsing date:', dateStr, e);
+      return null;
     }
-    // For string dates, assume they're in EST/EDT
-    if (typeof dateStr === 'string' && !dateStr.includes('T')) {
-      return new Date(dateStr + 'T00:00:00-05:00');
-    }
-    return new Date(dateStr);
   };
   
   const isToday = (date) => {
@@ -378,7 +393,9 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   
   requestsData.forEach(request => {
     const requestDate = parseDate(request.requested_on_date);
-    const minutesToQuote = parseFloat(request.minutes_to_quote_sent);
+    const minutesToQuote = request.minutes_to_quote_sent !== null && request.minutes_to_quote_sent !== undefined 
+      ? parseFloat(String(request.minutes_to_quote_sent)) 
+      : null;
     
     if (requestDate) speedToLeadDebug.requestsWithValidDates++;
     if (requestDate && isLast30Days(requestDate)) speedToLeadDebug.requestsInLast30Days++;
@@ -390,12 +407,21 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     }
   });
   
-  console.log('Speed to Lead Debug:', speedToLeadDebug);
-  console.log('Speed to Lead Metrics:', {
+  console.log('[Speed to Lead Debug]:', speedToLeadDebug);
+  console.log('[Speed to Lead Metrics]:', {
     sum: metrics.speedToLeadSum,
     count: metrics.speedToLeadCount,
     average: metrics.speedToLeadCount > 0 ? Math.round(metrics.speedToLeadSum / metrics.speedToLeadCount) : 0
   });
+  
+  // Log some sample request data
+  const sampleRequests = requestsData.slice(0, 5).map(r => ({
+    date: r.requested_on_date,
+    minutes: r.minutes_to_quote_sent,
+    parsedDate: parseDate(r.requested_on_date),
+    isLast30Days: parseDate(r.requested_on_date) ? isLast30Days(parseDate(r.requested_on_date)) : false
+  }));
+  console.log('[Sample Requests]:', sampleRequests);
   
   // Process jobs data for OTB calculations
   jobsData.forEach(job => {

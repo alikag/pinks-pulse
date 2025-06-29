@@ -174,10 +174,10 @@ const SalesKPIDashboard: React.FC = () => {
         id: 'speed-to-lead',
         label: 'Speed to Lead (30D Avg)',
         subtitle: 'Target: 30 min',
-        value: metrics.speedToLead30Days > 0 ? metrics.speedToLead30Days : 22,
+        value: metrics.speedToLead30Days || 0,
         target: 30,
         format: 'time',
-        status: (metrics.speedToLead30Days || 22) <= 30 ? 'success' : 'warning',
+        status: metrics.speedToLead30Days <= 30 ? 'success' : metrics.speedToLead30Days <= 60 ? 'warning' : 'danger',
         sparklineData: generateSparklineData()
       },
       {
