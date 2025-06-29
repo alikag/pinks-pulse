@@ -183,16 +183,25 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   const now = new Date(referenceDate);
   now.setHours(0, 0, 0, 0);
   
-  // For week calculations, always use the actual current date
+  // For week calculations, always use the actual current date in EST
   const actualToday = new Date();
-  actualToday.setHours(0, 0, 0, 0);
+  // Convert to EST timezone string and parse back
+  const estString = actualToday.toLocaleString("en-US", {timeZone: "America/New_York"});
+  const estToday = new Date(estString);
+  estToday.setHours(0, 0, 0, 0);
   
   // Helper functions
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
     // Handle BigQuery date objects that come as { value: "2025-06-27" }
     if (typeof dateStr === 'object' && dateStr.value) {
-      return new Date(dateStr.value);
+      // Parse as EST/EDT timezone
+      const date = new Date(dateStr.value + 'T00:00:00-05:00');
+      return date;
+    }
+    // For string dates, assume they're in EST/EDT
+    if (typeof dateStr === 'string' && !dateStr.includes('T')) {
+      return new Date(dateStr + 'T00:00:00-05:00');
     }
     return new Date(dateStr);
   };
@@ -207,9 +216,9 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
   const isThisWeek = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    // Sunday-Saturday weeks
-    const weekStart = new Date(actualToday);
-    weekStart.setDate(actualToday.getDate() - actualToday.getDay()); // Sunday
+    // Sunday-Saturday weeks using EST date
+    const weekStart = new Date(estToday);
+    weekStart.setDate(estToday.getDate() - estToday.getDay()); // Sunday
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
@@ -336,16 +345,19 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
         metrics.convertedThisWeekDollars += totalDollars;
         
         // Add to recent converted quotes
-        if (recentConvertedQuotes.length < 10) {
-          recentConvertedQuotes.push({
-            dateConverted: convertedDate.toLocaleDateString(),
-            quoteNumber: quote.quote_number,
-            clientName: quote.client_name,
-            salesPerson: quote.salesperson,
-            totalDollars: totalDollars,
-            status: quote.status
-          });
-        }
+        recentConvertedQuotes.push({
+          dateConverted: convertedDate.toLocaleDateString(),
+          quoteNumber: quote.quote_number || quote.Quote_Number,
+          jobNumber: quote.job_number || quote.Job_Number,
+          date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString() : '',
+          jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
+          clientName: quote.client_name || quote.Client_Name,
+          salesPerson: quote.salesperson || quote.Salesperson,
+          jobberLink: quote.jobber_link || quote.Jobber_Link || 'https://secure.getjobber.com',
+          visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
+          totalDollars: totalDollars,
+          status: quote.status || quote.Status
+        });
       }
       if (isLast30Days(convertedDate)) {
         metrics.converted30Days++;
@@ -416,6 +428,24 @@ function processIntoDashboardFormat(quotesData, jobsData, requestsData) {
     thisWeekOTB: metrics.thisWeekOTB,
     reviewsThisWeek: 3 // Mock value - would need reviews data
   };
+  
+  // Debug logging
+  console.log('Dashboard Data Debug:', {
+    estToday: estToday.toISOString(),
+    weekStart: (() => {
+      const ws = new Date(estToday);
+      ws.setDate(estToday.getDate() - estToday.getDay());
+      return ws.toISOString();
+    })(),
+    metrics: {
+      quotesThisWeek: metrics.quotesThisWeek,
+      convertedThisWeek: metrics.convertedThisWeek,
+      convertedThisWeekDollars: metrics.convertedThisWeekDollars,
+      cvrThisWeek: kpiMetrics.cvrThisWeek,
+      quotesThisWeekConverted: metrics.quotesThisWeekConverted
+    },
+    recentConvertedQuotesCount: recentConvertedQuotes.length
+  });
   
   // Calculate salesperson stats
   const colors = ['rgb(147, 51, 234)', 'rgb(236, 72, 153)', 'rgb(59, 130, 246)', 'rgb(16, 185, 129)'];
@@ -747,11 +777,11 @@ function getMockDashboardData() {
     kpiMetrics: {
       quotesToday: 0,
       convertedToday: 0,
-      convertedTodayDollars: 17208.18,
-      quotesThisWeek: 12,
-      convertedThisWeek: 3,
-      convertedThisWeekDollars: 17208.18,
-      cvrThisWeek: 29,
+      convertedTodayDollars: 0,
+      quotesThisWeek: 48,
+      convertedThisWeek: 14,
+      convertedThisWeekDollars: 25000,
+      cvrThisWeek: 29.2,
       quotes30Days: 85,
       converted30Days: 45,
       cvr30Days: 53,
