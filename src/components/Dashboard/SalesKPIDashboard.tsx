@@ -1284,10 +1284,12 @@ const SalesKPIDashboard: React.FC = () => {
                               <img 
                                 src={headshots[sp.name]} 
                                 alt={sp.name}
-                                className="w-12 h-12 rounded-full object-cover border-2 border-gray-700"
+                                className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full object-cover border-2 border-gray-700 flex-shrink-0"
+                                style={{ aspectRatio: '1/1' }}
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" style={{ backgroundColor: sp.color }}>
+                              <div className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0" 
+                                style={{ backgroundColor: sp.color, aspectRatio: '1/1' }}>
                                 {sp.name.split(' ').map(n => n[0]).join('')}
                               </div>
                             )}
