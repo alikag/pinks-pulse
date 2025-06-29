@@ -20,8 +20,12 @@ exports.handler = async (event, context) => {
   try {
     console.log('[Google Reviews API] Starting request...');
     
-    // Google Places API key from environment or fallback
-    const API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyDu8R9jJsGrKyRBPaV6kCu6qWGzUa1Etco';
+    // Google Places API key from environment only - NEVER hardcode API keys
+    const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+    
+    if (!API_KEY) {
+      throw new Error('GOOGLE_MAPS_API_KEY environment variable is not set');
+    }
     
     // Pink's Window Cleaning Place ID
     // If we have a known place ID, use it directly, otherwise search
@@ -120,7 +124,7 @@ exports.handler = async (event, context) => {
     const errorResponse = {
       success: false,
       error: error.message,
-      suggestion: "Please check: 1) API key is valid, 2) Places API is enabled in Google Cloud Console, 3) Business name matches Google listing",
+      suggestion: "Please set GOOGLE_MAPS_API_KEY environment variable in Netlify dashboard",
       data: {
         businessName: "Pink's Windows Hudson Valley",
         rating: 4.8,

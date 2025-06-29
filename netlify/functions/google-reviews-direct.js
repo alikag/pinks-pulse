@@ -20,8 +20,13 @@ exports.handler = async (event, context) => {
   try {
     console.log('[Google Reviews Direct] Starting request...');
     
-    // Google Places API key
-    const API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyDu8R9jJsGrKyRBPaV6kCu6qWGzUa1Etco';
+    // Google Places API key from environment only - NEVER hardcode API keys
+    const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+    
+    if (!API_KEY) {
+      console.log('[Google Reviews Direct] No API key configured');
+      throw new Error('GOOGLE_MAPS_API_KEY environment variable is not set');
+    }
     
     // Known Place IDs for Pink's Windows (you can find this from the Google Maps URL)
     // When you visit https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7, look for the place ID in the URL
