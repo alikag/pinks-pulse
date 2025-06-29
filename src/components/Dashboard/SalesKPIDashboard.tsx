@@ -1007,7 +1007,7 @@ const SalesKPIDashboard: React.FC = () => {
         {/* Sidebar */}
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center gap-3">
-            <img src="/logo.jpeg" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
+            <img src="/logo.png" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
             <span className="text-lg font-semibold tracking-tight">Pink's Pulse</span>
           </div>
 
