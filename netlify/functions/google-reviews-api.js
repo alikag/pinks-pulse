@@ -33,10 +33,10 @@ exports.handler = async (event, context) => {
       // The Google Maps URL https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7 likely contains the place ID
       // Try multiple search queries to find the business
       const searchQueries = [
-        "Pink's Window Services Hudson Valley",
-        "Pinks Window Cleaning Hudson Valley", 
-        "Pink Window Cleaning Poughkeepsie NY",
-        "Pink's Window Services Poughkeepsie"
+        "Pink's Windows Hudson Valley",
+        "Pinks Windows Hudson Valley",
+        "Pink's Window Hudson Valley",
+        "Pink's Window Services Hudson Valley"
       ];
       
       let searchData = null;
@@ -87,7 +87,7 @@ exports.handler = async (event, context) => {
     const formattedResponse = {
       success: true,
       data: {
-        businessName: result.name || "Pink's Window Cleaning",
+        businessName: result.name || "Pink's Windows Hudson Valley",
         rating: result.rating || 0,
         totalReviews: result.user_ratings_total || 0,
         reviews: (result.reviews || []).slice(0, 5).map(review => ({
@@ -122,7 +122,7 @@ exports.handler = async (event, context) => {
       error: error.message,
       suggestion: "Please check: 1) API key is valid, 2) Places API is enabled in Google Cloud Console, 3) Business name matches Google listing",
       data: {
-        businessName: "Pink's Window Cleaning - Hudson Valley",
+        businessName: "Pink's Windows Hudson Valley",
         rating: 4.8,
         totalReviews: 127,
         reviews: [
