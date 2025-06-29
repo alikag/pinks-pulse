@@ -1419,46 +1419,56 @@ const SalesKPIDashboard: React.FC = () => {
             {/* Converted Quotes Table */}
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
               <h2 className="font-medium mb-4">Converted Quotes - This Week</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-sm text-gray-400 border-b border-white/10">
-                      <th className="pb-3 pr-4">Date Converted</th>
-                      <th className="pb-3 pr-4">Job Number</th>
-                      <th className="pb-3 pr-4">Job Date</th>
-                      <th className="pb-3 pr-4">Job Type</th>
-                      <th className="pb-3 pr-4">Sales Person</th>
-                      <th className="pb-3 pr-4">JobberLink</th>
-                      <th className="pb-3 pr-4">Visit Title</th>
-                      <th className="pb-3 text-right">Total Dollars</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {(data?.recentConvertedQuotes || getConvertedQuotes()).map((quote: any, index) => (
-                      <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
-                        <td className="py-3 pr-4">{quote.dateConverted}</td>
-                        <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
-                        <td className="py-3 pr-4">{quote.date || '-'}</td>
-                        <td className="py-3 pr-4">
-                          <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
-                            {quote.jobType || 'ONE_OFF'}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4">{quote.salesPerson}</td>
-                        <td className="py-3 pr-4">
-                          <a href={quote.jobberLink || '#'} className="text-blue-400 hover:underline">
-                            View
-                          </a>
-                        </td>
-                        <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
-                        <td className="py-3 text-right font-medium">
-                          {formatValue(quote.totalDollars, 'currency')}
-                        </td>
+              {data?.recentConvertedQuotes && data.recentConvertedQuotes.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-gray-400 border-b border-white/10">
+                        <th className="pb-3 pr-4">Date Converted</th>
+                        <th className="pb-3 pr-4">Job Number</th>
+                        <th className="pb-3 pr-4">Job Date</th>
+                        <th className="pb-3 pr-4">Job Type</th>
+                        <th className="pb-3 pr-4">Sales Person</th>
+                        <th className="pb-3 pr-4">JobberLink</th>
+                        <th className="pb-3 pr-4">Visit Title</th>
+                        <th className="pb-3 text-right">Total Dollars</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="text-sm">
+                      {data.recentConvertedQuotes.map((quote: any, index) => (
+                        <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
+                          <td className="py-3 pr-4">{quote.dateConverted}</td>
+                          <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
+                          <td className="py-3 pr-4">{quote.date || '-'}</td>
+                          <td className="py-3 pr-4">
+                            <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 text-xs">
+                              {quote.jobType || 'ONE_OFF'}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4">{quote.salesPerson}</td>
+                          <td className="py-3 pr-4">
+                            <a href={quote.jobberLink || '#'} className="text-blue-400 hover:underline">
+                              View
+                            </a>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
+                          <td className="py-3 text-right font-medium">
+                            {formatValue(quote.totalDollars, 'currency')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">No quotes converted this week</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Week started {new Date().getDay() === 0 ? 'today' : 
+                      new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+              )}
             </div>
           </section>
         </div>
