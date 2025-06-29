@@ -299,6 +299,26 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     thirtyDaysAgo.setDate(now.getDate() - 30);
     return d >= thirtyDaysAgo && d <= now;
   };
+  
+  // Get current quarter (1-4)
+  const getCurrentQuarter = () => {
+    const month = estToday.getMonth(); // 0-11
+    return Math.floor(month / 3) + 1;
+  };
+  
+  // Check if date is in current quarter
+  const isThisQuarter = (date) => {
+    if (!date) return false;
+    const d = new Date(date);
+    const currentQuarter = getCurrentQuarter();
+    const currentYear = estToday.getFullYear();
+    
+    const quarterStartMonth = (currentQuarter - 1) * 3;
+    const quarterStart = new Date(currentYear, quarterStartMonth, 1);
+    const quarterEnd = new Date(currentYear, quarterStartMonth + 3, 0, 23, 59, 59, 999);
+    
+    return d >= quarterStart && d <= quarterEnd;
+  };
 
   // Initialize metrics
   let metrics = {
@@ -721,6 +741,49 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     referenceDate: now.toISOString()
   });
   
+  // Calculate Quote Value Flow Waterfall data for current quarter
+  const currentQuarter = getCurrentQuarter();
+  const quarterLabel = `Q${currentQuarter}`;
+  
+  let quarterQuotesSent = 0;
+  let quarterQuotesConverted = 0;
+  let quarterValueSent = 0;
+  let quarterValueConverted = 0;
+  
+  quotesData.forEach(quote => {
+    const sentDate = parseDate(quote.sent_date);
+    if (sentDate && isThisQuarter(sentDate)) {
+      const value = parseFloat(quote.total_dollars) || 0;
+      quarterQuotesSent++;
+      quarterValueSent += value;
+      
+      if (quote.status === 'Converted') {
+        quarterQuotesConverted++;
+        quarterValueConverted += value;
+      }
+    }
+  });
+  
+  const quarterValueNotConverted = quarterValueSent - quarterValueConverted;
+  
+  // Build waterfall data
+  const waterfallData = [
+    { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
+    { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
+    { label: 'Not Converted', value: -quarterValueNotConverted, cumulative: quarterValueConverted },
+    { label: 'Converted', value: quarterValueConverted, cumulative: quarterValueConverted }
+  ];
+  
+  console.log('[Quote Value Flow Waterfall]:', {
+    quarter: quarterLabel,
+    quotesSent: quarterQuotesSent,
+    quotesConverted: quarterQuotesConverted,
+    valueSent: quarterValueSent,
+    valueConverted: quarterValueConverted,
+    valueNotConverted: quarterValueNotConverted,
+    conversionRate: quarterQuotesSent > 0 ? ((quarterQuotesConverted / quarterQuotesSent) * 100).toFixed(1) + '%' : '0%'
+  });
+  
   return {
     timeSeries,
     salespersons,
@@ -728,6 +791,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData) {
     kpiMetrics,
     recentConvertedQuotes,
     speedDistribution, // Add speed distribution data
+    waterfallData, // Add waterfall data
     lastUpdated: new Date(),
     dataSource: 'bigquery'
   };
