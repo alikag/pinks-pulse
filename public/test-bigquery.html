@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test BigQuery Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+        }
+        .error {
+            background: #ffebee;
+            border-color: #ef5350;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            border-color: #66bb6a;
+            color: #2e7d32;
+        }
+        .warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        .section {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .check {
+            margin: 5px 0;
+        }
+        .check.pass {
+            color: #2e7d32;
+        }
+        .check.fail {
+            color: #c62828;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test BigQuery Connection</h1>
+    
+    <button onclick="testConnection()">Test Connection</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testConnection() {
+            const resultsEl = document.getElementById('results');
+            resultsEl.innerHTML = '<div class="status">Testing connection...</div>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/test-bigquery-connection');
+                const data = await response.json();
+                
+                let html = '<h2>Test Results</h2>';
+                
+                // Environment Variables
+                html += '<div class="section">';
+                html += '<h3>Environment Variables</h3>';
+                html += `<div class="check ${data.environment.hasProjectId ? 'pass' : 'fail'}">
+                    ${data.environment.hasProjectId ? '✓' : '✗'} BIGQUERY_PROJECT_ID: ${data.environment.projectId}
+                </div>`;
+                html += `<div class="check ${data.environment.hasDataset ? 'pass' : 'fail'}">
+                    ${data.environment.hasDataset ? '✓' : '✗'} BIGQUERY_DATASET: ${data.environment.dataset}
+                </div>`;
+                html += `<div class="check ${data.environment.hasCredentials ? 'pass' : 'fail'}">
+                    ${data.environment.hasCredentials ? '✓' : '✗'} GOOGLE_APPLICATION_CREDENTIALS_JSON: ${data.environment.credentialsLength} characters
+                </div>`;
+                html += `<div class="check ${data.environment.hasGoogleMapsKey ? 'pass' : 'fail'}">
+                    ${data.environment.hasGoogleMapsKey ? '✓' : '✗'} GOOGLE_MAPS_API_KEY: ${data.environment.hasGoogleMapsKey ? 'Set' : 'Not set'}
+                </div>`;
+                html += `<div class="check ${data.environment.hasGooglePlaceId ? 'pass' : 'fail'}">
+                    ${data.environment.hasGooglePlaceId ? '✓' : '✗'} GOOGLE_PLACE_ID: ${data.environment.placeId}
+                </div>`;
+                html += '</div>';
+                
+                // Credentials Check
+                html += '<div class="section">';
+                html += '<h3>Credentials Validation</h3>';
+                if (data.credentialsCheck.isValid) {
+                    html += '<div class="status success">✓ Credentials are valid JSON</div>';
+                    html += '<pre>' + JSON.stringify(data.credentialsCheck.details, null, 2) + '</pre>';
+                } else {
+                    html += '<div class="status error">✗ Invalid credentials: ' + data.credentialsCheck.error + '</div>';
+                    if (data.credentialsCheck.details) {
+                        html += '<pre>' + JSON.stringify(data.credentialsCheck.details, null, 2) + '</pre>';
+                    }
+                }
+                html += '</div>';
+                
+                // BigQuery Test
+                html += '<div class="section">';
+                html += '<h3>BigQuery Connection</h3>';
+                if (data.bigqueryTest.connected) {
+                    html += '<div class="status success">✓ Successfully connected to BigQuery</div>';
+                    if (data.bigqueryTest.tables) {
+                        html += `<p>Found ${data.bigqueryTest.tableCount} tables in dataset</p>`;
+                        html += '<pre>Tables: ' + data.bigqueryTest.tables.join(', ') + '</pre>';
+                    }
+                } else {
+                    html += '<div class="status error">✗ Failed to connect to BigQuery</div>';
+                    if (data.bigqueryTest.error) {
+                        html += '<pre>Error: ' + data.bigqueryTest.error + '</pre>';
+                    }
+                }
+                html += '</div>';
+                
+                // Raw response
+                html += '<div class="section">';
+                html += '<h3>Raw Response</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                html += '</div>';
+                
+                resultsEl.innerHTML = html;
+                
+            } catch (error) {
+                resultsEl.innerHTML = '<div class="status error">Error: ' + error.message + '</div>';
+            }
+        }
+        
+        // Run test automatically on load
+        window.addEventListener('load', testConnection);
+    </script>
+</body>
+</html>
