@@ -97,10 +97,12 @@ The calculation was incorrectly assigning jobs to weeks. Now properly calculates
 - Needs integration with actual review timestamps
 - Should count reviews posted in current Sunday-Saturday week
 
-### 3. Revenue Waterfall Chart
+### 3. Quote Value Flow Waterfall Chart
 - Currently shows empty state
-- Needs quarterly revenue flow data structure
-- Should show: Start → Quotes Sent → Not Converted → Converted → Cancelled → Final Revenue
+- Renamed from "Revenue Waterfall" to "Quote Value Flow Waterfall" 
+- Tracks the flow of quote values through the conversion process
+- Expected flow: Quarter Start → Quotes Sent → Not Converted → Converted → Adjustments → Quarter Final
+- Needs quarterly quote data aggregation in backend
 
 ### 4. Bundle Size Warning
 - Main JavaScript bundle is >500KB

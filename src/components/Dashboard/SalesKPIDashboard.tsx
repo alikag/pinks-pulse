@@ -814,11 +814,20 @@ const SalesKPIDashboard: React.FC = () => {
       }
     }
     
-    // Revenue Waterfall Chart
+    // Quote Value Flow Waterfall Chart
     if (waterfallRef.current && !loading && data && data.waterfallData) {
       const ctx = waterfallRef.current.getContext('2d')
       if (ctx) {
         // Use actual waterfall data from backend
+        // Expected format: 
+        // [
+        //   { label: 'Q1 Start', value: 0, cumulative: 0 },
+        //   { label: 'Quotes Sent', value: 250000, cumulative: 250000 },
+        //   { label: 'Not Converted', value: -150000, cumulative: 100000 },
+        //   { label: 'Converted', value: 100000, cumulative: 100000 },
+        //   { label: 'Adjustments', value: -5000, cumulative: 95000 },
+        //   { label: 'Q1 Final', value: 95000, cumulative: 95000 }
+        // ]
         const waterfallData = data.waterfallData
         
         waterfallInstance.current = new Chart(ctx, {
@@ -826,7 +835,7 @@ const SalesKPIDashboard: React.FC = () => {
           data: {
             labels: waterfallData.map((d: any) => d.label),
             datasets: [{
-              label: 'Revenue Flow',
+              label: 'Quote Value Flow',
               data: waterfallData.map((d: any) => Math.abs(d.value)),
               backgroundColor: waterfallData.map((d: any) => 
                 d.value > 0 ? 'rgba(168, 85, 247, 0.8)' : 'rgba(239, 68, 68, 0.8)'
@@ -1443,15 +1452,15 @@ const SalesKPIDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Revenue Waterfall Chart */}
+            {/* Quote Value Flow Waterfall Chart */}
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-shadow">
-              <h2 className="font-medium mb-4">Revenue Flow Waterfall - This Quarter</h2>
+              <h2 className="font-medium mb-4">Quote Value Flow Waterfall - This Quarter</h2>
               <div className="h-64">
                 {!data?.waterfallData ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <p className="text-gray-400">No waterfall data available</p>
-                      <p className="text-xs text-gray-500 mt-2">Data will be available when quarterly revenue flow is processed</p>
+                      <p className="text-gray-400">No quote flow data available</p>
+                      <p className="text-xs text-gray-500 mt-2">Data will be available when quarterly quote values are processed</p>
                     </div>
                   </div>
                 ) : (
