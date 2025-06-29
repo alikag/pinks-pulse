@@ -43,7 +43,16 @@ export interface DashboardData {
     nextMonthOTB: number;
     thisMonthOTB: number;
     thisWeekOTB: number;
+    weeklyOTBBreakdown?: Record<string, number>;
     reviewsThisWeek: number;
+    dataQuality?: {
+      totalQuotes: number;
+      validQuotes: number;
+      totalRequests: number;
+      validRequests: number;
+      totalJobs: number;
+      validJobs: number;
+    };
   };
   recentConvertedQuotes?: Array<{
     dateConverted: string;

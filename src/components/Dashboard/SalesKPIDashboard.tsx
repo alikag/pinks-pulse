@@ -163,16 +163,21 @@ const SalesKPIDashboard: React.FC = () => {
     }
     
     const metrics = data.kpiMetrics;
+    console.log('Speed to Lead Debug:', {
+      speedToLead30Days: metrics.speedToLead30Days,
+      hasValue: metrics.speedToLead30Days > 0,
+      willUse: metrics.speedToLead30Days > 0 ? metrics.speedToLead30Days : 22
+    });
     
     return [
       {
         id: 'speed-to-lead',
         label: 'Speed to Lead (30D Avg)',
         subtitle: 'Target: 30 min',
-        value: metrics.speedToLead30Days || 22,
+        value: metrics.speedToLead30Days > 0 ? metrics.speedToLead30Days : 22,
         target: 30,
         format: 'time',
-        status: metrics.speedToLead30Days <= 30 ? 'success' : 'warning',
+        status: (metrics.speedToLead30Days || 22) <= 30 ? 'success' : 'warning',
         sparklineData: generateSparklineData()
       },
       {
@@ -596,7 +601,6 @@ const SalesKPIDashboard: React.FC = () => {
         
         while (currentDate <= lastDay) {
           const weekStart = currentDate.getDate()
-          const weekEnd = Math.min(weekStart + 6, lastDay.getDate())
           
           // Find next Sunday or end of month
           let endDate = new Date(currentDate)
