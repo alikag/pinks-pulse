@@ -118,6 +118,7 @@ exports.handler = async (event, context) => {
       FROM speed_data
       WHERE minutes_to_quote >= 0
       AND minutes_to_quote < 10080  -- Exclude anything over 7 days as likely data issues
+      LIMIT 1000
     `;
 
     // Query for reviews count this week - simplified for now
@@ -132,59 +133,27 @@ exports.handler = async (event, context) => {
     let quotesData, jobsData, speedToLeadData, reviewsData;
     
     try {
-      // Execute each query individually with better error tracking
-      console.log('[dashboard-data-sales] Executing quotes query...');
-      try {
-        [quotesData] = await bigquery.query(quotesQuery);
-        console.log('[dashboard-data-sales] Quotes query successful:', quotesData.length, 'records');
-      } catch (quotesErr) {
-        console.error('[dashboard-data-sales] Quotes query failed:', quotesErr);
-        throw new Error(`Quotes query failed: ${quotesErr.message}`);
-      }
-      
-      console.log('[dashboard-data-sales] Executing jobs query...');
-      try {
-        [jobsData] = await bigquery.query(jobsQuery);
-        console.log('[dashboard-data-sales] Jobs query successful:', jobsData.length, 'records');
-      } catch (jobsErr) {
-        console.error('[dashboard-data-sales] Jobs query failed:', jobsErr);
-        throw new Error(`Jobs query failed: ${jobsErr.message}`);
-      }
-      
-      console.log('[dashboard-data-sales] Executing speed to lead query...');
-      try {
-        [speedToLeadData] = await bigquery.query(speedToLeadQuery);
-        console.log('[dashboard-data-sales] Speed to lead query successful:', speedToLeadData.length, 'records');
-      } catch (speedErr) {
-        console.error('[dashboard-data-sales] Speed to lead query failed:', speedErr);
-        throw new Error(`Speed to lead query failed: ${speedErr.message}`);
-      }
+      // Execute main queries in parallel for better performance
+      [[quotesData], [jobsData], [speedToLeadData]] = await Promise.all([
+        bigquery.query(quotesQuery),
+        bigquery.query(jobsQuery),
+        bigquery.query(speedToLeadQuery)
+      ]);
       
       // Try to get reviews count, but don't fail if it doesn't work
-      console.log('[dashboard-data-sales] Executing reviews query...');
       try {
         [reviewsData] = await bigquery.query(reviewsQuery);
-        console.log('[dashboard-data-sales] Reviews query successful');
       } catch (reviewErr) {
         console.log('[dashboard-data-sales] Reviews query failed (non-critical):', reviewErr.message);
         reviewsData = [{ reviews_count: 0 }];
       }
     } catch (queryError) {
       console.error('[dashboard-data-sales] Critical query error:', queryError);
-      throw queryError;
+      throw new Error(`BigQuery query failed: ${queryError.message}`);
     }
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
     
-    // Additional check for quotes
-    const quotesWithNullSent = quotesData.filter(q => !q.sent_date).length;
-    const uniqueQuoteNumbers = new Set(quotesData.map(q => q.quote_number)).size;
-    console.log(`[dashboard-data-sales] Quote data analysis:`, {
-      totalQuotes: quotesData.length,
-      uniqueQuoteNumbers: uniqueQuoteNumbers,
-      quotesWithNullSentDate: quotesWithNullSent,
-      hasDuplicates: uniqueQuoteNumbers < quotesData.length
-    });
     
     // Debug: Check sample job dates
     if (jobsData.length > 0) {
