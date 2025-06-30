@@ -390,6 +390,11 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const salespersonWeekStats = {}; // Track this week's performance separately
   const recentConvertedQuotes = [];
   
+  // Debug: Check unique statuses in the data
+  const uniqueStatuses = [...new Set(quotesData.map(q => q.status))];
+  console.log('[Quote Status Debug] Unique statuses found:', uniqueStatuses);
+  console.log('[Quote Status Debug] Total quotes:', quotesData.length);
+  
   quotesData.forEach(quote => {
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
@@ -437,23 +442,35 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         salespersonWeekStats[sp].valueSent += totalDollars;
         
         // Check if this quote sent this week was eventually converted
-        if (quote.status === 'Converted') {
+        // Handle case variations of status
+        const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+        if (isConverted) {
           metrics.quotesThisWeekConverted++;
           salespersonWeekStats[sp].quotesConverted++;
           salespersonWeekStats[sp].valueConverted += totalDollars;
+          
+          // Debug logging for CVR calculation
+          console.log('[CVR Debug] Quote sent this week and converted:', {
+            quoteNumber: quote.quote_number,
+            sentDate: sentDate.toLocaleDateString(),
+            convertedDate: convertedDate ? convertedDate.toLocaleDateString() : 'not converted',
+            status: quote.status
+          });
         }
       }
       if (isLast30Days(sentDate)) {
         metrics.quotes30Days++;
         // Check if this quote sent in last 30 days was eventually converted
-        if (quote.status === 'Converted') {
+        const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+        if (isConverted) {
           metrics.quotes30DaysConverted++;
         }
       }
     }
     
     // Count converted quotes by conversion date
-    if (convertedDate && quote.status === 'Converted') {
+    const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+    if (convertedDate && isConverted) {
       salespersonStats[sp].quotesConverted++;
       salespersonStats[sp].valueConverted += totalDollars;
       
@@ -662,6 +679,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesThisWeek: metrics.quotesThisWeek,
     quotes30Days: metrics.quotes30Days,
     referenceDate: now.toISOString()
+  });
+  
+  // Debug CVR calculation
+  console.log('[CVR Calculation Debug]:', {
+    quotesThisWeek: metrics.quotesThisWeek,
+    quotesThisWeekConverted: metrics.quotesThisWeekConverted,
+    convertedThisWeek: metrics.convertedThisWeek,
+    convertedThisWeekDollars: metrics.convertedThisWeekDollars,
+    calculatedCVR: metrics.quotesThisWeek > 0 ? 
+      parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
+    weekStartDate: estToday.getDay() === 0 ? estToday : new Date(estToday.getTime() - (estToday.getDay() * 24 * 60 * 60 * 1000))
   });
   
   const kpiMetrics = {
