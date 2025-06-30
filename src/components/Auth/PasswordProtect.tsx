@@ -86,15 +86,13 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               <span 
                 className="text-pink-400"
                 style={{
-                  fontFamily: "'Brush Script MT', 'Lucida Handwriting', 'Apple Chancery', cursive",
-                  fontWeight: "normal",
-                  letterSpacing: "0.02em",
-                  textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)"
+                  WebkitTextStroke: "1px #1e3a5f",
+                  textStroke: "1px #1e3a5f",
+                  paintOrder: "stroke fill"
                 }}
               >
-                Pink's
+                Pink's Pulse
               </span>
-              <span className="text-white ml-2">Pulse</span>
             </h1>
             <p className="text-gray-400 text-center">
               Hudson Valley KPI Dashboard
