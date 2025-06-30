@@ -32,6 +32,56 @@ exports.handler = async (event, context) => {
       }),
     };
   }
+  
+  // Add debug endpoint to check quote statuses
+  if (event.path && event.path.includes('/debug-quotes')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      
+      // Simple query to check statuses
+      const debugQuery = `
+        SELECT 
+          status,
+          COUNT(*) as count,
+          COUNT(DISTINCT CASE WHEN sent_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN quote_id END) as sent_this_week,
+          COUNT(DISTINCT CASE WHEN converted_date IS NOT NULL THEN quote_id END) as has_converted_date
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
+        GROUP BY status
+        ORDER BY count DESC
+        LIMIT 20
+      `;
+      
+      const [rows] = await bigquery.query(debugQuery);
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Quote status debug',
+          statuses: rows,
+          totalRows: rows.length
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Debug query failed',
+          message: error.message
+        }),
+      };
+    }
+  }
 
   try {
     console.log('[dashboard-data-sales] Starting request processing... v3');
