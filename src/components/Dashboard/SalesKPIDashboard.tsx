@@ -138,11 +138,11 @@ const SalesKPIDashboard: React.FC = () => {
       {
         id: 'recurring-2026',
         label: '2026 Recurring',
-        subtitle: 'Target: $85k',
+        subtitle: 'Target: $1M',
         value: metrics.recurringRevenue2026,
-        target: 85000,
+        target: 1000000,
         format: 'currency',
-        status: metrics.recurringRevenue2026 >= 85000 ? 'success' : 'warning'
+        status: metrics.recurringRevenue2026 >= 1000000 ? 'success' : metrics.recurringRevenue2026 >= 750000 ? 'warning' : 'danger'
       },
       {
         id: 'next-month-otb',
@@ -173,11 +173,11 @@ const SalesKPIDashboard: React.FC = () => {
       {
         id: 'speed-to-lead',
         label: 'Speed to Lead (30D Avg)',
-        subtitle: 'Target: 30 min',
+        subtitle: 'Target: 24 hours',
         value: metrics.speedToLead30Days || 0,
-        target: 30,
+        target: 1440, // 24 hours in minutes
         format: 'time',
-        status: metrics.speedToLead30Days <= 30 ? 'success' : metrics.speedToLead30Days <= 60 ? 'warning' : 'danger',
+        status: metrics.speedToLead30Days <= 1440 ? 'success' : metrics.speedToLead30Days <= 2880 ? 'warning' : 'danger',
         sparklineData: undefined
       },
       {
@@ -185,9 +185,9 @@ const SalesKPIDashboard: React.FC = () => {
         label: '30D CVR',
         subtitle: `${metrics.converted30Days || 0}/${metrics.quotes30Days || 0} converted`,
         value: metrics.cvr30Days || 0,
-        target: 45,
+        target: 50,
         format: 'percentage',
-        status: metrics.cvr30Days >= 45 ? 'success' : metrics.cvr30Days >= 30 ? 'warning' : 'danger'
+        status: metrics.cvr30Days >= 50 ? 'success' : metrics.cvr30Days >= 35 ? 'warning' : 'danger'
       },
       {
         id: 'avg-qpd',
@@ -202,11 +202,11 @@ const SalesKPIDashboard: React.FC = () => {
       {
         id: 'reviews-week',
         label: 'Reviews This Week',
-        subtitle: 'Target: 4',
+        subtitle: 'Target: 2',
         value: metrics.reviewsThisWeek || 0,
-        target: 4,
+        target: 2,
         format: 'number',
-        status: (metrics.reviewsThisWeek || 0) >= 4 ? 'success' : 'warning',
+        status: (metrics.reviewsThisWeek || 0) >= 2 ? 'success' : (metrics.reviewsThisWeek || 0) >= 1 ? 'warning' : 'danger',
         trend: 0
       }
     ]
