@@ -1051,7 +1051,7 @@ const SalesKPIDashboard: React.FC = () => {
             haptics.medium();
             setIsSidebarOpen(!isSidebarOpen);
           }}
-          className="lg:hidden fixed top-5 left-3 z-50 p-2 bg-gray-900/90 backdrop-blur-lg rounded-lg border border-white/20 shadow-lg"
+          className={`lg:hidden fixed top-5 left-3 z-50 p-2 bg-gray-900/90 backdrop-blur-lg rounded-lg border border-white/20 shadow-lg transition-transform ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'}`}
         >
           <Menu className="h-4 w-4 text-white" />
         </button>
@@ -1060,10 +1060,10 @@ const SalesKPIDashboard: React.FC = () => {
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
+              <img src="/logo.png" alt="Pink's Logo" className="h-10 w-10 rounded-lg object-cover" />
               <span 
                 style={{
-                  fontSize: "1.25rem",
+                  fontSize: "1.5rem",
                   fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
                   fontWeight: "900",
                   letterSpacing: "0.08em",
@@ -1093,7 +1093,7 @@ const SalesKPIDashboard: React.FC = () => {
             <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/10 relative overflow-hidden group">
               <TrendingUp className="h-4 w-4" />
               Dashboard
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#F9ABAC]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </a>
           </nav>
 
@@ -1143,7 +1143,7 @@ const SalesKPIDashboard: React.FC = () => {
                     paintOrder: "stroke fill",
                     lineHeight: "1"
                   } as React.CSSProperties}
-                  className="md:text-3xl"
+                  className="md:text-3xl lg:text-4xl"
                 >
                   PINK'S PULSE - HUDSON VALLEY KPI REPORT
                 </h1>
@@ -1160,7 +1160,7 @@ const SalesKPIDashboard: React.FC = () => {
               {kpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer overflow-visible"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible"
                   onClick={() => {
                     haptics.light();
                     setSelectedMetric(kpi);
@@ -1227,7 +1227,7 @@ const SalesKPIDashboard: React.FC = () => {
               {secondRowKpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all"
                 >
                   <div className="space-y-2">
                     <h3 className="text-sm text-gray-400">{kpi.label}</h3>
@@ -1292,7 +1292,7 @@ const SalesKPIDashboard: React.FC = () => {
             {/* Charts Row 1 */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Converted This Week Chart */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(14,165,233,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium">Converted This Week</h2>
                   <div className="flex items-center gap-4 text-xs">
@@ -1312,7 +1312,7 @@ const SalesKPIDashboard: React.FC = () => {
               </div>
 
               {/* Weekly CVR % */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4 flex items-center justify-between">
                   <span>Weekly CVR % <span className="text-xs font-normal text-gray-400">(by Send Date)</span></span>
                   {data?.kpiMetrics?.cvrThisWeek && (
@@ -1333,7 +1333,7 @@ const SalesKPIDashboard: React.FC = () => {
             {/* Charts Row 2 */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Speed to Lead Distribution */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(236,72,153,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4 flex items-center gap-2">
                   <Clock className="h-5 w-5 text-pink-400" />
                   Speed to Lead Distribution (Last 30 Days)
@@ -1344,7 +1344,7 @@ const SalesKPIDashboard: React.FC = () => {
               </div>
               
               {/* Salesperson Performance */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(251,146,60,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4">Salesperson Performance (This Week)</h2>
                 {data?.salespersonsThisWeek && data.salespersonsThisWeek.length > 0 ? (
                   <div className="h-48">
@@ -1370,7 +1370,7 @@ const SalesKPIDashboard: React.FC = () => {
             {/* Charts Row 3 */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* On The Books by Month */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium">On The Books by Month - 2025 YTD (Excluding Sales Tax)</h2>
                 </div>
@@ -1380,7 +1380,7 @@ const SalesKPIDashboard: React.FC = () => {
               </div>
 
               {/* On the Books by Week */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="mb-4">
                   <h2 className="font-medium">On the Books by Week - 5 Week View</h2>
                   <p className="text-xs text-gray-500 mt-1">Current week centered • Sunday-Saturday weeks</p>
@@ -1582,7 +1582,7 @@ const SalesKPIDashboard: React.FC = () => {
             </div>
 
             {/* Quote Value Flow Waterfall Chart */}
-            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-shadow">
+            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
               <h2 className="font-medium mb-4">Quote Value Flow Waterfall - This Quarter</h2>
               <div className="h-64">
                 {!data?.waterfallData ? (
@@ -1600,7 +1600,7 @@ const SalesKPIDashboard: React.FC = () => {
 
             {/* Salesperson Leaderboard Enhanced */}
             {data?.salespersons && data.salespersons.length > 0 && (
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(147,51,234,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-yellow-400" />
