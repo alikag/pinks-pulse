@@ -1318,13 +1318,9 @@ const SalesKPIDashboard: React.FC = () => {
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
-                {data?.timeSeries?.week?.conversionRate && 
-                 data.timeSeries.week.conversionRate.every(rate => rate === 0) && 
-                 data?.kpiMetrics?.cvrThisWeek > 0 && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Daily breakdown shows 0% as quotes need time to convert. Using last week's CVR ({data.kpiMetrics.cvrThisWeek}%) as reference.
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  Shows conversion rate for quotes sent on each day. Recent days may show 0% as quotes need time to convert.
+                </p>
               </div>
             </div>
 
