@@ -458,6 +458,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Quote Status Debug] Unique statuses found:', uniqueStatuses);
   console.log('[Quote Status Debug] Total quotes:', quotesData.length);
   
+  // Also check a sample of quotes with their statuses
+  console.log('[Quote Status Sample]:', quotesData.slice(0, 5).map(q => ({
+    quote_number: q.quote_number,
+    status: q.status,
+    sent_date: q.sent_date,
+    converted_date: q.converted_date
+  })));
+  
   // Debug week calculation
   const debugWeekStart = new Date(estToday);
   debugWeekStart.setDate(estToday.getDate() - estToday.getDay());
@@ -535,8 +543,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         salespersonWeekStats[sp].valueSent += totalDollars;
         
         // Check if this quote sent this week was eventually converted
-        // Handle case variations of status
-        const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+        // Handle case variations of status - check multiple possible values
+        const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
+        const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                           statusLower === 'accepted' || statusLower === 'complete' ||
+                           (convertedDate !== null && convertedDate !== undefined);
+        
         if (isConverted) {
           metrics.quotesThisWeekConverted++;
           salespersonWeekStats[sp].quotesConverted++;
@@ -547,14 +559,19 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
             quoteNumber: quote.quote_number,
             sentDate: sentDate.toLocaleDateString(),
             convertedDate: convertedDate ? convertedDate.toLocaleDateString() : 'not converted',
-            status: quote.status
+            status: quote.status,
+            statusLower: statusLower,
+            hasConvertedDate: convertedDate !== null
           });
         }
       }
       if (isLastWeek(sentDate)) {
         metrics.quotesLastWeek++;
         // Check if this quote sent last week was eventually converted
-        const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+        const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
+        const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                           statusLower === 'accepted' || statusLower === 'complete' ||
+                           (convertedDate !== null && convertedDate !== undefined);
         if (isConverted) {
           metrics.quotesLastWeekConverted++;
         }
@@ -562,7 +579,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       if (isLast30Days(sentDate)) {
         metrics.quotes30Days++;
         // Check if this quote sent in last 30 days was eventually converted
-        const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+        const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
+        const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                           statusLower === 'accepted' || statusLower === 'complete' ||
+                           (convertedDate !== null && convertedDate !== undefined);
         if (isConverted) {
           metrics.quotes30DaysConverted++;
         }
@@ -570,7 +590,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
     
     // Count converted quotes by conversion date
-    const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+    const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
+    const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                       statusLower === 'accepted' || statusLower === 'complete' ||
+                       (convertedDate !== null && convertedDate !== undefined);
     if (convertedDate && isConverted) {
       salespersonStats[sp].quotesConverted++;
       salespersonStats[sp].valueConverted += totalDollars;
