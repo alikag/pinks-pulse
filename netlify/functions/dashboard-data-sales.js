@@ -427,9 +427,39 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Quote Status Debug] Unique statuses found:', uniqueStatuses);
   console.log('[Quote Status Debug] Total quotes:', quotesData.length);
   
-  quotesData.forEach(quote => {
+  // Debug week calculation
+  const weekStart = new Date(estToday);
+  weekStart.setDate(estToday.getDate() - estToday.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+  
+  console.log('[Week Debug]', {
+    estToday: estToday.toISOString(),
+    estTodayDay: estToday.toLocaleDateString('en-US', { weekday: 'long' }),
+    weekStart: weekStart.toISOString(),
+    weekEnd: weekEnd.toISOString(),
+    weekStartDate: weekStart.toLocaleDateString(),
+    weekEndDate: weekEnd.toLocaleDateString()
+  });
+  
+  quotesData.forEach((quote, index) => {
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
+    
+    // Debug first few quotes
+    if (index < 3) {
+      console.log('[Quote Debug]', {
+        quote_number: quote.quote_number,
+        sent_date: quote.sent_date,
+        converted_date: quote.converted_date,
+        parsedSentDate: sentDate ? sentDate.toISOString() : null,
+        parsedConvertedDate: convertedDate ? convertedDate.toISOString() : null,
+        status: quote.status,
+        isThisWeekSent: sentDate ? isThisWeek(sentDate) : false,
+        isThisWeekConverted: convertedDate ? isThisWeek(convertedDate) : false
+      });
+    }
     const totalDollars = parseFloat(quote.total_dollars) || 0;
     const sp = quote.salesperson || 'Unknown';
     
@@ -573,6 +603,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       }
       // days_to_convert is not speed to lead - remove this calculation
     }
+  });
+  
+  // Debug converted quotes this week
+  console.log('[Converted Quotes Debug]', {
+    totalConvertedThisWeek: metrics.convertedThisWeek,
+    recentConvertedQuotesCount: recentConvertedQuotes.length,
+    firstFewConverted: recentConvertedQuotes.slice(0, 3).map(q => ({
+      dateConverted: q.dateConverted,
+      quoteNumber: q.quoteNumber,
+      status: q.status
+    }))
   });
   
   // Process speed to lead data
