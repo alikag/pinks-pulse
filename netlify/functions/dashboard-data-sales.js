@@ -1167,15 +1167,24 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     
     // For the "Converted" line: count quotes that were CONVERTED on this day
     const dayConversions = quotesData.filter(q => {
-      if (!q.converted_date || !q.status || q.status.toLowerCase() !== 'converted') return false;
+      if (!q.converted_date) return false;
+      const statusLower = q.status ? q.status.toLowerCase().trim() : '';
+      const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                         statusLower === 'accepted' || statusLower === 'complete' ||
+                         (q.converted_date !== null && q.converted_date !== undefined);
+      if (!isConverted) return false;
       const convertedDate = parseDate(q.converted_date);
       return convertedDate && convertedDate >= date && convertedDate < nextDate;
     }).length;
     
     // For CVR calculation: count quotes SENT on this day that have converted (any time)
-    const dayQuotesConverted = dayQuotes.filter(q => 
-      q.status && q.status.toLowerCase() === 'converted'
-    ).length;
+    const dayQuotesConverted = dayQuotes.filter(q => {
+      const statusLower = q.status ? q.status.toLowerCase().trim() : '';
+      const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                         statusLower === 'accepted' || statusLower === 'complete' ||
+                         (q.converted_date !== null && q.converted_date !== undefined);
+      return isConverted;
+    }).length;
     
     const sent = dayQuotes.length;
     const converted = dayConversions;  // For the converted line (conversions on this day)
@@ -1239,7 +1248,12 @@ function processMonthData(quotesData, referenceDate, parseDate) {
     });
     
     // Show quotes sent in this week that were eventually converted
-    const weekQuotesConverted = weekQuotes.filter(q => q.status === 'Converted').length;
+    const weekQuotesConverted = weekQuotes.filter(q => {
+      const statusLower = q.status ? q.status.toLowerCase().trim() : '';
+      return statusLower === 'converted' || statusLower === 'won' || 
+             statusLower === 'accepted' || statusLower === 'complete' ||
+             (q.converted_date !== null && q.converted_date !== undefined);
+    }).length;
     
     const sent = weekQuotes.length;
     const converted = weekQuotesConverted;
@@ -1292,7 +1306,11 @@ function processYearData(quotesData, referenceDate, parseDate) {
       }
     }
     
-    if (convertedDate && convertedDate.getFullYear() === currentYear && quote.status === 'Converted') {
+    const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
+    const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                       statusLower === 'accepted' || statusLower === 'complete' ||
+                       (quote.converted_date !== null && quote.converted_date !== undefined);
+    if (convertedDate && convertedDate.getFullYear() === currentYear && isConverted) {
       const monthIndex = convertedDate.getMonth();
       if (monthIndex <= currentMonth) {
         yearData.quotesConverted[monthIndex]++;
@@ -1327,7 +1345,12 @@ function processAllTimeData(quotesData, referenceDate, parseDate) {
   });
 
   const totalSent = allTimeQuotes.length;
-  const totalConverted = allTimeQuotes.filter(q => q.status === 'Converted').length;
+  const totalConverted = allTimeQuotes.filter(q => {
+    const statusLower = q.status ? q.status.toLowerCase().trim() : '';
+    return statusLower === 'converted' || statusLower === 'won' || 
+           statusLower === 'accepted' || statusLower === 'complete' ||
+           (q.converted_date !== null && q.converted_date !== undefined);
+  }).length;
   const avgConversionRate = totalSent > 0 
     ? Math.round((totalConverted / totalSent) * 100) 
     : 0;
