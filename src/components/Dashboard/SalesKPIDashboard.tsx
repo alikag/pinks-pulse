@@ -1132,8 +1132,12 @@ const SalesKPIDashboard: React.FC = () => {
               <div className="lg:hidden w-8"></div>
               <div>
                 <h1 
+                  onClick={() => {
+                    haptics.light();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   style={{
-                    fontSize: "1.5rem",
+                    fontSize: "1.75rem",
                     fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
                     fontWeight: "900",
                     letterSpacing: "0.08em",
@@ -1141,9 +1145,10 @@ const SalesKPIDashboard: React.FC = () => {
                     color: "#F9ABAC",
                     WebkitTextStroke: "0.5px #1e3a5f",
                     paintOrder: "stroke fill",
-                    lineHeight: "1"
+                    lineHeight: "1",
+                    cursor: "pointer"
                   } as React.CSSProperties}
-                  className="md:text-3xl lg:text-5xl xl:text-6xl"
+                  className="md:text-4xl lg:text-6xl xl:text-7xl hover:opacity-90 transition-opacity"
                 >
                   PINK'S PULSE - HUDSON VALLEY KPI REPORT
                 </h1>
