@@ -1131,36 +1131,20 @@ const SalesKPIDashboard: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="lg:hidden w-8"></div>
               <div>
-                <h1 className="flex items-center gap-2">
-                  <span 
-                    style={{
-                      fontSize: "1.125rem",
-                      fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
-                      fontWeight: "900",
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#F9ABAC",
-                      WebkitTextStroke: "0.5px #1e3a5f",
-                      paintOrder: "stroke fill",
-                      lineHeight: "1"
-                    } as React.CSSProperties}
-                  >
-                    PINK'S PULSE
-                  </span>
-                  <span className="text-gray-400">-</span>
-                  <span 
-                    style={{
-                      fontSize: "1.25rem",
-                      fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
-                      fontWeight: "700",
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      color: "#94a3b8",
-                      lineHeight: "1"
-                    } as React.CSSProperties}
-                  >
-                    HUDSON VALLEY KPI REPORT
-                  </span>
+                <h1 
+                  style={{
+                    fontSize: "1.25rem",
+                    fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                    fontWeight: "900",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "#F9ABAC",
+                    WebkitTextStroke: "0.5px #1e3a5f",
+                    paintOrder: "stroke fill",
+                    lineHeight: "1"
+                  } as React.CSSProperties}
+                >
+                  PINK'S PULSE - HUDSON VALLEY KPI REPORT
                 </h1>
               </div>
             </div>

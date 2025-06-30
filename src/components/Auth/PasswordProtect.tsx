@@ -58,7 +58,8 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+      <div className="h-full w-full flex items-center justify-center px-4 overflow-y-auto">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -178,7 +179,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
           </p>
         </div>
       </div>
-
+    </div>
     </div>
   );
 };
