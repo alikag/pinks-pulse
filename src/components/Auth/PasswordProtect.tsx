@@ -82,15 +82,22 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400" />
             </div>
             
-            <h1 className="text-4xl font-bold mb-2">
+            <h1 className="mb-2">
               <span 
-                className="text-pink-400"
                 style={{
-                  WebkitTextStroke: "1px #1e3a5f",
-                  paintOrder: "stroke fill"
+                  fontSize: "3rem",
+                  fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                  fontWeight: "900",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#F9ABAC",
+                  WebkitTextStroke: "2px #1e3a5f",
+                  paintOrder: "stroke fill",
+                  display: "inline-block",
+                  lineHeight: "0.9"
                 } as React.CSSProperties}
               >
-                Pink's Pulse
+                PINK'S PULSE
               </span>
             </h1>
             <p className="text-gray-400 text-center">
