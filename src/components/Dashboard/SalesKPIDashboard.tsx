@@ -1099,13 +1099,13 @@ const SalesKPIDashboard: React.FC = () => {
           </header>
 
           {/* Main Content */}
-          <section className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+          <section className="flex-1 overflow-y-auto p-4 pt-6 pb-20 lg:p-6 lg:pb-6 space-y-6">
             {/* First Row KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {kpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer overflow-visible"
                   onClick={() => {
                     haptics.light();
                     setSelectedMetric(kpi);
@@ -1149,8 +1149,10 @@ const SalesKPIDashboard: React.FC = () => {
                       </div>
                     )}
                     {kpi.isLive && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <div className="flex items-center gap-2 mt-2 py-0.5">
+                        <div className="relative">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        </div>
                         <span className="text-xs text-gray-500">Live</span>
                       </div>
                     )}
@@ -1687,7 +1689,7 @@ const SalesKPIDashboard: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-8"
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 md:p-8"
             onClick={() => {
               haptics.light();
               setSelectedMetric(null);
@@ -1697,7 +1699,7 @@ const SalesKPIDashboard: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="max-w-4xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
+              className="max-w-4xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-white/10"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-6">
@@ -1718,26 +1720,27 @@ const SalesKPIDashboard: React.FC = () => {
                   <p className="text-gray-400">Target: {formatValue(selectedMetric.target, selectedMetric.format)}</p>
                 </div>
                 <div className="flex items-center justify-center">
-                  <div className="relative w-32 h-32">
-                    <svg className="w-full h-full transform -rotate-90">
+                  <div className="relative w-24 h-24 md:w-32 md:h-32">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
                       <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
+                        cx="60"
+                        cy="60"
+                        r="50"
                         stroke="rgba(255,255,255,0.1)"
-                        strokeWidth="16"
+                        strokeWidth="12"
                         fill="none"
                       />
                       <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
+                        cx="60"
+                        cy="60"
+                        r="50"
                         stroke="url(#gradient)"
-                        strokeWidth="16"
+                        strokeWidth="12"
                         fill="none"
-                        strokeDasharray={`${2 * Math.PI * 56}`}
-                        strokeDashoffset={`${2 * Math.PI * 56 * (1 - Math.min(selectedMetric.value / selectedMetric.target, 1))}`}
+                        strokeDasharray={`${2 * Math.PI * 50}`}
+                        strokeDashoffset={`${2 * Math.PI * 50 * (1 - Math.min(selectedMetric.value / selectedMetric.target, 1))}`}
                         className="transition-all duration-1000"
+                        strokeLinecap="round"
                       />
                       <defs>
                         <linearGradient id="gradient">
@@ -1747,7 +1750,7 @@ const SalesKPIDashboard: React.FC = () => {
                       </defs>
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold">
+                      <span className="text-xl md:text-2xl font-bold">
                         {Math.round((selectedMetric.value / selectedMetric.target) * 100)}%
                       </span>
                     </div>
