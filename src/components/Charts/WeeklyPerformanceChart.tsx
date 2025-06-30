@@ -14,14 +14,26 @@ interface WeeklyPerformanceChartProps {
   data: WeeklyHistorical[];
 }
 
+const PRIMARY_PINK = '#ec4899'; // Tailwind pink-500
+const PRIMARY_PINK_TRANSPARENT = 'rgba(236, 72, 153, 0.5)';
+
 const WeeklyPerformanceChart: React.FC<WeeklyPerformanceChartProps> = ({ data }) => {
   // Transform data for the chart
   const chartData = data.map(week => ({
     week: week.weekEnding.split('/').slice(0, 2).join('/'), // Show MM/DD
     sent: week.sent,
     converted: week.converted,
-    cvr: parseFloat(week.cvr)
+    cvr: parseFloat(week.cvr),
+    isCurrent: isCurrentWeek(week.weekEnding)
   }));
+
+  // Helper to determine if this is the current week
+  function isCurrentWeek(weekEnding: string) {
+    const today = new Date();
+    const weekEnd = new Date(weekEnding);
+    // If weekEnd is within 7 days of today, treat as current week
+    return Math.abs(today.getTime() - weekEnd.getTime()) < 7 * 24 * 60 * 60 * 1000;
+  }
 
   return (
     <div className="bg-background-primary dark:bg-dark-background-secondary rounded-xl border border-border dark:border-dark-border p-4 md:p-6">
@@ -42,7 +54,21 @@ const WeeklyPerformanceChart: React.FC<WeeklyPerformanceChartProps> = ({ data })
             />
             <XAxis
               dataKey="week"
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={({ x, y, payload, index }) => {
+                const isCurrent = chartData[index]?.isCurrent;
+                return (
+                  <text
+                    x={x}
+                    y={y + 16}
+                    textAnchor="middle"
+                    fontSize={12}
+                    fontWeight={isCurrent ? 700 : 400}
+                    fill={isCurrent ? PRIMARY_PINK : '#6B7280'}
+                  >
+                    {payload.value}
+                  </text>
+                );
+              }}
               tickLine={false}
               axisLine={false}
             />
@@ -58,15 +84,15 @@ const WeeklyPerformanceChart: React.FC<WeeklyPerformanceChartProps> = ({ data })
             
             <Bar
               dataKey="sent"
-              fill="#3B82F6"
               radius={[4, 4, 0, 0]}
               animationDuration={500}
+              fill={({ index }) => chartData[index]?.isCurrent ? PRIMARY_PINK_TRANSPARENT : '#3B82F6'}
             />
             <Bar
               dataKey="converted"
-              fill="#10B981"
               radius={[4, 4, 0, 0]}
               animationDuration={500}
+              fill={({ index }) => chartData[index]?.isCurrent ? PRIMARY_PINK : '#10B981'}
             />
           </BarChart>
         </ResponsiveContainer>

@@ -49,15 +49,21 @@ exports.handler = async (event, context) => {
       
       // Simple query to check statuses
       const debugQuery = `
-        SELECT 
-          status,
-          COUNT(*) as count,
-          COUNT(DISTINCT CASE WHEN sent_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN quote_id END) as sent_this_week,
-          COUNT(DISTINCT CASE WHEN converted_date IS NOT NULL THEN quote_id END) as has_converted_date
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-        GROUP BY status
-        ORDER BY count DESC
-        LIMIT 20
+        WITH monday_quotes AS (
+          SELECT 
+            quote_number,
+            status,
+            sent_date,
+            converted_date,
+            CASE 
+              WHEN LOWER(status) = 'converted' THEN 'YES'
+              WHEN status = 'Converted' THEN 'EXACT_MATCH'
+              ELSE 'NO'
+            END as is_converted_check
+          FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
+          WHERE sent_date = '2025-06-30'
+        )
+        SELECT * FROM monday_quotes
       `;
       
       const [rows] = await bigquery.query(debugQuery);
