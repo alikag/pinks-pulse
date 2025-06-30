@@ -58,7 +58,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4 overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -87,9 +87,8 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
                 className="text-pink-400"
                 style={{
                   WebkitTextStroke: "1px #1e3a5f",
-                  textStroke: "1px #1e3a5f",
                   paintOrder: "stroke fill"
-                }}
+                } as React.CSSProperties}
               >
                 Pink's Pulse
               </span>
