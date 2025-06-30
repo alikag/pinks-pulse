@@ -72,7 +72,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
             {/* Logo area with gradient */}
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full blur-lg opacity-50"></div>
-              <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
+              <div className="relative w-28 h-28 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
                 <img 
                   src="/logo.png" 
                   alt="Pink's Window Services" 
@@ -82,8 +82,19 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400" />
             </div>
             
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Pink's Pulse
+            <h1 className="text-4xl font-bold mb-2">
+              <span 
+                className="text-pink-400"
+                style={{
+                  fontFamily: "'Brush Script MT', 'Lucida Handwriting', 'Apple Chancery', cursive",
+                  fontWeight: "normal",
+                  letterSpacing: "0.02em",
+                  textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)"
+                }}
+              >
+                Pink's
+              </span>
+              <span className="text-white ml-2">Pulse</span>
             </h1>
             <p className="text-gray-400 text-center">
               Hudson Valley KPI Dashboard
@@ -133,7 +144,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               Protected by enterprise-grade security
             </p>
             <p className="text-xs text-gray-600 text-center mt-2">
-              Contact your administrator for access
+              Contact Alika for administrator access
             </p>
           </div>
         </div>
