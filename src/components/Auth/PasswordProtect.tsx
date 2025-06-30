@@ -141,7 +141,14 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               Protected by enterprise-grade security
             </p>
             <p className="text-xs text-gray-600 text-center mt-2">
-              Contact Alika for administrator access
+              Contact{' '}
+              <a 
+                href="mailto:alika.graham@pinkswindows.com"
+                className="text-pink-400 hover:text-pink-300 underline transition-colors"
+              >
+                Alika
+              </a>
+              {' '}for administrator access
             </p>
           </div>
         </div>
