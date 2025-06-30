@@ -45,7 +45,7 @@ const SalesKPIDashboard: React.FC = () => {
       })
       
       // Haptic feedback if there are new conversions today
-      if (data.kpiMetrics?.convertedToday > 0) {
+      if (data.kpiMetrics && data.kpiMetrics.convertedToday && data.kpiMetrics.convertedToday > 0) {
         haptics.success();
       }
     }
