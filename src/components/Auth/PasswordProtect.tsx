@@ -100,8 +100,19 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
                 PINK'S PULSE
               </span>
             </h1>
-            <p className="text-gray-400 text-center">
-              Hudson Valley KPI Dashboard
+            <p 
+              className="text-center"
+              style={{
+                fontSize: "1.125rem",
+                fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                fontWeight: "700",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: "#94a3b8",
+                lineHeight: "1"
+              } as React.CSSProperties}
+            >
+              HUDSON VALLEY KPI DASHBOARD
             </p>
           </div>
 

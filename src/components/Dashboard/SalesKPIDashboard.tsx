@@ -1147,7 +1147,20 @@ const SalesKPIDashboard: React.FC = () => {
                   >
                     PINK'S PULSE
                   </span>
-                  <span className="text-base lg:text-lg text-gray-400 font-normal">- Hudson Valley KPI Report</span>
+                  <span className="text-gray-400">-</span>
+                  <span 
+                    style={{
+                      fontSize: "1.25rem",
+                      fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                      fontWeight: "700",
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
+                      color: "#94a3b8",
+                      lineHeight: "1"
+                    } as React.CSSProperties}
+                  >
+                    HUDSON VALLEY KPI REPORT
+                  </span>
                 </h1>
               </div>
             </div>
