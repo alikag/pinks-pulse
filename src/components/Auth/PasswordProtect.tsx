@@ -73,7 +73,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
             {/* Logo area with gradient */}
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full blur-lg opacity-50"></div>
-              <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
+              <div className="relative w-40 h-40 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
                 <img 
                   src="/logo.png" 
                   alt="Pink's Window Services" 
