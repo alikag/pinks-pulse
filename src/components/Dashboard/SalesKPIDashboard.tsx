@@ -591,66 +591,66 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
         gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
         
-        // Calculate weeks for current month dynamically (Sunday-Saturday weeks)
+        // Calculate weeks with current week in the middle
         const now = new Date()
-        const currentMonth = now.getMonth()
-        const currentYear = now.getFullYear()
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
-        // Get first and last day of current month
-        const firstDay = new Date(currentYear, currentMonth, 1)
-        const lastDay = new Date(currentYear, currentMonth + 1, 0)
-        
-        // Calculate week ranges for the month
-        const weekRanges: string[] = []
-        const weeklyOTBData: number[] = []
-        
-        // Find all Sunday-Saturday weeks that overlap with this month
-        let weekStart = new Date(firstDay)
-        // Move back to the previous Sunday if first day isn't Sunday
-        if (weekStart.getDay() !== 0) {
-          weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+        // Find the current week's Sunday
+        const currentWeekStart = new Date(now)
+        if (currentWeekStart.getDay() !== 0) {
+          currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay())
         }
         
-        let weekNum = 1
+        // Create array of 5 weeks with current week in middle
+        const weekRanges: string[] = []
+        const weeklyOTBData: number[] = []
+        const weeksToShow = 5 // Total weeks to display
+        const weeksBefore = 2  // Weeks before current week
         
-        while (weekStart <= lastDay) {
-          // Calculate week end (Saturday)
+        // Start from 2 weeks before current week
+        const startWeek = new Date(currentWeekStart)
+        startWeek.setDate(startWeek.getDate() - (weeksBefore * 7))
+        
+        // Build 5 weeks of data
+        for (let i = 0; i < weeksToShow; i++) {
+          const weekStart = new Date(startWeek)
+          weekStart.setDate(startWeek.getDate() + (i * 7))
+          
           const weekEnd = new Date(weekStart)
           weekEnd.setDate(weekStart.getDate() + 6)
           
-          // Only include weeks that have at least one day in the current month
-          if (weekEnd >= firstDay) {
-            // Format the date range
-            const startMonth = weekStart.getMonth()
-            const endMonth = weekEnd.getMonth()
-            
-            let label = ''
-            if (startMonth === endMonth) {
-              // Same month: "June 22-28"
-              label = `${monthNames[startMonth]} ${weekStart.getDate()}-${weekEnd.getDate()}`
-            } else {
-              // Crosses months: "May 26 - June 1" 
-              label = `${monthNames[startMonth]} ${weekStart.getDate()} - ${monthNames[endMonth]} ${weekEnd.getDate()}`
-            }
-            
-            weekRanges.push(label)
-            
-            // Use actual data from backend if available
-            if (data?.kpiMetrics?.weeklyOTBBreakdown) {
-              const weekKey = `week${weekNum}`
-              weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
-            } else {
-              // No data available
-              weeklyOTBData.push(0)
-            }
-            
-            weekNum++
+          // Format the date range
+          const startMonth = weekStart.getMonth()
+          const endMonth = weekEnd.getMonth()
+          
+          let label = ''
+          const isCurrentWeek = weekStart.getTime() === currentWeekStart.getTime()
+          
+          if (startMonth === endMonth) {
+            label = `${monthNames[startMonth]} ${weekStart.getDate()}-${weekEnd.getDate()}`
+          } else {
+            label = `${monthNames[startMonth]} ${weekStart.getDate()} - ${monthNames[endMonth]} ${weekEnd.getDate()}`
           }
           
-          // Move to next Sunday
-          weekStart = new Date(weekStart)
-          weekStart.setDate(weekStart.getDate() + 7)
+          // Add indicator for current week
+          if (isCurrentWeek) {
+            label += ' (Current)'
+          }
+          
+          weekRanges.push(label)
+          
+          // For OTB data, we need to map to the correct week number in the month
+          // This is a simplified approach - in production, you'd want to calculate
+          // the actual week number within the month for the data mapping
+          if (data?.kpiMetrics?.weeklyOTBBreakdown) {
+            // Calculate which week of the month this is
+            const monthStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1)
+            const weekOfMonth = Math.ceil((weekStart.getDate() + monthStart.getDay()) / 7)
+            const weekKey = `week${weekOfMonth}`
+            weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
+          } else {
+            weeklyOTBData.push(0)
+          }
         }
         
         let weekLabels = weekRanges
@@ -1051,9 +1051,9 @@ const SalesKPIDashboard: React.FC = () => {
             haptics.medium();
             setIsSidebarOpen(!isSidebarOpen);
           }}
-          className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-gray-900/90 backdrop-blur-lg rounded-lg border border-white/20 shadow-lg"
+          className="lg:hidden fixed top-5 left-3 z-50 p-2 bg-gray-900/90 backdrop-blur-lg rounded-lg border border-white/20 shadow-lg"
         >
-          <Menu className="h-5 w-5 text-white" />
+          <Menu className="h-4 w-4 text-white" />
         </button>
 
         {/* Sidebar */}
@@ -1366,8 +1366,8 @@ const SalesKPIDashboard: React.FC = () => {
               {/* On the Books by Week */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-shadow">
                 <div className="mb-4">
-                  <h2 className="font-medium">On the Books by Week - This Month</h2>
-                  <p className="text-xs text-gray-500 mt-1">Sunday-Saturday weeks</p>
+                  <h2 className="font-medium">On the Books by Week - 5 Week View</h2>
+                  <p className="text-xs text-gray-500 mt-1">Current week centered • Sunday-Saturday weeks</p>
                 </div>
                 <div className="h-48">
                   <canvas ref={weeklyOTBChartRef}></canvas>
