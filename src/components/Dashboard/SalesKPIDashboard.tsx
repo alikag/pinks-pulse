@@ -1308,7 +1308,7 @@ const SalesKPIDashboard: React.FC = () => {
               {/* Weekly CVR % */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4 flex items-center justify-between">
-                  <span>Weekly CVR %</span>
+                  <span>Weekly CVR % <span className="text-xs font-normal text-gray-400">(by Send Date)</span></span>
                   {data?.kpiMetrics?.cvrThisWeek && (
                     <span className="text-sm text-gray-400">
                       Week Avg: {data.kpiMetrics.cvrThisWeek}%
@@ -1318,9 +1318,12 @@ const SalesKPIDashboard: React.FC = () => {
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Shows conversion rate for quotes sent on each day. Recent days may show 0% as quotes need time to convert.
-                </p>
+                <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-xs text-blue-300 flex items-start gap-1">
+                    <span className="font-semibold">How this works:</span>
+                    <span>Each bar shows the conversion rate for quotes sent on that specific day. Example: Monday's bar = (Monday quotes that eventually converted) ÷ (Total Monday quotes sent) × 100. Today's quotes typically show 0% until they convert in coming days.</span>
+                  </p>
+                </div>
               </div>
             </div>
 
