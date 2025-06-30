@@ -939,7 +939,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   // Process time series data
   const timeSeries = {
-    week: processWeekData(quotesData, now, parseDate),
+    week: processWeekData(quotesData, now, parseDate, estToday),
     month: processMonthData(quotesData, now, parseDate),
     year: processYearData(quotesData, now, parseDate),
     all: processAllTimeData(quotesData, now, parseDate)
@@ -1009,7 +1009,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
 }
 
 // Time series processing functions
-function processWeekData(quotesData, referenceDate, parseDate) {
+function processWeekData(quotesData, referenceDate, parseDate, estToday) {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekData = {
     labels: [],
@@ -1020,16 +1020,26 @@ function processWeekData(quotesData, referenceDate, parseDate) {
     totalConverted: 0
   };
 
-  // Always use actual today for the week view to show the current week
-  // Use EST timezone to match business hours
-  const estString = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-  const today = new Date(estString);
+  // Use the estToday passed from the main function for consistency
+  const today = new Date(estToday);
   today.setHours(0, 0, 0, 0);
-  console.log('[processWeekData] Using EST today for week view:', today.toISOString(), 'Day:', weekDays[today.getDay()]);
   
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
+  // Calculate the start of the week (Sunday)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  
+  console.log('[processWeekData] Week calculation:', {
+    today: today.toISOString(),
+    dayOfWeek: today.getDay(),
+    weekStart: weekStart.toISOString(),
+    weekDayName: weekDays[today.getDay()]
+  });
+  
+  // Loop through each day of the week starting from Sunday
+  for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + dayOffset);
     date.setHours(0, 0, 0, 0);
     const nextDate = new Date(date);
     nextDate.setDate(date.getDate() + 1);
@@ -1046,21 +1056,21 @@ function processWeekData(quotesData, referenceDate, parseDate) {
       return convertedDate && convertedDate >= date && convertedDate < nextDate;
     }).length;
     
-    // For CVR calculation: count quotes SENT on this day that have converted (any time)
-    const dayQuotesConverted = dayQuotes.filter(q => 
-      q.status && q.status.toLowerCase() === 'converted'
-    ).length;
+    // For CVR calculation: For weekly CVR, we want conversions/sent for each day
+    // This can exceed 100% if quotes from previous weeks are converting this week
     
     const sent = dayQuotes.length;
-    const converted = dayConversions;  // For the converted line chart
-    const cvrConverted = dayQuotesConverted;  // For CVR calculation
+    const converted = dayConversions;  // Number of conversions on this day
+    
+    // For Weekly CVR %: conversions on this day / quotes sent on this day
+    // This can exceed 100% if many old quotes convert on a slow sending day
+    const dailyCVR = sent > 0 ? Math.round((converted / sent) * 100) : 0;
     
     // Debug logging
     console.log(`[processWeekData] ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}):`, {
       sent: sent,
-      convertedOnThisDay: converted,
-      sentThatConverted: cvrConverted,
-      cvr: sent > 0 ? Math.round((cvrConverted / sent) * 100) : 0
+      converted: converted,
+      cvr: dailyCVR
     });
     
     // Format label with day and date (e.g., "Mon 12/25")
@@ -1071,9 +1081,9 @@ function processWeekData(quotesData, referenceDate, parseDate) {
     weekData.labels.push(dateLabel);
     weekData.quotesSent.push(sent);
     weekData.quotesConverted.push(converted);
-    weekData.conversionRate.push(sent > 0 ? Math.round((cvrConverted / sent) * 100) : 0);
+    weekData.conversionRate.push(dailyCVR);
     weekData.totalSent += sent;
-    weekData.totalConverted += cvrConverted;  // Use quotes sent that converted for total CVR
+    weekData.totalConverted += converted;
   }
 
   const avgConversionRate = weekData.totalSent > 0 
