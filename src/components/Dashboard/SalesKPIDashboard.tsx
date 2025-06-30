@@ -4,6 +4,7 @@ import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
+import { haptics } from '../../utils/haptics'
 
 // Types
 interface KPI {
@@ -34,7 +35,7 @@ const SalesKPIDashboard: React.FC = () => {
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
   const { data, loading, error } = useDashboardData()
   
-  // Debug converted quotes
+  // Debug converted quotes and haptic feedback for conversions
   useEffect(() => {
     if (data) {
       console.log('[Converted Quotes Debug]', {
@@ -42,6 +43,11 @@ const SalesKPIDashboard: React.FC = () => {
         recentConvertedQuotes: data.recentConvertedQuotes,
         length: data.recentConvertedQuotes?.length || 0
       })
+      
+      // Haptic feedback if there are new conversions today
+      if (data.kpiMetrics?.convertedToday > 0) {
+        haptics.success();
+      }
     }
   }, [data])
   
@@ -503,6 +509,9 @@ const SalesKPIDashboard: React.FC = () => {
               x: {
                 grid: { display: false }
               }
+            },
+            onClick: () => {
+              haptics.selection();
             }
           }
         })
@@ -1038,7 +1047,10 @@ const SalesKPIDashboard: React.FC = () => {
       <div className="flex h-full">
         {/* Mobile Menu Button */}
         <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onClick={() => {
+            haptics.medium();
+            setIsSidebarOpen(!isSidebarOpen);
+          }}
           className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/80 backdrop-blur-lg rounded-lg border border-white/10"
         >
           <Menu className="h-5 w-5" />
@@ -1064,7 +1076,10 @@ const SalesKPIDashboard: React.FC = () => {
         {/* Overlay for mobile */}
         {isSidebarOpen && (
           <div 
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => {
+              haptics.light();
+              setIsSidebarOpen(false);
+            }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
           />
         )}
@@ -1090,7 +1105,11 @@ const SalesKPIDashboard: React.FC = () => {
               {kpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer"
+                  onClick={() => {
+                    haptics.light();
+                    setSelectedMetric(kpi);
+                  }}
                 >
                   <div className="space-y-2">
                     <h3 className="text-sm text-gray-400">{kpi.label}</h3>
@@ -1638,6 +1657,7 @@ const SalesKPIDashboard: React.FC = () => {
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:underline flex items-center gap-1"
+                              onClick={() => haptics.medium()}
                             >
                               View
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1668,7 +1688,10 @@ const SalesKPIDashboard: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-8"
-            onClick={() => setSelectedMetric(null)}
+            onClick={() => {
+              haptics.light();
+              setSelectedMetric(null);
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -1680,7 +1703,10 @@ const SalesKPIDashboard: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">{selectedMetric.label} Deep Dive</h2>
                 <button 
-                  onClick={() => setSelectedMetric(null)}
+                  onClick={() => {
+              haptics.light();
+              setSelectedMetric(null);
+            }}
                   className="p-2 hover:bg-white/10 rounded-lg transition"
                 >
                   <XCircle className="h-5 w-5" />
