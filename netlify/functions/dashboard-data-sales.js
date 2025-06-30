@@ -317,6 +317,21 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     estTodayTime: estToday.getTime()
   });
   
+  // Helper function to extract Jobber ID from quote_id
+  const extractJobberId = (encodedId) => {
+    if (!encodedId) return null;
+    try {
+      // Decode base64
+      const decoded = Buffer.from(encodedId, 'base64').toString('utf-8');
+      // Extract the numeric ID from the end (e.g., "gid://Jobber/Quote/46164695" -> "46164695")
+      const match = decoded.match(/\/(\d+)$/);
+      return match ? match[1] : null;
+    } catch (e) {
+      console.error('[extractJobberId] Error decoding:', encodedId, e);
+      return null;
+    }
+  };
+
   // Helper functions for date comparisons
   
   const isToday = (date) => {
@@ -526,16 +541,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         
         // Debug: Log the first few converted quotes to see what IDs we have
         if (recentConvertedQuotes.length < 3) {
+          const jobberId = extractJobberId(quote.quote_id);
           console.log('[Jobber Link Debug] Converted quote data:', {
             quote_number: quote.quote_number,
+            quote_id: quote.quote_id,
+            extracted_jobber_id: jobberId,
             job_numbers: quote.job_numbers,
             client_name: quote.client_name,
             status: quote.status,
-            url: (quote.job_numbers && quote.job_numbers !== '-') ? 
-              `https://secure.getjobber.com/work_orders/${quote.job_numbers}` : 
-              `https://secure.getjobber.com/quotes/${quote.quote_number}`
+            url: jobberId ? 
+              `https://secure.getjobber.com/quotes/${jobberId}` : 
+              'https://secure.getjobber.com'
           });
         }
+        
+        // Extract the internal Jobber quote ID
+        const jobberId = extractJobberId(quote.quote_id);
         
         // Add to recent converted quotes
         recentConvertedQuotes.push({
@@ -546,11 +567,11 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
           clientName: quote.client_name || quote.Client_Name,
           salesPerson: quote.salesperson || quote.Salesperson,
-          // Construct Jobber URL - use job number for converted quotes
-          // Converted quotes should link to the job, not the quote
-          jobberLink: (quote.job_numbers && quote.job_numbers !== '-') ? 
-            `https://secure.getjobber.com/work_orders/${quote.job_numbers}` : 
-            `https://secure.getjobber.com/quotes/${quote.quote_number}`,
+          // Construct Jobber URL - use the internal Jobber ID
+          // For now, always use quotes URL since we don't have the job's internal ID
+          jobberLink: jobberId ? 
+            `https://secure.getjobber.com/quotes/${jobberId}` : 
+            'https://secure.getjobber.com',
           visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
           totalDollars: totalDollars,
           status: quote.status || quote.Status
