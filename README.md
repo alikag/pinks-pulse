@@ -2,6 +2,12 @@
 
 A comprehensive business analytics dashboard for Pink's Window Cleaning franchise, tracking quotes, conversions, and sales performance in the Hudson Valley region.
 
+## Documentation
+
+- **[Detailed Calculation Documentation](./DASHBOARD_CALCULATIONS.md)** - Complete formulas and logic for all metrics
+- **[Deployment Guide](./DEPLOYMENT.md)** - Step-by-step deployment instructions
+- **[Setup Guide](./setup-guide.md)** - Initial setup and configuration
+
 ## Google Reviews Configuration
 - Reviews are sourced from BigQuery table: `jobber-data-warehouse-462721.jobber_data.google_reviews`
 - Add new reviews directly to BigQuery for full control
@@ -167,33 +173,40 @@ curl https://your-domain/.netlify/functions/scrape-google-reviews-playwright
 ### Recent Updates (June 2025)
 
 #### Dashboard UI Improvements
-- Updated header to "Pink's Pulse - Hudson Valley KPI Report"
-- Replaced dashboard icon with Pink's logo
-- Removed period selector buttons (Today/Week/Month/Quarter)
-- Removed unused top navigation icons
-- Clearer KPI labels for window cleaning business context
+- **Typography**: DDC Hardware industrial font style for Pink's branding
+- **Responsive Design**: Larger text on desktop (up to 7xl), mobile optimizations
+- **Color Scheme**: Consistent pink (#F9ABAC) hover effects throughout
+- **Navigation**: Clickable header scrolls to top, mobile menu slides with content
+- **Password Page**: Larger logo, overflow prevention, email link for admin contact
 
-#### Data Accuracy Fixes
-- Fixed BigQuery date parsing (dates come as objects with `value` property)
-- Corrected CVR calculation to track quotes sent in a period that were converted
-- Fixed "Converted This Week" chart to show both sent and converted quotes
-- Updated week calculations to use Sunday-Saturday consistently
-- Salesperson Performance chart now shows only current week data
+#### Data Accuracy Enhancements
+- **Smart CVR Logic**: Shows last week's CVR when current week has no conversions yet
+- **Status Flexibility**: Handles "Converted", "Won", "Accepted", "Complete" statuses
+- **Timezone Consistency**: All calculations in EST/EDT (America/New_York)
+- **Week Boundaries**: Sunday-Saturday weeks throughout the system
+- **Parallel Queries**: Prevents 502 timeouts on data fetching
 
-#### Key Metrics Tracked
-- **Quotes Sent Today**: Daily quote volume with target of 12
-- **Converted Today**: Dollar value of quotes converted today
-- **Converted This Week**: Weekly conversion dollars and count
-- **CVR This Week**: Conversion rate percentage for quotes sent this week
-- **Speed to Lead**: Average response time to quote requests (30-day average)
-- **OTB (On The Books)**: Scheduled revenue for future periods
+#### Key Metrics and Targets
+- **Quotes Sent Today**: Target 12 quotes daily
+- **Converted Today**: $100k target (quotes converting today)
+- **Converted This Week**: $157.5k target (Sunday-Saturday)
+- **CVR This Week**: 45% target (with smart fallback logic)
+- **2026 Recurring**: $1M annual target
+- **Speed to Lead**: 24-hour target (was 30 minutes)
+- **30D CVR**: 50% target (was 45%)
+- **Reviews This Week**: 2 review target (was 4)
 
-#### Known Issues Resolved
-- "Invalid time value" error when parsing BigQuery dates
-- Empty "Converted This Week" chart
-- Incorrect salesperson data showing inactive employees
-- QPD (Quotes Per Day) showing as zero
-- Week calculations not matching BigQuery's week definition
+#### Technical Improvements
+- **Base64 Decoding**: Jobber GraphQL IDs properly decoded for links
+- **Date Parsing**: Handles BigQuery date objects and UTC timestamps
+- **Haptic Feedback**: Touch feedback on all mobile interactions
+- **Type Safety**: TypeScript with proper null checks
+- **Performance**: 15-minute cache, optimized queries
+
+#### CVR Calculation Clarification
+- **CVR This Week (KPI Card)**: Overall weekly conversion rate, may show last week's rate if no conversions yet
+- **Weekly CVR % Chart**: Daily breakdown showing conversion rate for quotes sent each specific day
+- Both metrics serve different purposes - one for current performance, one for daily trends
 
 ## License
 
