@@ -1057,11 +1057,25 @@ const SalesKPIDashboard: React.FC = () => {
         </button>
 
         {/* Sidebar */}
-        <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
+        <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/logo.png" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
-              <span className="text-lg font-semibold tracking-tight">Pink's Pulse</span>
+              <span 
+                style={{
+                  fontSize: "1.25rem",
+                  fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                  fontWeight: "900",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#F9ABAC",
+                  WebkitTextStroke: "1px #1e3a5f",
+                  paintOrder: "stroke fill",
+                  lineHeight: "1"
+                } as React.CSSProperties}
+              >
+                PINK'S PULSE
+              </span>
             </div>
             {/* Close button for mobile */}
             <button 
@@ -1075,13 +1089,27 @@ const SalesKPIDashboard: React.FC = () => {
             </button>
           </div>
 
-          <nav className="flex flex-col gap-1 text-sm">
+          <nav className="flex flex-col gap-1 text-sm flex-1 mt-6">
             <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/10 relative overflow-hidden group">
               <TrendingUp className="h-4 w-4" />
               Dashboard
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </a>
           </nav>
+
+          {/* Footer contact info */}
+          <div className="mt-auto pt-6 border-t border-white/10">
+            <p className="text-xs text-gray-500 text-center">
+              Contact{' '}
+              <a 
+                href="mailto:alika.graham@pinkswindows.com"
+                className="text-gray-500 hover:text-gray-400 no-underline transition-colors"
+              >
+                Alika
+              </a>
+              {' '}for feedback, requests, or questions
+            </p>
+          </div>
 
         </aside>
 
@@ -1103,7 +1131,24 @@ const SalesKPIDashboard: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="lg:hidden w-8"></div>
               <div>
-                <h1 className="text-base lg:text-lg font-medium">Pink's Pulse - Hudson Valley KPI Report</h1>
+                <h1 className="flex items-center gap-2">
+                  <span 
+                    style={{
+                      fontSize: "1.125rem",
+                      fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                      fontWeight: "900",
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "#F9ABAC",
+                      WebkitTextStroke: "0.5px #1e3a5f",
+                      paintOrder: "stroke fill",
+                      lineHeight: "1"
+                    } as React.CSSProperties}
+                  >
+                    PINK'S PULSE
+                  </span>
+                  <span className="text-base lg:text-lg text-gray-400 font-normal">- Hudson Valley KPI Report</span>
+                </h1>
               </div>
             </div>
             

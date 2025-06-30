@@ -72,7 +72,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
             {/* Logo area with gradient */}
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full blur-lg opacity-50"></div>
-              <div className="relative w-28 h-28 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-lg ring-4 ring-white/20">
                 <img 
                   src="/logo.png" 
                   alt="Pink's Window Services" 
@@ -151,7 +151,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
               Contact{' '}
               <a 
                 href="mailto:alika.graham@pinkswindows.com"
-                className="text-pink-400 hover:text-pink-300 underline transition-colors"
+                className="text-gray-600 hover:text-gray-500 no-underline transition-colors"
               >
                 Alika
               </a>
