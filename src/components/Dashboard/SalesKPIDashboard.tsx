@@ -1246,6 +1246,9 @@ const SalesKPIDashboard: React.FC = () => {
                         Week started {new Date().getDay() === 0 ? 'today' : 
                           new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        (Weeks run Sunday through Saturday)
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1266,7 +1269,10 @@ const SalesKPIDashboard: React.FC = () => {
 
               {/* On the Books by Week */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">On the Books by Week - This Month</h2>
+                <div className="mb-4">
+                  <h2 className="font-medium">On the Books by Week - This Month</h2>
+                  <p className="text-xs text-gray-500 mt-1">Sunday-Saturday weeks</p>
+                </div>
                 <div className="h-48">
                   <canvas ref={weeklyOTBChartRef}></canvas>
                 </div>
@@ -1574,6 +1580,9 @@ const SalesKPIDashboard: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-2">
                     Week started {new Date().getDay() === 0 ? 'today' : 
                       new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    (Weeks run Sunday through Saturday)
                   </p>
                 </div>
               ) : (
