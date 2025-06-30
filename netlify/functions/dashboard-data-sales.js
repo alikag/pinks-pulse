@@ -1020,20 +1020,6 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     totalConverted: 0
   };
   
-  // Debug: Check if we have any converted quotes
-  const uniqueStatuses = [...new Set(quotesData.map(q => q.status))];
-  const convertedQuotes = quotesData.filter(q => q.status && q.status.toLowerCase() === 'converted');
-  console.log('[processWeekData] Debug - Status analysis:', {
-    totalQuotes: quotesData.length,
-    uniqueStatuses: uniqueStatuses,
-    convertedCount: convertedQuotes.length,
-    sampleQuotes: quotesData.slice(0, 5).map(q => ({
-      quote_number: q.quote_number,
-      status: q.status,
-      sent_date: q.sent_date,
-      converted_date: q.converted_date
-    }))
-  });
 
   // Use the estToday passed from the main function for consistency
   const today = new Date(estToday);
@@ -1072,19 +1058,9 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     }).length;
     
     // For CVR calculation: count quotes SENT on this day that have converted (any time)
-    const dayQuotesConverted = dayQuotes.filter(q => {
-      const isConverted = q.status && q.status.toLowerCase() === 'converted';
-      if (dayQuotes.length > 0 && dayOffset === 0) {
-        // Debug first day's quotes
-        console.log('[CVR Debug] Quote status check:', {
-          quote_number: q.quote_number,
-          status: q.status,
-          statusLower: q.status ? q.status.toLowerCase() : 'null',
-          isConverted: isConverted
-        });
-      }
-      return isConverted;
-    }).length;
+    const dayQuotesConverted = dayQuotes.filter(q => 
+      q.status && q.status.toLowerCase() === 'converted'
+    ).length;
     
     const sent = dayQuotes.length;
     const converted = dayConversions;  // For the converted line (conversions on this day)
