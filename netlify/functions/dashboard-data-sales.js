@@ -54,7 +54,6 @@ exports.handler = async (event, context) => {
     const quotesQuery = `
       SELECT 
         quote_number,
-        job_number,
         client_name,
         salesperson,
         status,
@@ -131,23 +130,46 @@ exports.handler = async (event, context) => {
     let quotesData, jobsData, speedToLeadData, reviewsData;
     
     try {
-      // Execute main queries
-      [[quotesData], [jobsData], [speedToLeadData]] = await Promise.all([
-        bigquery.query(quotesQuery),
-        bigquery.query(jobsQuery),
-        bigquery.query(speedToLeadQuery)
-      ]);
+      // Execute each query individually with better error tracking
+      console.log('[dashboard-data-sales] Executing quotes query...');
+      try {
+        [quotesData] = await bigquery.query(quotesQuery);
+        console.log('[dashboard-data-sales] Quotes query successful:', quotesData.length, 'records');
+      } catch (quotesErr) {
+        console.error('[dashboard-data-sales] Quotes query failed:', quotesErr);
+        throw new Error(`Quotes query failed: ${quotesErr.message}`);
+      }
+      
+      console.log('[dashboard-data-sales] Executing jobs query...');
+      try {
+        [jobsData] = await bigquery.query(jobsQuery);
+        console.log('[dashboard-data-sales] Jobs query successful:', jobsData.length, 'records');
+      } catch (jobsErr) {
+        console.error('[dashboard-data-sales] Jobs query failed:', jobsErr);
+        throw new Error(`Jobs query failed: ${jobsErr.message}`);
+      }
+      
+      console.log('[dashboard-data-sales] Executing speed to lead query...');
+      try {
+        [speedToLeadData] = await bigquery.query(speedToLeadQuery);
+        console.log('[dashboard-data-sales] Speed to lead query successful:', speedToLeadData.length, 'records');
+      } catch (speedErr) {
+        console.error('[dashboard-data-sales] Speed to lead query failed:', speedErr);
+        throw new Error(`Speed to lead query failed: ${speedErr.message}`);
+      }
       
       // Try to get reviews count, but don't fail if it doesn't work
+      console.log('[dashboard-data-sales] Executing reviews query...');
       try {
         [reviewsData] = await bigquery.query(reviewsQuery);
+        console.log('[dashboard-data-sales] Reviews query successful');
       } catch (reviewErr) {
         console.log('[dashboard-data-sales] Reviews query failed (non-critical):', reviewErr.message);
         reviewsData = [{ reviews_count: 0 }];
       }
     } catch (queryError) {
       console.error('[dashboard-data-sales] Critical query error:', queryError);
-      throw new Error(`BigQuery query failed: ${queryError.message}`);
+      throw queryError;
     }
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
@@ -196,14 +218,16 @@ exports.handler = async (event, context) => {
     };
   } catch (error) {
     console.error('[dashboard-data-sales] Error:', error);
+    console.error('[dashboard-data-sales] Error stack:', error.stack);
     
-    // Return error for production - no mock data
+    // Return detailed error for debugging
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Failed to fetch dashboard data',
         message: error.message,
+        details: error.toString(),
         dataSource: 'error'
       }),
     };
@@ -211,6 +235,37 @@ exports.handler = async (event, context) => {
 };
 
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
+  // Helper function to parse dates - defined at the top
+  const parseDate = (dateStr) => {
+    if (!dateStr) return null;
+    
+    try {
+      // Handle BigQuery date objects that come as { value: "2025-06-27" }
+      if (typeof dateStr === 'object' && dateStr.value) {
+        // Parse as EST/EDT timezone
+        const date = new Date(dateStr.value + 'T00:00:00-05:00');
+        return date;
+      }
+      
+      // Handle UTC timestamp strings like "2025-06-27 17:05:33.000000 UTC"
+      if (typeof dateStr === 'string' && dateStr.includes('UTC')) {
+        // Remove the microseconds and UTC suffix
+        const cleanedDate = dateStr.replace(/\.\d{6} UTC$/, '').replace(' ', 'T') + 'Z';
+        return new Date(cleanedDate);
+      }
+      
+      // For string dates without time, assume EST/EDT
+      if (typeof dateStr === 'string' && !dateStr.includes('T')) {
+        return new Date(dateStr + 'T00:00:00-05:00');
+      }
+      
+      return new Date(dateStr);
+    } catch (e) {
+      console.error('[parseDate] Error parsing date:', dateStr, e);
+      return null;
+    }
+  };
+
   // Find the most recent activity date (either sent or converted) to use as reference
   // Use EST timezone for reference date
   const estRefString = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
@@ -254,36 +309,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const estToday = new Date(estString);
   estToday.setHours(0, 0, 0, 0);
   
-  // Helper functions
-  const parseDate = (dateStr) => {
-    if (!dateStr) return null;
-    
-    try {
-      // Handle BigQuery date objects that come as { value: "2025-06-27" }
-      if (typeof dateStr === 'object' && dateStr.value) {
-        // Parse as EST/EDT timezone
-        const date = new Date(dateStr.value + 'T00:00:00-05:00');
-        return date;
-      }
-      
-      // Handle UTC timestamp strings like "2025-06-27 17:05:33.000000 UTC"
-      if (typeof dateStr === 'string' && dateStr.includes('UTC')) {
-        // Remove the microseconds and UTC suffix
-        const cleanedDate = dateStr.replace(/\.\d{6} UTC$/, '').replace(' ', 'T') + 'Z';
-        return new Date(cleanedDate);
-      }
-      
-      // For string dates without time, assume EST/EDT
-      if (typeof dateStr === 'string' && !dateStr.includes('T')) {
-        return new Date(dateStr + 'T00:00:00-05:00');
-      }
-      
-      return new Date(dateStr);
-    } catch (e) {
-      console.error('[parseDate] Error parsing date:', dateStr, e);
-      return null;
-    }
-  };
+  // Helper functions for date comparisons
   
   const isToday = (date) => {
     if (!date) return false;
@@ -487,9 +513,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         if (recentConvertedQuotes.length < 3) {
           console.log('[Jobber Link Debug] Converted quote data:', {
             quote_number: quote.quote_number,
-            job_number: quote.job_number,
             client_name: quote.client_name,
-            status: quote.status
+            status: quote.status,
+            url: `https://secure.getjobber.com/quotes/${quote.quote_number}`
           });
         }
         
@@ -502,20 +528,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
           clientName: quote.client_name || quote.Client_Name,
           salesPerson: quote.salesperson || quote.Salesperson,
-          // Construct Jobber URL - try different patterns based on what data we have
-          // Note: Jobber might use job_number for the URL instead of quote_number
-          jobberLink: (() => {
-            // If we have a job_number, try using that (jobs might be the correct endpoint)
-            if (quote.job_number || quote.Job_Number) {
-              return `https://secure.getjobber.com/jobs/${quote.job_number || quote.Job_Number}`;
-            }
-            // Otherwise fall back to quote_number
-            if (quote.quote_number || quote.Quote_Number) {
-              return `https://secure.getjobber.com/quotes/${quote.quote_number || quote.Quote_Number}`;
-            }
-            // Default to Jobber home
-            return 'https://secure.getjobber.com';
-          })(),
+          // Construct Jobber URL
+          // Note: Without knowing the exact Jobber URL structure, we'll use the quote_number
+          // You may need to update this pattern based on your Jobber instance
+          jobberLink: quote.quote_number ? 
+            `https://secure.getjobber.com/quotes/${quote.quote_number}` : 
+            'https://secure.getjobber.com',
           visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
           totalDollars: totalDollars,
           status: quote.status || quote.Status
