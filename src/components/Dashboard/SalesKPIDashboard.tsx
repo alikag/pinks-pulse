@@ -1143,7 +1143,7 @@ const SalesKPIDashboard: React.FC = () => {
                     paintOrder: "stroke fill",
                     lineHeight: "1"
                   } as React.CSSProperties}
-                  className="md:text-3xl lg:text-4xl"
+                  className="md:text-3xl lg:text-5xl xl:text-6xl"
                 >
                   PINK'S PULSE - HUDSON VALLEY KPI REPORT
                 </h1>
