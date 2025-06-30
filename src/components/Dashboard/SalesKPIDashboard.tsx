@@ -1133,7 +1133,7 @@ const SalesKPIDashboard: React.FC = () => {
               <div>
                 <h1 
                   style={{
-                    fontSize: "1.25rem",
+                    fontSize: "1.5rem",
                     fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
                     fontWeight: "900",
                     letterSpacing: "0.08em",
@@ -1143,6 +1143,7 @@ const SalesKPIDashboard: React.FC = () => {
                     paintOrder: "stroke fill",
                     lineHeight: "1"
                   } as React.CSSProperties}
+                  className="md:text-3xl"
                 >
                   PINK'S PULSE - HUDSON VALLEY KPI REPORT
                 </h1>
