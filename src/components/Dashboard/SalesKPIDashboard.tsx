@@ -557,11 +557,13 @@ const SalesKPIDashboard: React.FC = () => {
             scales: {
               y: {
                 beginAtZero: true,
-                max: 150000,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => `$${Number(value) / 1000}k`
-                }
+                  callback: (value) => `$${Number(value) / 1000}k`,
+                  autoSkip: false,
+                  maxTicksLimit: 6
+                },
+                grace: '5%' // Add 5% padding to the top for better visibility
               },
               x: {
                 grid: { display: false }
@@ -678,8 +680,14 @@ const SalesKPIDashboard: React.FC = () => {
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => `$${Number(value).toLocaleString()}`
-                }
+                  callback: (value) => `$${Number(value).toLocaleString()}`,
+                  // Auto-calculate nice step size based on max value
+                  autoSkip: false,
+                  maxTicksLimit: 6
+                },
+                // Let Chart.js calculate a nice scale that fits the data
+                grace: '5%', // Add 5% padding to the top
+                suggestedMax: undefined // Remove any fixed max to auto-scale
               },
               x: {
                 grid: { display: false }
@@ -1625,8 +1633,16 @@ const SalesKPIDashboard: React.FC = () => {
                           </td>
                           <td className="py-3 pr-4">{quote.salesPerson}</td>
                           <td className="py-3 pr-4">
-                            <a href={quote.jobberLink || '#'} className="text-blue-400 hover:underline">
+                            <a 
+                              href={quote.jobberLink || '#'} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:underline flex items-center gap-1"
+                            >
                               View
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
                             </a>
                           </td>
                           <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>

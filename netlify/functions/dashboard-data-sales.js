@@ -474,7 +474,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
           clientName: quote.client_name || quote.Client_Name,
           salesPerson: quote.salesperson || quote.Salesperson,
-          jobberLink: quote.jobber_link || quote.Jobber_Link || 'https://secure.getjobber.com',
+          // Construct proper Jobber quote URL using quote number
+          jobberLink: quote.quote_number ? `https://secure.getjobber.com/quotes/${quote.quote_number}` : 'https://secure.getjobber.com',
           visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
           totalDollars: totalDollars,
           status: quote.status || quote.Status
