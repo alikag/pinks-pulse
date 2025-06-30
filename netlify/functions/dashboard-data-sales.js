@@ -54,13 +54,15 @@ exports.handler = async (event, context) => {
     const quotesQuery = `
       SELECT 
         quote_number,
+        quote_id,
         client_name,
         salesperson,
         status,
         total_dollars,
         sent_date,
         converted_date,
-        days_to_convert
+        days_to_convert,
+        job_numbers
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
       WHERE sent_date IS NOT NULL
       ORDER BY sent_date DESC
