@@ -78,11 +78,11 @@ exports.handler = async (event, context) => {
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       WHERE Date IS NOT NULL
         AND (
-          -- Future jobs for "next month" and "this week" calculations
-          PARSE_DATE('%Y-%m-%d', Date) >= CURRENT_DATE()
-          -- All jobs in current month for "this month" calculation
-          OR (EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(YEAR FROM CURRENT_DATE())
-              AND EXTRACT(MONTH FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(MONTH FROM CURRENT_DATE()))
+          -- Include ALL jobs in current month (past, present, and future)
+          (EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(YEAR FROM CURRENT_DATE())
+           AND EXTRACT(MONTH FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(MONTH FROM CURRENT_DATE()))
+          -- Also include future jobs for next month
+          OR PARSE_DATE('%Y-%m-%d', Date) > CURRENT_DATE()
         )
       ORDER BY Date
     `;
@@ -306,14 +306,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const isThisMonth = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    // Use actual current date (estToday) for month comparison, not reference date
+    return d.getMonth() === estToday.getMonth() && d.getFullYear() === estToday.getFullYear();
   };
   
   const isNextMonth = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    const nextMonth = new Date(now);
-    nextMonth.setMonth(now.getMonth() + 1);
+    // Use actual current date (estToday) for next month calculation
+    const nextMonth = new Date(estToday);
+    nextMonth.setMonth(estToday.getMonth() + 1);
     return d.getMonth() === nextMonth.getMonth() && d.getFullYear() === nextMonth.getFullYear();
   };
   
@@ -564,6 +566,20 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Sample Speed to Lead Data]:', sampleSpeedData);
   
   // Process jobs data for OTB calculations
+  console.log('[OTB Debug] Processing', jobsData.length, 'jobs');
+  console.log('[OTB Debug] Current month:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  console.log('[OTB Debug] Reference date month:', now.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  
+  // Log first 5 jobs for debugging
+  jobsData.slice(0, 5).forEach(job => {
+    console.log('[OTB Debug] Sample job:', {
+      date: job.Date,
+      value: job.Calculated_Value,
+      type: job.Job_type,
+      salesperson: job.SalesPerson
+    });
+  });
+  
   jobsData.forEach(job => {
     const jobDate = parseDate(job.Date);
     const jobValue = parseFloat(job.Calculated_Value) || 0;
