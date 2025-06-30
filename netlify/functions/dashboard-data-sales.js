@@ -558,6 +558,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         // Extract the internal Jobber quote ID
         const jobberId = extractJobberId(quote.quote_id);
         
+        // Log the URL we're generating for debugging
+        if (jobberId) {
+          console.log('[Jobber URL Debug]', {
+            quote_number: quote.quote_number,
+            quote_id: quote.quote_id,
+            extracted_id: jobberId,
+            generated_url: `https://secure.getjobber.com/quotes/${jobberId}`
+          });
+        }
+        
         // Add to recent converted quotes
         recentConvertedQuotes.push({
           dateConverted: convertedDate.toLocaleDateString(),
