@@ -17,8 +17,24 @@ exports.handler = async (event, context) => {
     };
   }
 
+  // Add test endpoint for debugging
+  if (event.path && event.path.includes('/test')) {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        message: 'Test endpoint working',
+        timestamp: new Date().toISOString(),
+        env: {
+          hasProjectId: !!process.env.BIGQUERY_PROJECT_ID,
+          projectId: process.env.BIGQUERY_PROJECT_ID
+        }
+      }),
+    };
+  }
+
   try {
-    console.log('[dashboard-data-sales] Starting request processing... v2');
+    console.log('[dashboard-data-sales] Starting request processing... v3');
     
     // Check environment variables
     console.log('[dashboard-data-sales] Environment check:', {
