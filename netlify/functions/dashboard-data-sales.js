@@ -575,30 +575,33 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.thisMonthOTB += jobValue;
       
       // Calculate which week of the month this job falls into
-      // Sunday-Saturday weeks
+      // Proper Sunday-Saturday weeks that may span months
       const firstOfMonth = new Date(jobDate.getFullYear(), jobDate.getMonth(), 1);
-      let weekNumber = 1;
-      let weekStartDate = new Date(firstOfMonth);
+      const lastOfMonth = new Date(jobDate.getFullYear(), jobDate.getMonth() + 1, 0);
       
-      // Find all week starts (Sundays) in the month
-      while (weekStartDate <= jobDate) {
-        // Calculate the end of the current week (Saturday)
-        let weekEndDate = new Date(weekStartDate);
-        while (weekEndDate.getDay() !== 6 && weekEndDate.getMonth() === jobDate.getMonth()) {
-          weekEndDate.setDate(weekEndDate.getDate() + 1);
-        }
+      // Find the Sunday at or before the first of the month
+      let weekStartDate = new Date(firstOfMonth);
+      if (weekStartDate.getDay() !== 0) {
+        weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
+      }
+      
+      let weekNumber = 1;
+      
+      // Find which Sunday-Saturday week contains this job
+      while (weekStartDate <= lastOfMonth) {
+        const weekEndDate = new Date(weekStartDate);
+        weekEndDate.setDate(weekStartDate.getDate() + 6);
         
-        // Check if the job date falls within this week
+        // Check if job falls in this week
         if (jobDate >= weekStartDate && jobDate <= weekEndDate) {
           break;
         }
         
         // Move to next Sunday
-        weekStartDate = new Date(weekEndDate);
-        weekStartDate.setDate(weekStartDate.getDate() + 1);
+        weekStartDate.setDate(weekStartDate.getDate() + 7);
         
-        // Only increment week number if we're still in the same month
-        if (weekStartDate.getMonth() === jobDate.getMonth()) {
+        // Only count weeks that have at least one day in the current month
+        if (weekStartDate <= lastOfMonth) {
           weekNumber++;
         }
       }

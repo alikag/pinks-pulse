@@ -567,7 +567,7 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
         gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
         
-        // Calculate weeks for current month dynamically
+        // Calculate weeks for current month dynamically (Sunday-Saturday weeks)
         const now = new Date()
         const currentMonth = now.getMonth()
         const currentYear = now.getFullYear()
@@ -582,33 +582,52 @@ const SalesKPIDashboard: React.FC = () => {
         const weekRanges: string[] = []
         const weeklyOTBData: number[] = []
         
-        let currentDate = new Date(firstDay)
+        // Find all Sunday-Saturday weeks that overlap with this month
+        let weekStart = new Date(firstDay)
+        // Move back to the previous Sunday if first day isn't Sunday
+        if (weekStart.getDay() !== 0) {
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+        }
+        
         let weekNum = 1
         
-        while (currentDate <= lastDay) {
-          const weekStart = currentDate.getDate()
+        while (weekStart <= lastDay) {
+          // Calculate week end (Saturday)
+          const weekEnd = new Date(weekStart)
+          weekEnd.setDate(weekStart.getDate() + 6)
           
-          // Find next Sunday or end of month
-          let endDate = new Date(currentDate)
-          while (endDate.getDay() !== 6 && endDate.getDate() < lastDay.getDate()) {
-            endDate.setDate(endDate.getDate() + 1)
+          // Only include weeks that have at least one day in the current month
+          if (weekEnd >= firstDay) {
+            // Format the date range
+            const startMonth = weekStart.getMonth()
+            const endMonth = weekEnd.getMonth()
+            
+            let label = ''
+            if (startMonth === endMonth) {
+              // Same month: "June 22-28"
+              label = `${monthNames[startMonth]} ${weekStart.getDate()}-${weekEnd.getDate()}`
+            } else {
+              // Crosses months: "May 26 - June 1" 
+              label = `${monthNames[startMonth]} ${weekStart.getDate()} - ${monthNames[endMonth]} ${weekEnd.getDate()}`
+            }
+            
+            weekRanges.push(label)
+            
+            // Use actual data from backend if available
+            if (data?.kpiMetrics?.weeklyOTBBreakdown) {
+              const weekKey = `week${weekNum}`
+              weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
+            } else {
+              // No data available
+              weeklyOTBData.push(0)
+            }
+            
+            weekNum++
           }
           
-          weekRanges.push(`Week ${weekNum} (${monthName} ${weekStart}-${Math.min(endDate.getDate(), lastDay.getDate())})`)
-          
-          // Use actual data from backend if available
-          if (data?.kpiMetrics?.weeklyOTBBreakdown) {
-            const weekKey = `week${weekNum}`
-            weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
-          } else {
-            // No data available
-            weeklyOTBData.push(0)
-          }
-          
-          // Move to next week (next Sunday)
-          currentDate = new Date(endDate)
-          currentDate.setDate(currentDate.getDate() + 1)
-          weekNum++
+          // Move to next Sunday
+          weekStart = new Date(weekStart)
+          weekStart.setDate(weekStart.getDate() + 7)
         }
         
         let weekLabels = weekRanges
