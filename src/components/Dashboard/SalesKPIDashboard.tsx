@@ -34,6 +34,7 @@ const SalesKPIDashboard: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
   const { data, loading, error } = useDashboardData()
+  const mainContentRef = useRef<HTMLElement>(null)
   
   // Debug converted quotes and haptic feedback for conversions
   useEffect(() => {
@@ -1134,7 +1135,9 @@ const SalesKPIDashboard: React.FC = () => {
                 <h1 
                   onClick={() => {
                     haptics.light();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (mainContentRef.current) {
+                      mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
                   style={{
                     fontSize: "1.75rem",
@@ -1159,7 +1162,7 @@ const SalesKPIDashboard: React.FC = () => {
           </header>
 
           {/* Main Content */}
-          <section className="flex-1 overflow-y-auto p-4 pt-6 pb-20 lg:p-6 lg:pb-6 space-y-6">
+          <section ref={mainContentRef} className="flex-1 overflow-y-auto p-4 pt-6 pb-20 lg:p-6 lg:pb-6 space-y-6">
             {/* First Row KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {kpis.map((kpi) => (
