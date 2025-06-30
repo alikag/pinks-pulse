@@ -1039,14 +1039,23 @@ function processWeekData(quotesData, referenceDate, parseDate) {
       return sentDate && sentDate >= date && sentDate < nextDate;
     });
     
-    // For the chart, show quotes that were sent on this day and eventually converted
-    const dayQuotesConverted = dayQuotes.filter(q => q.status === 'Converted').length;
+    // For conversions, count quotes that were CONVERTED on this day (not sent)
+    const dayConversions = quotesData.filter(q => {
+      if (!q.converted_date || !q.status || q.status.toLowerCase() !== 'converted') return false;
+      const convertedDate = parseDate(q.converted_date);
+      return convertedDate && convertedDate >= date && convertedDate < nextDate;
+    }).length;
     
     const sent = dayQuotes.length;
-    const converted = dayQuotesConverted;
+    const converted = dayConversions;  // Use conversions by conversion date
     
     // Debug logging
     console.log(`[processWeekData] Position ${6-i} (i=${i}): ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
+    
+    // Additional debug for conversions
+    if (converted > 0) {
+      console.log(`[processWeekData] Found ${converted} conversions on ${date.toISOString().split('T')[0]}`);
+    }
     
     // Format label with day and date (e.g., "Mon 12/25")
     const month = date.getMonth() + 1;
