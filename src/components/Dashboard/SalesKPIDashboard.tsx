@@ -1094,7 +1094,7 @@ const SalesKPIDashboard: React.FC = () => {
                     }`}>
                       {(() => {
                         if (kpi.value === 0) {
-                          if (kpi.id === 'quotes-sent-today') return 'No quotes sent this week';
+                          if (kpi.id === 'quotes-sent-today') return 'No quotes sent today';
                           if (kpi.id === 'converted-today') return 'No quotes converted today';
                           if (kpi.id === 'converted-week') return 'No quotes converted this week';
                           if (kpi.id === 'cvr-week') return 'No quotes converted this week';
