@@ -211,7 +211,9 @@ exports.handler = async (event, context) => {
 
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
   // Find the most recent activity date (either sent or converted) to use as reference
-  let referenceDate = new Date();
+  // Use EST timezone for reference date
+  const estRefString = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+  let referenceDate = new Date(estRefString);
   const allDates = [];
   
   quotesData.forEach(q => {
@@ -863,9 +865,11 @@ function processWeekData(quotesData, referenceDate, parseDate) {
   };
 
   // Always use actual today for the week view to show the current week
-  const today = new Date();
+  // Use EST timezone to match business hours
+  const estString = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+  const today = new Date(estString);
   today.setHours(0, 0, 0, 0);
-  console.log('[processWeekData] Using today for week view:', today.toISOString(), 'Day:', weekDays[today.getDay()]);
+  console.log('[processWeekData] Using EST today for week view:', today.toISOString(), 'Day:', weekDays[today.getDay()]);
   
   for (let i = 6; i >= 0; i--) {
     const date = new Date(today);
@@ -957,7 +961,7 @@ function processMonthData(quotesData, referenceDate, parseDate) {
     ...monthData,
     avgConversionRate: `${avgConversionRate}%`,
     conversionChange: '+8.3%',
-    period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'America/New_York' })
   };
 }
 
