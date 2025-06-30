@@ -589,54 +589,55 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
     if (isThisMonth(jobDate)) {
       metrics.thisMonthOTB += jobValue;
+    }
+    
+    // Calculate weekly OTB for display - include jobs from ANY month that fall in displayed weeks
+    const currentMonth = estToday.getMonth();
+    const currentYear = estToday.getFullYear();
+    const firstOfMonth = new Date(currentYear, currentMonth, 1);
+    const lastOfMonth = new Date(currentYear, currentMonth + 1, 0);
+    
+    // Find the Sunday at or before the first of the month
+    let weekStartDate = new Date(firstOfMonth);
+    if (weekStartDate.getDay() !== 0) {
+      weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
+    }
+    
+    let weekNumber = 1;
+    
+    // Check all weeks that overlap with the current month
+    while (weekStartDate <= lastOfMonth) {
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekStartDate.getDate() + 6);
       
-      // Calculate which week of the month this job falls into
-      // Proper Sunday-Saturday weeks that may span months
-      const firstOfMonth = new Date(jobDate.getFullYear(), jobDate.getMonth(), 1);
-      const lastOfMonth = new Date(jobDate.getFullYear(), jobDate.getMonth() + 1, 0);
-      
-      // Find the Sunday at or before the first of the month
-      let weekStartDate = new Date(firstOfMonth);
-      if (weekStartDate.getDay() !== 0) {
-        weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
-      }
-      
-      let weekNumber = 1;
-      
-      // Find which Sunday-Saturday week contains this job
-      while (weekStartDate <= lastOfMonth) {
-        const weekEndDate = new Date(weekStartDate);
-        weekEndDate.setDate(weekStartDate.getDate() + 6);
+      // If this job falls within this week (regardless of month), add it to the week's total
+      if (jobDate >= weekStartDate && jobDate <= weekEndDate) {
+        const weekKey = `week${weekNumber}`;
         
-        // Check if job falls in this week
-        if (jobDate >= weekStartDate && jobDate <= weekEndDate) {
-          break;
+        console.log('[OTB Week Debug]', {
+          jobDate: jobDate.toLocaleDateString(),
+          jobMonth: jobDate.toLocaleString('default', { month: 'long' }),
+          currentMonth: estToday.toLocaleString('default', { month: 'long' }),
+          weekRange: `${weekStartDate.toLocaleDateString()} - ${weekEndDate.toLocaleDateString()}`,
+          weekNumber,
+          jobValue,
+          jobNumber: job.Job_Number
+        });
+        
+        if (!metrics.weeklyOTBBreakdown[weekKey]) {
+          metrics.weeklyOTBBreakdown[weekKey] = 0;
         }
-        
-        // Move to next Sunday
-        weekStartDate.setDate(weekStartDate.getDate() + 7);
-        
-        // Only count weeks that have at least one day in the current month
-        if (weekStartDate <= lastOfMonth) {
-          weekNumber++;
-        }
+        metrics.weeklyOTBBreakdown[weekKey] += jobValue;
+        break; // Job found in a week, no need to check other weeks
       }
       
-      const weekKey = `week${weekNumber}`;
+      // Move to next Sunday
+      weekStartDate.setDate(weekStartDate.getDate() + 7);
       
-      console.log('[OTB Week Debug]', {
-        jobDate: jobDate.toLocaleDateString(),
-        month: jobDate.toLocaleString('default', { month: 'long' }),
-        year: jobDate.getFullYear(),
-        weekNumber,
-        jobValue,
-        jobNumber: job.Job_Number
-      });
-      
-      if (!metrics.weeklyOTBBreakdown[weekKey]) {
-        metrics.weeklyOTBBreakdown[weekKey] = 0;
+      // Only increment week number if the week has at least one day in current month
+      if (weekStartDate <= lastOfMonth) {
+        weekNumber++;
       }
-      metrics.weeklyOTBBreakdown[weekKey] += jobValue;
     }
     if (isNextMonth(jobDate)) {
       metrics.nextMonthOTB += jobValue;
@@ -701,18 +702,34 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const lastDay = new Date(debugYear, debugMonth + 1, 0);
   console.log('[Week Ranges for', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }), ']:');
   
+  // Show proper Sunday-Saturday week ranges
   let debugDate = new Date(firstDay);
+  if (debugDate.getDay() !== 0) {
+    debugDate.setDate(debugDate.getDate() - debugDate.getDay());
+  }
+  
   let debugWeekNum = 1;
   while (debugDate <= lastDay) {
-    const weekStart = debugDate.getDate();
-    let endDate = new Date(debugDate);
-    while (endDate.getDay() !== 6 && endDate.getDate() < lastDay.getDate()) {
-      endDate.setDate(endDate.getDate() + 1);
+    const weekEnd = new Date(debugDate);
+    weekEnd.setDate(debugDate.getDate() + 6);
+    
+    // Format the week range properly
+    const startMonth = debugDate.getMonth();
+    const endMonth = weekEnd.getMonth();
+    let rangeStr = '';
+    
+    if (startMonth === endMonth) {
+      rangeStr = `${debugDate.toLocaleString('default', { month: 'short' })} ${debugDate.getDate()}-${weekEnd.getDate()}`;
+    } else {
+      rangeStr = `${debugDate.toLocaleString('default', { month: 'short' })} ${debugDate.getDate()} - ${weekEnd.toLocaleString('default', { month: 'short' })} ${weekEnd.getDate()}`;
     }
-    console.log(`  Week ${debugWeekNum}: ${estToday.toLocaleString('default', { month: 'short' })} ${weekStart}-${Math.min(endDate.getDate(), lastDay.getDate())} = $${metrics.weeklyOTBBreakdown[`week${debugWeekNum}`] || 0}`);
-    debugDate = new Date(endDate);
-    debugDate.setDate(debugDate.getDate() + 1);
-    debugWeekNum++;
+    
+    console.log(`  Week ${debugWeekNum}: ${rangeStr} = $${metrics.weeklyOTBBreakdown[`week${debugWeekNum}`] || 0}`);
+    
+    debugDate.setDate(debugDate.getDate() + 7);
+    if (debugDate <= lastDay) {
+      debugWeekNum++;
+    }
   }
   
   // Log job counts by week
