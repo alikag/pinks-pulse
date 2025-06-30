@@ -1039,23 +1039,29 @@ function processWeekData(quotesData, referenceDate, parseDate) {
       return sentDate && sentDate >= date && sentDate < nextDate;
     });
     
-    // For conversions, count quotes that were CONVERTED on this day (not sent)
+    // For the "Converted" line: count quotes that were CONVERTED on this day
     const dayConversions = quotesData.filter(q => {
       if (!q.converted_date || !q.status || q.status.toLowerCase() !== 'converted') return false;
       const convertedDate = parseDate(q.converted_date);
       return convertedDate && convertedDate >= date && convertedDate < nextDate;
     }).length;
     
+    // For CVR calculation: count quotes SENT on this day that have converted (any time)
+    const dayQuotesConverted = dayQuotes.filter(q => 
+      q.status && q.status.toLowerCase() === 'converted'
+    ).length;
+    
     const sent = dayQuotes.length;
-    const converted = dayConversions;  // Use conversions by conversion date
+    const converted = dayConversions;  // For the converted line chart
+    const cvrConverted = dayQuotesConverted;  // For CVR calculation
     
     // Debug logging
-    console.log(`[processWeekData] Position ${6-i} (i=${i}): ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}): ${sent} sent, ${converted} converted`);
-    
-    // Additional debug for conversions
-    if (converted > 0) {
-      console.log(`[processWeekData] Found ${converted} conversions on ${date.toISOString().split('T')[0]}`);
-    }
+    console.log(`[processWeekData] ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}):`, {
+      sent: sent,
+      convertedOnThisDay: converted,
+      sentThatConverted: cvrConverted,
+      cvr: sent > 0 ? Math.round((cvrConverted / sent) * 100) : 0
+    });
     
     // Format label with day and date (e.g., "Mon 12/25")
     const month = date.getMonth() + 1;
@@ -1065,9 +1071,9 @@ function processWeekData(quotesData, referenceDate, parseDate) {
     weekData.labels.push(dateLabel);
     weekData.quotesSent.push(sent);
     weekData.quotesConverted.push(converted);
-    weekData.conversionRate.push(sent > 0 ? Math.round((converted / sent) * 100) : 0);
+    weekData.conversionRate.push(sent > 0 ? Math.round((cvrConverted / sent) * 100) : 0);
     weekData.totalSent += sent;
-    weekData.totalConverted += converted;
+    weekData.totalConverted += cvrConverted;  // Use quotes sent that converted for total CVR
   }
 
   const avgConversionRate = weekData.totalSent > 0 
