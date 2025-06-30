@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -1185,7 +1185,7 @@ const SalesKPIDashboard: React.FC = () => {
                       })()}
                     </p>
                     {/* Add note for CVR This Week when using last week's data */}
-                    {kpi.id === 'cvr-week' && kpi.value > 0 && data?.kpiMetrics?.debugInfo?.usingLastWeekCVR && (
+                    {kpi.id === 'cvr-week' && kpi.value > 0 && (data?.kpiMetrics as any)?.debugInfo?.usingLastWeekCVR && (
                       <p className="text-xs text-blue-400 mt-1">
                         *Using last week's rate
                       </p>
