@@ -528,9 +528,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         if (recentConvertedQuotes.length < 3) {
           console.log('[Jobber Link Debug] Converted quote data:', {
             quote_number: quote.quote_number,
+            job_numbers: quote.job_numbers,
             client_name: quote.client_name,
             status: quote.status,
-            url: `https://secure.getjobber.com/quotes/${quote.quote_number}`
+            url: (quote.job_numbers && quote.job_numbers !== '-') ? 
+              `https://secure.getjobber.com/work_orders/${quote.job_numbers}` : 
+              `https://secure.getjobber.com/quotes/${quote.quote_number}`
           });
         }
         
@@ -538,17 +541,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         recentConvertedQuotes.push({
           dateConverted: convertedDate.toLocaleDateString(),
           quoteNumber: quote.quote_number || quote.Quote_Number,
-          jobNumber: quote.job_number || quote.Job_Number,
+          jobNumber: quote.job_numbers || quote.Job_Numbers,
           date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString() : '',
           jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
           clientName: quote.client_name || quote.Client_Name,
           salesPerson: quote.salesperson || quote.Salesperson,
-          // Construct Jobber URL
-          // Note: Without knowing the exact Jobber URL structure, we'll use the quote_number
-          // You may need to update this pattern based on your Jobber instance
-          jobberLink: quote.quote_number ? 
-            `https://secure.getjobber.com/quotes/${quote.quote_number}` : 
-            'https://secure.getjobber.com',
+          // Construct Jobber URL - use job number for converted quotes
+          // Converted quotes should link to the job, not the quote
+          jobberLink: (quote.job_numbers && quote.job_numbers !== '-') ? 
+            `https://secure.getjobber.com/work_orders/${quote.job_numbers}` : 
+            `https://secure.getjobber.com/quotes/${quote.quote_number}`,
           visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
           totalDollars: totalDollars,
           status: quote.status || quote.Status
