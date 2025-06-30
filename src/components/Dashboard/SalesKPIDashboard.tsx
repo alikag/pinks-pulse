@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle } from 'lucide-react'
+import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -1184,6 +1184,12 @@ const SalesKPIDashboard: React.FC = () => {
                         return formatValue(kpi.value, kpi.format);
                       })()}
                     </p>
+                    {/* Add note for CVR This Week when using last week's data */}
+                    {kpi.id === 'cvr-week' && kpi.value > 0 && data?.kpiMetrics?.debugInfo?.usingLastWeekCVR && (
+                      <p className="text-xs text-blue-400 mt-1">
+                        *Using last week's rate
+                      </p>
+                    )}
                     {/* Goal Progress Bar */}
                     {!(kpi.value === 0 && (kpi.id === 'quotes-sent-today' || kpi.id === 'converted-today' || kpi.id === 'converted-week' || kpi.id === 'cvr-week')) && (
                       <div className="mt-2">
@@ -1318,12 +1324,9 @@ const SalesKPIDashboard: React.FC = () => {
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
-                <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs text-blue-300 flex items-start gap-1">
-                    <span className="font-semibold">How this works:</span>
-                    <span>Each bar shows the conversion rate for quotes sent on that specific day. Example: Monday's bar = (Monday quotes that eventually converted) ÷ (Total Monday quotes sent) × 100. Today's quotes typically show 0% until they convert in coming days.</span>
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  *Tracks quotes by send date. Today's quotes show 0% until they convert.
+                </p>
               </div>
             </div>
 
