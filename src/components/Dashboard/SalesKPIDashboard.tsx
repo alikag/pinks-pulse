@@ -1051,16 +1051,28 @@ const SalesKPIDashboard: React.FC = () => {
             haptics.medium();
             setIsSidebarOpen(!isSidebarOpen);
           }}
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/80 backdrop-blur-lg rounded-lg border border-white/10"
+          className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-gray-900/90 backdrop-blur-lg rounded-lg border border-white/20 shadow-lg"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-5 w-5 text-white" />
         </button>
 
         {/* Sidebar */}
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col gap-6 border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
-            <span className="text-lg font-semibold tracking-tight">Pink's Pulse</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Pink's Logo" className="h-8 w-8 rounded-lg object-cover" />
+              <span className="text-lg font-semibold tracking-tight">Pink's Pulse</span>
+            </div>
+            {/* Close button for mobile */}
+            <button 
+              onClick={() => {
+                haptics.light();
+                setIsSidebarOpen(false);
+              }}
+              className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg transition"
+            >
+              <XCircle className="h-5 w-5" />
+            </button>
           </div>
 
           <nav className="flex flex-col gap-1 text-sm">
