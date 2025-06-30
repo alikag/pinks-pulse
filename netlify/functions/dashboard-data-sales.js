@@ -54,6 +54,7 @@ exports.handler = async (event, context) => {
     const quotesQuery = `
       SELECT 
         quote_number,
+        job_number,
         client_name,
         salesperson,
         status,
@@ -482,6 +483,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         metrics.convertedThisWeek++;
         metrics.convertedThisWeekDollars += totalDollars;
         
+        // Debug: Log the first few converted quotes to see what IDs we have
+        if (recentConvertedQuotes.length < 3) {
+          console.log('[Jobber Link Debug] Converted quote data:', {
+            quote_number: quote.quote_number,
+            job_number: quote.job_number,
+            client_name: quote.client_name,
+            status: quote.status
+          });
+        }
+        
         // Add to recent converted quotes
         recentConvertedQuotes.push({
           dateConverted: convertedDate.toLocaleDateString(),
@@ -491,8 +502,20 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
           clientName: quote.client_name || quote.Client_Name,
           salesPerson: quote.salesperson || quote.Salesperson,
-          // Construct proper Jobber quote URL using quote number
-          jobberLink: quote.quote_number ? `https://secure.getjobber.com/quotes/${quote.quote_number}` : 'https://secure.getjobber.com',
+          // Construct Jobber URL - try different patterns based on what data we have
+          // Note: Jobber might use job_number for the URL instead of quote_number
+          jobberLink: (() => {
+            // If we have a job_number, try using that (jobs might be the correct endpoint)
+            if (quote.job_number || quote.Job_Number) {
+              return `https://secure.getjobber.com/jobs/${quote.job_number || quote.Job_Number}`;
+            }
+            // Otherwise fall back to quote_number
+            if (quote.quote_number || quote.Quote_Number) {
+              return `https://secure.getjobber.com/quotes/${quote.quote_number || quote.Quote_Number}`;
+            }
+            // Default to Jobber home
+            return 'https://secure.getjobber.com';
+          })(),
           visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
           totalDollars: totalDollars,
           status: quote.status || quote.Status
