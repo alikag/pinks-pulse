@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
+import RainbowLoadingWave from '../RainbowLoadingWave';
 
 interface PasswordProtectProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
 
   // Check if already authenticated
   useEffect(() => {
@@ -31,8 +33,14 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
     
     if (password === correctPassword) {
       localStorage.setItem('dashboard_auth', 'authenticated_2025');
-      setIsAuthenticated(true);
       setError('');
+      setShowLoadingAnimation(true);
+      
+      // Show loading animation for 2 seconds before revealing dashboard
+      setTimeout(() => {
+        setIsAuthenticated(true);
+        setShowLoadingAnimation(false);
+      }, 2000);
     } else {
       setError('Incorrect password. Please try again.');
       setPassword('');
@@ -40,6 +48,10 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
     
     setIsLoading(false);
   };
+
+  if (showLoadingAnimation) {
+    return <RainbowLoadingWave />;
+  }
 
   if (isAuthenticated) {
     return <>{children}</>;

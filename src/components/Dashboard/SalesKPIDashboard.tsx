@@ -3,6 +3,7 @@ import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle } fr
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
+import RainbowLoadingWave from '../RainbowLoadingWave'
 
 // Types
 interface KPI {
@@ -572,7 +573,6 @@ const SalesKPIDashboard: React.FC = () => {
         const currentMonth = now.getMonth()
         const currentYear = now.getFullYear()
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const monthName = monthNames[currentMonth]
         
         // Get first and last day of current month
         const firstDay = new Date(currentYear, currentMonth, 1)
@@ -997,20 +997,7 @@ const SalesKPIDashboard: React.FC = () => {
   }, [data, loading, kpis])
 
   if (loading) {
-    return (
-      <div className="h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f]">
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <div className="relative inline-flex mb-8">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-spin"></div>
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full absolute top-0 left-0 animate-ping"></div>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Loading Dashboard</h2>
-            <p className="text-white/60">Connecting to data source...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <RainbowLoadingWave />
   }
 
   if (error) {
