@@ -1325,7 +1325,7 @@ const SalesKPIDashboard: React.FC = () => {
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 italic">
-                  *Tracks quotes by send date. Today's quotes show 0% until they convert.
+                  *By send date, not conversion date
                 </p>
               </div>
             </div>
