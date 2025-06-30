@@ -194,6 +194,16 @@ exports.handler = async (event, context) => {
     
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
     
+    // Additional check for quotes
+    const quotesWithNullSent = quotesData.filter(q => !q.sent_date).length;
+    const uniqueQuoteNumbers = new Set(quotesData.map(q => q.quote_number)).size;
+    console.log(`[dashboard-data-sales] Quote data analysis:`, {
+      totalQuotes: quotesData.length,
+      uniqueQuoteNumbers: uniqueQuoteNumbers,
+      quotesWithNullSentDate: quotesWithNullSent,
+      hasDuplicates: uniqueQuoteNumbers < quotesData.length
+    });
+    
     // Debug: Check sample job dates
     if (jobsData.length > 0) {
       console.log('[dashboard-data-sales] Sample job dates from BigQuery:', {
@@ -974,43 +984,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const currentQuarter = getCurrentQuarter();
   const quarterLabel = `Q${currentQuarter}`;
   
-  // Debug: Check date ranges for Q2
-  const q2Start = new Date(estToday.getFullYear(), 3, 1); // April 1
-  const q2End = new Date(estToday.getFullYear(), 6, 0, 23, 59, 59, 999); // June 30
-  console.log('[Waterfall Debug] Q2 date range:', {
-    start: q2Start.toISOString(),
-    end: q2End.toISOString(),
-    currentQuarter: currentQuarter,
-    estToday: estToday.toISOString()
-  });
   
   let quarterQuotesSent = 0;
   let quarterQuotesConverted = 0;
   let quarterValueSent = 0;
   let quarterValueConverted = 0;
   
-  // Count ALL quotes to compare with Jobber
-  let totalQuotesSent = 0;
-  let totalQuotesConverted = 0;
-  let totalValueSent = 0;
-  let totalValueConverted = 0;
-  
   quotesData.forEach(quote => {
     const sentDate = parseDate(quote.sent_date);
-    const value = parseFloat(quote.total_dollars) || 0;
-    
-    // Count all quotes
-    if (sentDate) {
-      totalQuotesSent++;
-      totalValueSent += value;
-      if (quote.status && quote.status.toLowerCase() === 'converted') {
-        totalQuotesConverted++;
-        totalValueConverted += value;
-      }
-    }
-    
-    // Count Q2 quotes
     if (sentDate && isThisQuarter(sentDate)) {
+      const value = parseFloat(quote.total_dollars) || 0;
       quarterQuotesSent++;
       quarterValueSent += value;
       
@@ -1021,17 +1004,6 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
   });
   
-  console.log('[Waterfall Debug] Quote counts:', {
-    totalInData: quotesData.length,
-    totalWithSentDate: totalQuotesSent,
-    totalConverted: totalQuotesConverted,
-    totalValueSent: totalValueSent,
-    totalValueConverted: totalValueConverted,
-    q2Sent: quarterQuotesSent,
-    q2Converted: quarterQuotesConverted,
-    q2ValueSent: quarterValueSent,
-    q2ValueConverted: quarterValueConverted
-  });
   
   const quarterValueNotConverted = quarterValueSent - quarterValueConverted;
   
