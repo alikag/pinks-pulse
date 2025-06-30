@@ -759,7 +759,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     convertedThisWeekDollars: metrics.convertedThisWeekDollars,
     calculatedCVR: metrics.quotesThisWeek > 0 ? 
       parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
-    weekStartDate: estToday.getDay() === 0 ? estToday : new Date(estToday.getTime() - (estToday.getDay() * 24 * 60 * 60 * 1000))
+    weekStartDate: estToday.getDay() === 0 ? estToday : new Date(estToday.getTime() - (estToday.getDay() * 24 * 60 * 60 * 1000)),
+    convertedToday: metrics.convertedToday,
+    quotes30Days: metrics.quotes30Days,
+    quotes30DaysConverted: metrics.quotes30DaysConverted,
+    cvr30Days: metrics.quotes30Days > 0 ? 
+      parseFloat(((metrics.quotes30DaysConverted / metrics.quotes30Days) * 100).toFixed(1)) : 0
   });
   
   const kpiMetrics = {
