@@ -129,24 +129,6 @@ exports.handler = async (event, context) => {
 
     console.log('[dashboard-data-sales] Executing queries...');
     
-    // First, let's check how many quotes we have total
-    const countQuery = `
-      SELECT 
-        COUNT(*) as total_quotes,
-        COUNT(CASE WHEN sent_date IS NOT NULL THEN 1 END) as quotes_with_sent_date,
-        COUNT(CASE WHEN sent_date IS NULL THEN 1 END) as quotes_without_sent_date,
-        MIN(sent_date) as earliest_sent_date,
-        MAX(sent_date) as latest_sent_date
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-    `;
-    
-    try {
-      const [countData] = await bigquery.query(countQuery);
-      console.log('[BigQuery Data Check]:', countData[0]);
-    } catch (err) {
-      console.error('[BigQuery Data Check] Count query failed:', err);
-    }
-    
     let quotesData, jobsData, speedToLeadData, reviewsData;
     
     try {
