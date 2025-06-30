@@ -456,6 +456,21 @@ const SalesKPIDashboard: React.FC = () => {
       if (ctx) {
         const chartData = data.timeSeries.week
         
+        // Debug logging for missing bars
+        console.log('[Weekly CVR Chart Debug]', {
+          labels: chartData.labels,
+          conversionRate: chartData.conversionRate,
+          labelsLength: chartData.labels.length,
+          dataLength: chartData.conversionRate.length
+        })
+        
+        // Check for null/undefined/zero values
+        chartData.conversionRate.forEach((value, index) => {
+          if (value === null || value === undefined || value === 0) {
+            console.log(`[CVR Debug] Index ${index} (${chartData.labels[index]}): value=${value}, isNull=${value === null}, isUndefined=${value === undefined}, isZero=${value === 0}`)
+          }
+        })
+        
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -463,13 +478,10 @@ const SalesKPIDashboard: React.FC = () => {
             datasets: [{
               label: 'CVR %',
               data: chartData.conversionRate,
-              backgroundColor: [
-                'rgba(14, 165, 233, 0.8)',
-                'rgba(6, 182, 212, 0.8)',
-                'rgba(34, 211, 238, 0.8)'
-              ],
+              backgroundColor: 'rgba(14, 165, 233, 0.8)',
               borderRadius: 4,
-              borderWidth: 0
+              borderWidth: 0,
+              minBarLength: 2 // Show minimal bar even for 0 values
             }]
           },
           options: {
