@@ -309,13 +309,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const estToday = new Date(estString);
   estToday.setHours(0, 0, 0, 0);
   
+  console.log('[Date Calculation Debug]', {
+    referenceDate: referenceDate.toLocaleDateString(),
+    now: now.toLocaleDateString(),
+    actualToday: actualToday.toLocaleDateString(),
+    estToday: estToday.toLocaleDateString(),
+    estTodayTime: estToday.getTime()
+  });
+  
   // Helper functions for date comparisons
   
   const isToday = (date) => {
     if (!date) return false;
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
-    return d.getTime() === now.getTime();
+    // Use actual current EST date, not reference date
+    return d.getTime() === estToday.getTime();
   };
   
   const isThisWeek = (date) => {
@@ -504,6 +513,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       if (isToday(convertedDate)) {
         metrics.convertedToday++;
         metrics.convertedTodayDollars += totalDollars;
+        console.log('[Converted Today Debug] Quote converted today:', {
+          quoteNumber: quote.quote_number,
+          convertedDate: convertedDate.toLocaleDateString(),
+          estToday: estToday.toLocaleDateString(),
+          totalDollars
+        });
       }
       if (isThisWeek(convertedDate)) {
         metrics.convertedThisWeek++;
