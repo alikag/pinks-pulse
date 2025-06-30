@@ -459,19 +459,19 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Quote Status Debug] Total quotes:', quotesData.length);
   
   // Debug week calculation
-  const weekStart = new Date(estToday);
-  weekStart.setDate(estToday.getDate() - estToday.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  const debugWeekStart = new Date(estToday);
+  debugWeekStart.setDate(estToday.getDate() - estToday.getDay());
+  debugWeekStart.setHours(0, 0, 0, 0);
+  const debugWeekEnd = new Date(debugWeekStart);
+  debugWeekEnd.setDate(debugWeekStart.getDate() + 7);
   
   console.log('[Week Debug]', {
     estToday: estToday.toISOString(),
     estTodayDay: estToday.toLocaleDateString('en-US', { weekday: 'long' }),
-    weekStart: weekStart.toISOString(),
-    weekEnd: weekEnd.toISOString(),
-    weekStartDate: weekStart.toLocaleDateString(),
-    weekEndDate: weekEnd.toLocaleDateString()
+    weekStart: debugWeekStart.toISOString(),
+    weekEnd: debugWeekEnd.toISOString(),
+    weekStartDate: debugWeekStart.toLocaleDateString(),
+    weekEndDate: debugWeekEnd.toLocaleDateString()
   });
   
   quotesData.forEach((quote, index) => {
