@@ -351,6 +351,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     return d >= weekStart && d < weekEnd;
   };
   
+  const isLastWeek = (date) => {
+    if (!date) return false;
+    const d = new Date(date);
+    // Last week's Sunday-Saturday
+    const lastWeekStart = new Date(estToday);
+    lastWeekStart.setDate(estToday.getDate() - estToday.getDay() - 7); // Last Sunday
+    lastWeekStart.setHours(0, 0, 0, 0);
+    const lastWeekEnd = new Date(lastWeekStart);
+    lastWeekEnd.setDate(lastWeekStart.getDate() + 7);
+    return d >= lastWeekStart && d < lastWeekEnd;
+  };
+  
   const isThisMonth = (date) => {
     if (!date) return false;
     const d = new Date(date);
@@ -414,6 +426,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     // For proper CVR calculation
     quotesThisWeekConverted: 0,
     quotes30DaysConverted: 0,
+    // NEW: Track last week's quotes and conversions for meaningful CVR
+    quotesLastWeek: 0,
+    quotesLastWeekConverted: 0,
     // Weekly OTB breakdown for current month
     weeklyOTBBreakdown: {},
     // Monthly OTB data for all 12 months of 2025
@@ -534,6 +549,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
             convertedDate: convertedDate ? convertedDate.toLocaleDateString() : 'not converted',
             status: quote.status
           });
+        }
+      }
+      if (isLastWeek(sentDate)) {
+        metrics.quotesLastWeek++;
+        // Check if this quote sent last week was eventually converted
+        const isConverted = quote.status && quote.status.toLowerCase() === 'converted';
+        if (isConverted) {
+          metrics.quotesLastWeekConverted++;
         }
       }
       if (isLast30Days(sentDate)) {
@@ -812,10 +835,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[CVR Calculation Debug]:', {
     quotesThisWeek: metrics.quotesThisWeek,
     quotesThisWeekConverted: metrics.quotesThisWeekConverted,
+    quotesLastWeek: metrics.quotesLastWeek,
+    quotesLastWeekConverted: metrics.quotesLastWeekConverted,
     convertedThisWeek: metrics.convertedThisWeek,
     convertedThisWeekDollars: metrics.convertedThisWeekDollars,
-    calculatedCVR: metrics.quotesThisWeek > 0 ? 
+    calculatedCVRThisWeek: metrics.quotesThisWeek > 0 ? 
       parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
+    calculatedCVRLastWeek: metrics.quotesLastWeek > 0 ? 
+      parseFloat(((metrics.quotesLastWeekConverted / metrics.quotesLastWeek) * 100).toFixed(1)) : 0,
     weekStartDate: estToday.getDay() === 0 ? estToday : new Date(estToday.getTime() - (estToday.getDay() * 24 * 60 * 60 * 1000)),
     convertedToday: metrics.convertedToday,
     quotes30Days: metrics.quotes30Days,
@@ -824,6 +851,23 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       parseFloat(((metrics.quotes30DaysConverted / metrics.quotes30Days) * 100).toFixed(1)) : 0
   });
   
+  // Use a smart CVR calculation:
+  // - If we have conversions this week already, use this week's CVR
+  // - Otherwise, use last week's CVR as a more meaningful metric
+  // - This avoids showing 0% CVR just because today's quotes haven't had time to convert
+  let smartWeeklyCVR = 0;
+  if (metrics.quotesThisWeekConverted > 0 && metrics.quotesThisWeek > 0) {
+    // We have conversions this week, use current week CVR
+    smartWeeklyCVR = parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1));
+    console.log('[Smart CVR] Using current week CVR:', smartWeeklyCVR);
+  } else if (metrics.quotesLastWeek > 0) {
+    // No conversions this week yet, use last week's CVR as a proxy
+    smartWeeklyCVR = parseFloat(((metrics.quotesLastWeekConverted / metrics.quotesLastWeek) * 100).toFixed(1));
+    console.log('[Smart CVR] Using last week CVR as proxy:', smartWeeklyCVR);
+  } else {
+    console.log('[Smart CVR] No data available for CVR calculation');
+  }
+  
   const kpiMetrics = {
     quotesToday: metrics.quotesToday,
     convertedToday: metrics.convertedToday,
@@ -831,8 +875,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesThisWeek: metrics.quotesThisWeek,
     convertedThisWeek: metrics.convertedThisWeek,
     convertedThisWeekDollars: metrics.convertedThisWeekDollars,
-    cvrThisWeek: metrics.quotesThisWeek > 0 ? 
-      parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1)) : 0,
+    cvrThisWeek: smartWeeklyCVR,
     quotes30Days: metrics.quotes30Days,
     converted30Days: metrics.converted30Days,
     cvr30Days: metrics.quotes30Days > 0 ? 
@@ -846,7 +889,13 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     thisWeekOTB: metrics.thisWeekOTB,
     weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
     monthlyOTBData: metrics.monthlyOTBData,
-    reviewsThisWeek: reviewsThisWeek
+    reviewsThisWeek: reviewsThisWeek,
+    // Add debug info
+    debugInfo: {
+      usingLastWeekCVR: metrics.quotesThisWeekConverted === 0 && metrics.quotesLastWeek > 0,
+      lastWeekCVR: metrics.quotesLastWeek > 0 ? 
+        parseFloat(((metrics.quotesLastWeekConverted / metrics.quotesLastWeek) * 100).toFixed(1)) : 0
+    }
   };
   
   // Log weekly OTB breakdown with more detail
