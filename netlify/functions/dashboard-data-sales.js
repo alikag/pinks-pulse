@@ -47,23 +47,20 @@ exports.handler = async (event, context) => {
       
       const bigquery = new BigQuery(bigqueryConfig);
       
-      // Simple query to check statuses
+      // Query to check today's quotes specifically
       const debugQuery = `
-        WITH monday_quotes AS (
-          SELECT 
-            quote_number,
-            status,
-            sent_date,
-            converted_date,
-            CASE 
-              WHEN LOWER(status) = 'converted' THEN 'YES'
-              WHEN status = 'Converted' THEN 'EXACT_MATCH'
-              ELSE 'NO'
-            END as is_converted_check
-          FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-          WHERE sent_date = '2025-06-30'
-        )
-        SELECT * FROM monday_quotes
+        SELECT 
+          quote_number,
+          status,
+          sent_date,
+          converted_date,
+          salesperson,
+          total_dollars
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
+        WHERE DATE(sent_date) = CURRENT_DATE()
+           OR DATE(converted_date) = CURRENT_DATE()
+        ORDER BY sent_date DESC, converted_date DESC
+        LIMIT 20
       `;
       
       const [rows] = await bigquery.query(debugQuery);
@@ -1232,6 +1229,14 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       const convertedDate = parseDate(q.converted_date);
       return convertedDate && convertedDate >= date && convertedDate < nextDate;
     }).length;
+    
+    // Debug for all days
+    if (dayQuotes.length > 0) {
+      console.log(`[Day ${dayOffset} - ${weekDays[date.getDay()]}] Found ${dayQuotes.length} quotes sent`);
+      dayQuotes.forEach(q => {
+        console.log(`  Quote ${q.quote_number}: status="${q.status}", converted_date=${q.converted_date}`);
+      });
+    }
     
     // For CVR calculation: count quotes SENT on this day that have converted (any time)
     const dayQuotesConverted = dayQuotes.filter(q => {

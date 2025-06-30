@@ -1307,10 +1307,24 @@ const SalesKPIDashboard: React.FC = () => {
 
               {/* Weekly CVR % */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">Weekly CVR %</h2>
+                <h2 className="font-medium mb-4 flex items-center justify-between">
+                  <span>Weekly CVR %</span>
+                  {data?.kpiMetrics?.cvrThisWeek && (
+                    <span className="text-sm text-gray-400">
+                      Week Avg: {data.kpiMetrics.cvrThisWeek}%
+                    </span>
+                  )}
+                </h2>
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
+                {data?.timeSeries?.week?.conversionRate && 
+                 data.timeSeries.week.conversionRate.every(rate => rate === 0) && 
+                 data?.kpiMetrics?.cvrThisWeek > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Daily breakdown shows 0% as quotes need time to convert. Using last week's CVR ({data.kpiMetrics.cvrThisWeek}%) as reference.
+                  </p>
+                )}
               </div>
             </div>
 
