@@ -1572,7 +1572,7 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       return sentDateEST.getTime() === date.getTime();
     });
     
-    // For the "Converted" line: count quotes that were CONVERTED on this day
+    // For the "Converted" line: calculate DOLLAR VALUE of quotes that were CONVERTED on this day
     const dayConversions = quotesData.filter(q => {
       if (!q.converted_date) return false;
       const statusLower = q.status ? q.status.toLowerCase().trim() : '';
@@ -1589,21 +1589,27 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       
       // Check if the converted date falls on this specific day
       return convertedDateEST.getTime() === date.getTime();
-    }).length;
+    });
+    
+    // Calculate total dollar value of conversions on this day
+    const dayConversionDollars = dayConversions.reduce((sum, quote) => {
+      return sum + (parseFloat(quote.total_dollars) || 0);
+    }, 0);
     
     // Debug for all days
-    if (dayConversions > 0 || dayOffset <= today.getDay()) {
+    if (dayConversionDollars > 0 || dayOffset <= today.getDay()) {
       console.log(`[processWeekData Day ${dayOffset} - ${weekDays[date.getDay()]} ${date.toLocaleDateString()}]`, {
         date: date.toISOString(),
         dayQuotesSent: dayQuotes.length,
-        dayConversions: dayConversions,
+        dayConversions: dayConversions.length,
+        dayConversionDollars: dayConversionDollars,
         isToday: date.getTime() === today.getTime(),
         isFuture: date > today
       });
       
       // Log any conversions found for debugging
-      if (dayConversions > 0) {
-        console.log(`[CONVERSION FOUND] ${dayConversions} conversion(s) on ${weekDays[date.getDay()]} ${date.toLocaleDateString()}`);
+      if (dayConversionDollars > 0) {
+        console.log(`[CONVERSION FOUND] ${dayConversions.length} conversion(s) worth $${dayConversionDollars} on ${weekDays[date.getDay()]} ${date.toLocaleDateString()}`);
       }
     }
     
@@ -1617,7 +1623,7 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     }).length;
     
     const sent = dayQuotes.length;
-    const converted = dayConversions;  // For the converted line (conversions on this day)
+    const converted = dayConversionDollars;  // For the converted line (conversion dollars on this day)
     
     // For Weekly CVR %: quotes sent on this day that have converted / quotes sent on this day
     const dailyCVR = sent > 0 ? Math.round((dayQuotesConverted / sent) * 100) : 0;
@@ -1626,6 +1632,7 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     console.log(`[processWeekData] ${weekDays[date.getDay()]} (${date.toISOString().split('T')[0]}):`, {
       sent: sent,
       convertedOnDay: converted,
+      convertedCount: dayConversions.length,
       sentThatConverted: dayQuotesConverted,
       cvr: dailyCVR
     });

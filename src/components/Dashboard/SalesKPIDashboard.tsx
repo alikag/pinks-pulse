@@ -700,7 +700,12 @@ const SalesKPIDashboard: React.FC = () => {
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 callbacks: {
-                  label: (context) => `${context.dataset.label}: ${context.parsed.y}`
+                  label: (context) => {
+                    if (context.dataset.label === 'Converted ($)') {
+                      return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`;
+                    }
+                    return `${context.dataset.label}: ${context.parsed.y}`;
+                  }
                 }
               }
             },
@@ -709,8 +714,13 @@ const SalesKPIDashboard: React.FC = () => {
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => value.toString(),
-                  stepSize: 1
+                  callback: (value) => {
+                    // Format as currency for better readability
+                    if (value >= 1000) {
+                      return `$${(value / 1000).toFixed(1)}k`;
+                    }
+                    return `$${value}`;
+                  }
                 }
               },
               x: {
