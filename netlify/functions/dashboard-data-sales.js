@@ -134,10 +134,11 @@ export const handler = async (event, context) => {
         q.total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
         q.sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
         -- Use job's Date_Converted if available, otherwise fall back to quote's converted_date
+        -- Cast both to same type (DATE) for COALESCE to work
         COALESCE(
-          j.Date_Converted,    -- When the job was actually created (accurate conversion date)
-          q.converted_date     -- Fallback to quote's converted date if no job found
-        ) as converted_date,   -- This is now the CORRECT conversion date
+          CAST(j.Date_Converted AS DATE),    -- When the job was actually created (accurate conversion date)
+          q.converted_date                    -- Fallback to quote's converted date if no job found
+        ) as converted_date,                  -- This is now the CORRECT conversion date
         q.days_to_convert,     -- How long it took to close (not currently used)
         q.job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
