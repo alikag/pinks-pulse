@@ -408,58 +408,64 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   const isToday = (date) => {
     if (!date) return false;
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    dateInEST.setHours(0, 0, 0, 0);
     // Use actual current EST date, not reference date
-    return d.getTime() === estToday.getTime();
+    return dateInEST.getTime() === estToday.getTime();
   };
   
   const isThisWeek = (date) => {
     if (!date) return false;
-    const d = new Date(date);
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
     // Sunday-Saturday weeks using EST date
     const weekStart = new Date(estToday);
     weekStart.setDate(estToday.getDate() - estToday.getDay()); // Sunday
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
-    return d >= weekStart && d < weekEnd;
+    return dateInEST >= weekStart && dateInEST < weekEnd;
   };
   
   const isLastWeek = (date) => {
     if (!date) return false;
-    const d = new Date(date);
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
     // Last week's Sunday-Saturday
     const lastWeekStart = new Date(estToday);
     lastWeekStart.setDate(estToday.getDate() - estToday.getDay() - 7); // Last Sunday
     lastWeekStart.setHours(0, 0, 0, 0);
     const lastWeekEnd = new Date(lastWeekStart);
     lastWeekEnd.setDate(lastWeekStart.getDate() + 7);
-    return d >= lastWeekStart && d < lastWeekEnd;
+    return dateInEST >= lastWeekStart && dateInEST < lastWeekEnd;
   };
   
   const isThisMonth = (date) => {
     if (!date) return false;
-    const d = new Date(date);
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
     // Use actual current date (estToday) for month comparison, not reference date
-    return d.getMonth() === estToday.getMonth() && d.getFullYear() === estToday.getFullYear();
+    return dateInEST.getMonth() === estToday.getMonth() && dateInEST.getFullYear() === estToday.getFullYear();
   };
   
   const isNextMonth = (date) => {
     if (!date) return false;
-    const d = new Date(date);
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
     // Use actual current date (estToday) for next month calculation
     const nextMonth = new Date(estToday);
     nextMonth.setMonth(estToday.getMonth() + 1);
-    return d.getMonth() === nextMonth.getMonth() && d.getFullYear() === nextMonth.getFullYear();
+    return dateInEST.getMonth() === nextMonth.getMonth() && dateInEST.getFullYear() === nextMonth.getFullYear();
   };
   
   const isLast30Days = (date) => {
     if (!date) return false;
-    const d = new Date(date);
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(now.getDate() - 30);
-    return d >= thirtyDaysAgo && d <= now;
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const thirtyDaysAgo = new Date(estToday);
+    thirtyDaysAgo.setDate(estToday.getDate() - 30);
+    return dateInEST >= thirtyDaysAgo && dateInEST <= estToday;
   };
   
   // Get current quarter (1-4)
@@ -471,7 +477,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Check if date is in current quarter
   const isThisQuarter = (date) => {
     if (!date) return false;
-    const d = new Date(date);
+    // Convert the date to EST string and parse back to ensure we're comparing in EST
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
     const currentQuarter = getCurrentQuarter();
     const currentYear = estToday.getFullYear();
     
@@ -479,7 +486,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const quarterStart = new Date(currentYear, quarterStartMonth, 1);
     const quarterEnd = new Date(currentYear, quarterStartMonth + 3, 0, 23, 59, 59, 999);
     
-    return d >= quarterStart && d <= quarterEnd;
+    return dateInEST >= quarterStart && dateInEST <= quarterEnd;
   };
 
   // ================================================
@@ -741,10 +748,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         
         // Add to recent converted quotes
         recentConvertedQuotes.push({
-          dateConverted: convertedDate.toLocaleDateString(),
+          dateConverted: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
           quoteNumber: quote.quote_number || quote.Quote_Number,
           jobNumber: quote.job_numbers || quote.Job_Numbers,
-          date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString() : '',
+          date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString("en-US", {timeZone: "America/New_York"}) : '',
           jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
           clientName: quote.client_name || quote.Client_Name,
           salesPerson: quote.salesperson || quote.Salesperson,
