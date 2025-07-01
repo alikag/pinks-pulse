@@ -1104,7 +1104,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Process jobs data for OTB calculations
   console.log('[OTB Debug] Processing', jobsData.length, 'jobs');
   console.log('[OTB Debug] Current month:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
-  console.log('[OTB Debug] Reference date month:', now.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  console.log('[OTB Debug] Reference date month:', now_utc.toLocaleString('default', { month: 'long', year: 'numeric' }));
   
   // Log first 5 jobs for debugging
   jobsData.slice(0, 5).forEach(job => {
