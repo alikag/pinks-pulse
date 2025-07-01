@@ -603,38 +603,43 @@ const SalesKPIDashboard: React.FC = () => {
         // Get current day index (0 = Sunday, 6 = Saturday)
         const currentDayIndex = new Date().getDay()
         
-        // Trim data to only show up to current day
-        const trimmedLabels = chartData.labels.slice(0, currentDayIndex + 1)
-        const trimmedQuotesSent = chartData.quotesSent.slice(0, currentDayIndex + 1)
-        const trimmedQuotesConverted = chartData.quotesConverted.slice(0, currentDayIndex + 1)
+        // Create data arrays with null values for future days
+        const processedQuotesSent = chartData.quotesSent.map((value, index) => 
+          index <= currentDayIndex ? value : null
+        )
+        const processedQuotesConverted = chartData.quotesConverted.map((value, index) => 
+          index <= currentDayIndex ? value : null
+        )
         
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: trimmedLabels,
+            labels: chartData.labels,
             datasets: [{
               label: 'Sent Quotes',
-              data: trimmedQuotesSent,
+              data: processedQuotesSent,
               borderColor: '#fb923c',
               backgroundColor: 'rgba(251, 146, 60, 0.1)',
               fill: false,
               tension: 0.4,
-              pointBackgroundColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#fb923c'),
-              pointBorderColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
-              pointBorderWidth: trimmedLabels.map((_, i) => i === currentDayIndex ? 3 : 2),
-              pointRadius: trimmedLabels.map((_, i) => i === currentDayIndex ? 6 : 4),
+              spanGaps: false,
+              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#fb923c'),
+              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
+              pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
+              pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
               pointHoverRadius: 6
             }, {
               label: 'Converted ($)',
-              data: trimmedQuotesConverted,
+              data: processedQuotesConverted,
               borderColor: '#3b82f6',
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
               fill: false,
               tension: 0.4,
-              pointBackgroundColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#3b82f6'),
-              pointBorderColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
-              pointBorderWidth: trimmedLabels.map((_, i) => i === currentDayIndex ? 3 : 2),
-              pointRadius: trimmedLabels.map((_, i) => i === currentDayIndex ? 6 : 4),
+              spanGaps: false,
+              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#3b82f6'),
+              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
+              pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
+              pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
               pointHoverRadius: 6
             }]
           },
@@ -884,14 +889,9 @@ const SalesKPIDashboard: React.FC = () => {
           
           weekRanges.push(label)
           
-          // For OTB data, we need to map to the correct week number in the month
-          // This is a simplified approach - in production, you'd want to calculate
-          // the actual week number within the month for the data mapping
+          // For OTB data, use the week index (0-4) matching backend's week0-week4 keys
           if (data?.kpiMetrics?.weeklyOTBBreakdown) {
-            // Calculate which week of the month this is
-            const monthStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1)
-            const weekOfMonth = Math.ceil((weekStart.getDate() + monthStart.getDay()) / 7)
-            const weekKey = `week${weekOfMonth}`
+            const weekKey = `week${i}`
             weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
           } else {
             weeklyOTBData.push(0)

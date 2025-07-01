@@ -523,7 +523,13 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesLastWeekConverted: 0,  // Quotes sent last week that converted
     
     // === CHART DATA STRUCTURES ===
-    weeklyOTBBreakdown: {},      // Week-by-week OTB for 5-week chart
+    weeklyOTBBreakdown: {        // Week-by-week OTB for 5-week chart
+      week0: 0,
+      week1: 0,
+      week2: 0,
+      week3: 0,
+      week4: 0
+    },
     monthlyOTBData: {            // Month-by-month OTB for yearly chart
       1: 0,   // January
       2: 0,   // February
@@ -874,37 +880,44 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.thisMonthOTB += jobValue;
     }
     
-    // Calculate weekly OTB for display - include jobs from ANY month that fall in displayed weeks
-    const currentMonth = estToday.getMonth();
-    const currentYear = estToday.getFullYear();
-    const firstOfMonth = new Date(currentYear, currentMonth, 1);
-    const lastOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    
-    // Find the Sunday at or before the first of the month
-    let weekStartDate = new Date(firstOfMonth);
-    if (weekStartDate.getDay() !== 0) {
-      weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
+    // Calculate weekly OTB for 5-week display
+    // Find the current week's Sunday
+    const currentWeekStart = new Date(estToday);
+    if (currentWeekStart.getDay() !== 0) {
+      currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
     }
+    currentWeekStart.setHours(0, 0, 0, 0);
     
-    let weekNumber = 1;
+    // Calculate 5 weeks centered on current week (2 before, current, 2 after)
+    const weeksToShow = 5;
+    const weeksBefore = 2;
     
-    // Check all weeks that overlap with the current month
-    while (weekStartDate <= lastOfMonth) {
-      const weekEndDate = new Date(weekStartDate);
-      weekEndDate.setDate(weekStartDate.getDate() + 6);
+    // Start from 2 weeks before current week
+    const startWeek = new Date(currentWeekStart);
+    startWeek.setDate(startWeek.getDate() - (weeksBefore * 7));
+    
+    // Process each of the 5 weeks
+    for (let weekIndex = 0; weekIndex < weeksToShow; weekIndex++) {
+      const weekStart = new Date(startWeek);
+      weekStart.setDate(startWeek.getDate() + (weekIndex * 7));
       
-      // If this job falls within this week (regardless of month), add it to the week's total
-      if (jobDate >= weekStartDate && jobDate <= weekEndDate) {
-        const weekKey = `week${weekNumber}`;
-        
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      
+      // Create a unique key for this week based on its position
+      const weekKey = `week${weekIndex}`;
+      
+      // Check if this job falls within this week
+      if (jobDate >= weekStart && jobDate <= weekEnd) {
         console.log('[OTB Week Debug]', {
           jobDate: jobDate.toLocaleDateString(),
-          jobMonth: jobDate.toLocaleString('default', { month: 'long' }),
-          currentMonth: estToday.toLocaleString('default', { month: 'long' }),
-          weekRange: `${weekStartDate.toLocaleDateString()} - ${weekEndDate.toLocaleDateString()}`,
-          weekNumber,
+          weekRange: `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`,
+          weekIndex,
+          weekKey,
           jobValue,
-          jobNumber: job.Job_Number
+          jobNumber: job.Job_Number,
+          isCurrentWeek: weekIndex === weeksBefore
         });
         
         if (!metrics.weeklyOTBBreakdown[weekKey]) {
@@ -912,14 +925,6 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         }
         metrics.weeklyOTBBreakdown[weekKey] += jobValue;
         break; // Job found in a week, no need to check other weeks
-      }
-      
-      // Move to next Sunday
-      weekStartDate.setDate(weekStartDate.getDate() + 7);
-      
-      // Only increment week number if the week has at least one day in current month
-      if (weekStartDate <= lastOfMonth) {
-        weekNumber++;
       }
     }
     if (isNextMonth(jobDate)) {
@@ -1019,6 +1024,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Current Month]:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
   console.log('[Monthly OTB Data for 2025]:', metrics.monthlyOTBData);
   console.log('[Next Month OTB (July 2025)]:', metrics.nextMonthOTB);
+  
+  // Log 5-week range details
+  const debugCurrentWeekStart = new Date(estToday);
+  if (debugCurrentWeekStart.getDay() !== 0) {
+    debugCurrentWeekStart.setDate(debugCurrentWeekStart.getDate() - debugCurrentWeekStart.getDay());
+  }
+  debugCurrentWeekStart.setHours(0, 0, 0, 0);
+  
+  console.log('[5-Week OTB Debug]:');
+  for (let i = 0; i < 5; i++) {
+    const weekStart = new Date(debugCurrentWeekStart);
+    weekStart.setDate(debugCurrentWeekStart.getDate() + ((i - 2) * 7));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    console.log(`  week${i}: ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()} = $${metrics.weeklyOTBBreakdown[`week${i}`] || 0}`);
+  }
   
   // Log week ranges for debugging
   const debugMonth = estToday.getMonth();
