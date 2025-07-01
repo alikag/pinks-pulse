@@ -72,6 +72,22 @@ export interface DashboardData {
   }>;
   lastUpdated: Date;
   dataSource?: string;
+  debug?: {
+    jobberQuotes: Array<{
+      quote_number: string;
+      client_name: string;
+      raw_converted_date: any;
+      parsed_converted_date?: string;
+      convertedDate_EST?: string;
+      convertedDate_full_EST?: string;
+      isToday_result: boolean;
+      isThisWeek_result: boolean;
+      estToday_EST: string;
+    }>;
+    estToday: string;
+    currentESTTime: string;
+    getESTOffset: string;
+  };
 }
 
 export interface QuoteData {
