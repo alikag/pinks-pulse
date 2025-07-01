@@ -417,44 +417,11 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
   };
 
-  // Find the most recent activity date (either sent or converted) to use as reference
-  // Use EST timezone for reference date
-  const estRefString = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-  let referenceDate = new Date(estRefString);
-  const allDates = [];
-  
-  quotesData.forEach(q => {
-    try {
-      if (q.sent_date) {
-        const sentDate = parseDate(q.sent_date);
-        if (sentDate && !isNaN(sentDate.getTime())) {
-          allDates.push(sentDate);
-        }
-      }
-      if (q.converted_date) {
-        const convertedDate = parseDate(q.converted_date);
-        if (convertedDate && !isNaN(convertedDate.getTime())) {
-          allDates.push(convertedDate);
-        }
-      }
-    } catch (e) {
-      console.log('[dashboard-data-sales] Error parsing date:', e.message, 'Quote:', q.quote_number);
-    }
-  });
-  
-  if (allDates.length > 0) {
-    // Use the most recent activity as our "today"
-    allDates.sort((a, b) => b - a);
-    referenceDate = allDates[0];
-    console.log('[dashboard-data-sales] Using reference date from most recent activity:', referenceDate);
-  }
-  
-  // Use the reference date and normalize to start of day
-  const now = new Date(referenceDate);
-  now.setHours(0, 0, 0, 0);
-  
-  // ROOT CAUSE FIX: Get current EST date properly
+  // CRITICAL FIX: Always use the actual current date, not "most recent activity"
   const now_utc = new Date();
+  
+  // Don't use "most recent activity" date - that's what was causing July 1st to show June 30th data!
+  console.log('🟢 Using ACTUAL current date:', now_utc.toISOString());
   
   // Get the current time in EST as a string, then parse it back
   const estDateString = now_utc.toLocaleDateString("en-US", {
@@ -1445,10 +1412,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   // Process time series data
   const timeSeries = {
-    week: processWeekData(quotesData, now, parseDate, estToday),
-    month: processMonthData(quotesData, now, parseDate),
-    year: processYearData(quotesData, now, parseDate),
-    all: processAllTimeData(quotesData, now, parseDate)
+    week: processWeekData(quotesData, now_utc, parseDate, estToday),
+    month: processMonthData(quotesData, now_utc, parseDate),
+    year: processYearData(quotesData, now_utc, parseDate),
+    all: processAllTimeData(quotesData, now_utc, parseDate)
   };
   
   console.log('[dashboard-data-sales] Week time series data:', {
