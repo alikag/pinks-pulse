@@ -120,25 +120,31 @@ export const handler = async (event, context) => {
     console.log('[dashboard-data-sales] BigQuery client created');
 
     // ============================================
-    // QUERY 1: FETCH ALL QUOTES DATA
+    // QUERY 1: FETCH ALL QUOTES DATA WITH JOB CONVERSION DATES
     // ============================================
-    // Purpose: Get all quotes to calculate conversion rates, daily metrics, and salesperson performance
-    // This is the foundation for most KPI calculations
+    // Purpose: Get all quotes with ACCURATE conversion dates from jobs table
+    // This fixes the issue where quote approval date differs from job creation date
     const quotesQuery = `
       SELECT 
-        quote_number,        -- Unique identifier for the quote
-        quote_id,            -- Jobber's internal ID (base64 encoded)
-        client_name,         -- Customer name for display
-        salesperson,         -- Who sent the quote (for performance tracking)
-        status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
-        total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
-        sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
-        converted_date,      -- When customer said YES (for "Converted Today" metrics)
-        days_to_convert,     -- How long it took to close (not currently used)
-        job_numbers          -- Associated job numbers if converted
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-      WHERE sent_date IS NOT NULL  -- Only include quotes that were actually sent
-      ORDER BY sent_date DESC      -- Most recent first for display purposes
+        q.quote_number,        -- Unique identifier for the quote
+        q.quote_id,            -- Jobber's internal ID (base64 encoded)
+        q.client_name,         -- Customer name for display
+        q.salesperson,         -- Who sent the quote (for performance tracking)
+        q.status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
+        q.total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
+        q.sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
+        -- Use job's Date_Converted if available, otherwise fall back to quote's converted_date
+        COALESCE(
+          j.Date_Converted,    -- When the job was actually created (accurate conversion date)
+          q.converted_date     -- Fallback to quote's converted date if no job found
+        ) as converted_date,   -- This is now the CORRECT conversion date
+        q.days_to_convert,     -- How long it took to close (not currently used)
+        q.job_numbers          -- Associated job numbers if converted
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+      LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
+        ON q.job_numbers = CAST(j.Job_Number AS STRING)  -- Join on job number
+      WHERE q.sent_date IS NOT NULL  -- Only include quotes that were actually sent
+      ORDER BY q.sent_date DESC      -- Most recent first for display purposes
     `;
 
     // ============================================
