@@ -133,17 +133,16 @@ export const handler = async (event, context) => {
         q.status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
         q.total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
         q.sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
-        -- Use a correlated subquery to get job's Date_Converted efficiently
+        -- Use LEFT JOIN instead of correlated subquery for BigQuery compatibility
         COALESCE(
-          (SELECT CAST(j.Date_Converted AS DATE)
-           FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j 
-           WHERE CAST(j.Job_Number AS STRING) = q.job_numbers 
-           LIMIT 1),
+          CAST(j.Date_Converted AS DATE),
           q.converted_date
         ) as converted_date,   -- Accurate conversion date from job creation
         q.days_to_convert,     -- How long it took to close (not currently used)
         q.job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+      LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j 
+        ON CAST(j.Job_Number AS STRING) = q.job_numbers
       WHERE q.sent_date IS NOT NULL  -- Only include quotes that were actually sent
       ORDER BY q.sent_date DESC      -- Most recent first for display purposes
     `;

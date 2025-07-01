@@ -1,6 +1,6 @@
 import { chromium } from 'playwright-chromium';
 
-export default async (request, context) => {
+export const handler = async (event, context) => {
   let browser = null;
   
   console.log('[Scraper] Starting Google Reviews scraper...');
@@ -214,21 +214,22 @@ export default async (request, context) => {
     const finalUrl = page.url();
     await browser.close();
     
-    return new Response(JSON.stringify({
-      success: true,
-      data: {
-        ...data,
-        scrapedAt: new Date().toISOString(),
-        method: 'playwright',
-        url: finalUrl
-      }
-    }), {
-      status: 200,
+    return {
+      statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
-      }
-    });
+      },
+      body: JSON.stringify({
+        success: true,
+        data: {
+          ...data,
+          scrapedAt: new Date().toISOString(),
+          method: 'playwright',
+          url: finalUrl
+        }
+      })
+    };
     
   } catch (error) {
     console.error('[Scraper] Error scraping with Playwright:', {
@@ -247,24 +248,21 @@ export default async (request, context) => {
                          error.message.includes('executable') ||
                          error.message.includes('Failed to launch');
     
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message,
-      errorType: isBrowserError ? 'BROWSER_LAUNCH_FAILED' : 'SCRAPING_ERROR',
-      suggestion: isBrowserError 
-        ? 'Playwright may not work on Netlify Free tier. Use simple scraper as fallback.'
-        : 'Check logs for details. The scraper may need updating.',
-      timestamp: new Date().toISOString()
-    }), {
-      status: 500,
+    return {
+      statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
-      }
-    });
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.message,
+        errorType: isBrowserError ? 'BROWSER_LAUNCH_FAILED' : 'SCRAPING_ERROR',
+        suggestion: isBrowserError 
+          ? 'Playwright may not work on Netlify Free tier. Use simple scraper as fallback.'
+          : 'Check logs for details. The scraper may need updating.',
+        timestamp: new Date().toISOString()
+      })
+    };
   }
-};
-
-export const config = {
-  path: "/api/scrape-google-reviews-playwright"
 };

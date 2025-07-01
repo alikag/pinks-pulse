@@ -1,4 +1,4 @@
-export default async (request, context) => {
+export const handler = async (event, context) => {
   try {
     // The Google Maps short URL that should redirect to the full page
     const shortUrl = 'https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7';
@@ -44,46 +44,49 @@ export default async (request, context) => {
     
     // If we couldn't extract meaningful data, provide a fallback response
     if (!extractedData.rating && !extractedData.reviews.length) {
-      return new Response(JSON.stringify({
-        success: false,
-        message: 'Unable to extract review data. Google Maps content is loaded dynamically and requires a headless browser.',
-        suggestion: 'Consider using Puppeteer or Playwright for dynamic content scraping.',
-        attemptedUrl: actualUrl,
-        extractedData
-      }), {
-        status: 200,
+      return {
+        statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
-        }
-      });
+        },
+        body: JSON.stringify({
+          success: false,
+          message: 'Unable to extract review data. Google Maps content is loaded dynamically and requires a headless browser.',
+          suggestion: 'Consider using Puppeteer or Playwright for dynamic content scraping.',
+          attemptedUrl: actualUrl,
+          extractedData
+        })
+      };
     }
     
-    return new Response(JSON.stringify({
-      success: true,
-      data: extractedData
-    }), {
-      status: 200,
+    return {
+      statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
-      }
-    });
+      },
+      body: JSON.stringify({
+        success: true,
+        data: extractedData
+      })
+    };
     
   } catch (error) {
     console.error('Error scraping Google reviews:', error);
     
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message,
-      stack: error.stack
-    }), {
-      status: 500,
+    return {
+      statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
-      }
-    });
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.message,
+        stack: error.stack
+      })
+    };
   }
 };
 
@@ -259,6 +262,3 @@ function extractReviewerName(html) {
   return null;
 }
 
-export const config = {
-  path: "/api/scrape-google-reviews"
-};
