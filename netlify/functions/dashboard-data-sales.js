@@ -47,8 +47,16 @@ export const handler = async (event, context) => {
       
       const bigquery = new BigQuery(bigqueryConfig);
       
-      // Query to debug the join
+      // Query to debug the join and check for duplicates
       const debugQuery = `
+        WITH job_counts AS (
+          SELECT 
+            Job_Number,
+            COUNT(*) as job_count
+          FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
+          GROUP BY Job_Number
+          HAVING COUNT(*) > 1
+        )
         SELECT 
           q.quote_number,
           q.status,
@@ -56,13 +64,17 @@ export const handler = async (event, context) => {
           q.converted_date as quote_converted_date,
           j.Job_Number as job_number,
           j.Date_Converted as job_date_converted,
-          CAST(j.Job_Number AS STRING) as job_number_string
+          j.Date as job_scheduled_date,
+          jc.job_count as duplicate_count
         FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
         LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
           ON q.job_numbers = CAST(j.Job_Number AS STRING)
+        LEFT JOIN job_counts jc
+          ON j.Job_Number = jc.Job_Number
         WHERE q.status IN ('Converted', 'Won')
           AND q.sent_date >= '2025-06-01'
-        LIMIT 10
+        ORDER BY jc.job_count DESC NULLS LAST
+        LIMIT 20
       `;
       
       const [rows] = await bigquery.query(debugQuery);
@@ -180,43 +192,36 @@ export const handler = async (event, context) => {
     // Purpose: Get all quotes with ACCURATE conversion dates from jobs table
     // This fixes the issue where quote approval date differs from job creation date
     const quotesQuery = `
-      WITH quotes_with_jobs AS (
+      WITH job_conversion_dates AS (
+        -- Get the earliest conversion date for each job number
+        -- This handles recurring jobs that might have multiple entries
         SELECT 
-          q.quote_number,
-          q.quote_id,
-          q.client_name,
-          q.salesperson,
-          q.status,
-          q.total_dollars,
-          q.sent_date,
-          q.converted_date as quote_converted_date,
-          q.days_to_convert,
-          q.job_numbers,
-          -- Get the first job's converted date if available
-          MIN(CAST(j.Date_Converted AS DATE)) as job_converted_date
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-        LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
-          ON CAST(j.Job_Number AS STRING) = q.job_numbers
-        WHERE q.sent_date IS NOT NULL
-          AND q.sent_date >= '2025-03-01'
-        GROUP BY 
-          q.quote_number, q.quote_id, q.client_name, q.salesperson,
-          q.status, q.total_dollars, q.sent_date, q.converted_date,
-          q.days_to_convert, q.job_numbers
+          CAST(Job_Number AS STRING) as job_number_str,
+          MIN(PARSE_DATE('%Y-%m-%d', Date_Converted)) as earliest_conversion_date
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
+        WHERE Date_Converted IS NOT NULL
+        GROUP BY Job_Number
       )
       SELECT 
-        quote_number,
-        quote_id,
-        client_name,
-        salesperson,
-        status,
-        total_dollars,
-        sent_date,
-        -- Use job converted date if available, otherwise quote converted date
-        COALESCE(job_converted_date, quote_converted_date) as converted_date,
-        days_to_convert,
-        job_numbers
-      FROM quotes_with_jobs
+        q.quote_number,
+        q.quote_id,
+        q.client_name,
+        q.salesperson,
+        q.status,
+        q.total_dollars,
+        q.sent_date,
+        -- Use job's conversion date if available, otherwise fall back to quote's converted_date
+        COALESCE(
+          j.earliest_conversion_date,
+          CAST(q.converted_date AS DATE)
+        ) as converted_date,
+        q.days_to_convert,
+        q.job_numbers
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+      LEFT JOIN job_conversion_dates j
+        ON j.job_number_str = q.job_numbers
+      WHERE q.sent_date IS NOT NULL
+        AND q.sent_date >= '2025-03-01'
     `;
 
     // ============================================
