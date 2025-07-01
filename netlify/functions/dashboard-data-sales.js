@@ -114,40 +114,36 @@ export const handler = async (event, context) => {
       
       const bigquery = new BigQuery(bigqueryConfig);
       
-      // Query to check quote 676 specifically
+      // Query to check quotes with potential date mismatches
       const debugQuery = `
-        SELECT 
-          'Quote Data' as source,
-          q.quote_number,
-          q.status,
-          q.job_numbers,
-          q.sent_date,
-          q.converted_date as quote_converted_date,
-          NULL as job_number,
-          NULL as job_date_converted,
-          NULL as job_scheduled_date
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-        WHERE q.quote_number = '676'
-        
-        UNION ALL
-        
-        SELECT 
-          'Job Data' as source,
-          '676' as quote_number,
-          NULL as status,
-          NULL as job_numbers,
-          NULL as sent_date,
-          NULL as quote_converted_date,
-          j.Job_Number,
-          j.Date_Converted as job_date_converted,
-          j.Date as job_scheduled_date
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
-        WHERE j.Job_Number IN (
-          SELECT job_numbers 
-          FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` 
-          WHERE quote_number = '676'
+        WITH quote_job_comparison AS (
+          SELECT 
+            q.quote_number,
+            q.status,
+            q.job_numbers,
+            q.sent_date,
+            q.converted_date as quote_converted_date,
+            j.Job_Number,
+            j.Date_Converted as job_date_converted,
+            j.Date as job_scheduled_date,
+            -- Compare the dates
+            CASE 
+              WHEN CAST(q.converted_date AS DATE) != PARSE_DATE('%Y-%m-%d', j.Date_Converted) 
+              THEN 'MISMATCH'
+              ELSE 'MATCH'
+            END as date_comparison
+          FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+          LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
+            ON q.job_numbers = CAST(j.Job_Number AS STRING)
+          WHERE q.status IN ('Converted', 'Won')
+            AND q.sent_date >= '2025-06-20'
+            AND j.Date_Converted IS NOT NULL
         )
-        ORDER BY source
+        SELECT * FROM quote_job_comparison
+        WHERE quote_number = '676' 
+           OR date_comparison = 'MISMATCH'
+        ORDER BY date_comparison DESC, quote_number
+        LIMIT 20
       `;
       
       const [rows] = await bigquery.query(debugQuery);
