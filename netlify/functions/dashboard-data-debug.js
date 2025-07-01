@@ -154,6 +154,11 @@ export const handler = async (event, context) => {
       // Otherwise try to parse as string
       return new Date(dateValue);
     };
+    
+    // Get EST reference time for consistent date comparisons
+    const estString = now.toLocaleString("en-US", {timeZone: "America/New_York"});
+    const estToday = new Date(estString);
+    estToday.setHours(0, 0, 0, 0);
 
     // Calculate date boundaries in UTC
     const todayStart = new Date();
@@ -210,17 +215,67 @@ export const handler = async (event, context) => {
 
     // Calculate KPIs
     const quotesSentToday = quotesData.filter(q => q.sent_date && isToday(q.sent_date)).length;
-    const convertedToday = quotesData.filter(q => q.converted_date && isToday(q.converted_date)).length;
-    const convertedThisWeek = quotesData.filter(q => q.converted_date && isThisWeek(q.converted_date)).length;
+    const convertedToday = quotesData.filter(q => {
+      if (!q.converted_date) return false;
+      const convertedDate = parseBQDate(q.converted_date);
+      if (!convertedDate || isNaN(convertedDate.getTime())) return false;
+      
+      // Prevent counting future conversions
+      const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedEST.setHours(0, 0, 0, 0);
+      if (convertedEST > estToday) {
+        debugInfo.futureConversionsBlocked = (debugInfo.futureConversionsBlocked || 0) + 1;
+        return false;
+      }
+      
+      return isToday(convertedDate);
+    }).length;
+    const convertedThisWeek = quotesData.filter(q => {
+      if (!q.converted_date) return false;
+      const convertedDate = parseBQDate(q.converted_date);
+      if (!convertedDate || isNaN(convertedDate.getTime())) return false;
+      
+      // Prevent counting future conversions
+      const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedEST.setHours(0, 0, 0, 0);
+      if (convertedEST > estToday) {
+        debugInfo.futureConversionsBlocked = (debugInfo.futureConversionsBlocked || 0) + 1;
+        return false;
+      }
+      
+      return isThisWeek(convertedDate);
+    }).length;
     const quotesThisWeek = quotesData.filter(q => q.sent_date && isThisWeek(q.sent_date)).length;
     const cvrThisWeek = quotesThisWeek > 0 ? ((convertedThisWeek / quotesThisWeek) * 100).toFixed(1) : 0;
 
     const convertedAmountToday = quotesData
-      .filter(q => q.converted_date && isToday(q.converted_date))
+      .filter(q => {
+        if (!q.converted_date) return false;
+        const convertedDate = parseBQDate(q.converted_date);
+        if (!convertedDate || isNaN(convertedDate.getTime())) return false;
+        
+        // Prevent counting future conversions
+        const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        convertedEST.setHours(0, 0, 0, 0);
+        if (convertedEST > estToday) return false;
+        
+        return isToday(convertedDate);
+      })
       .reduce((sum, q) => sum + (parseFloat(q.total_dollars) || 0), 0);
 
     const convertedAmountThisWeek = quotesData
-      .filter(q => q.converted_date && isThisWeek(q.converted_date))
+      .filter(q => {
+        if (!q.converted_date) return false;
+        const convertedDate = parseBQDate(q.converted_date);
+        if (!convertedDate || isNaN(convertedDate.getTime())) return false;
+        
+        // Prevent counting future conversions
+        const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        convertedEST.setHours(0, 0, 0, 0);
+        if (convertedEST > estToday) return false;
+        
+        return isThisWeek(convertedDate);
+      })
       .reduce((sum, q) => sum + (parseFloat(q.total_dollars) || 0), 0);
 
     const quotesLast30Days = quotesData.filter(q => q.sent_date && isLast30Days(q.sent_date));

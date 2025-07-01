@@ -105,6 +105,16 @@ export class MetricsCalculator {
     return d >= thirtyDaysAgo && d <= this.referenceDate;
   }
   
+  // Helper to check if a date is in the future
+  isFutureDate(date) {
+    if (!date) return false;
+    const d = new Date(date);
+    // Convert to EST for comparison
+    const dateEST = new Date(d.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    dateEST.setHours(0, 0, 0, 0);
+    return dateEST > this.estToday;
+  }
+  
   // Process quotes
   processQuote(quote) {
     this.metrics.dataQuality.totalQuotes++;
@@ -137,6 +147,16 @@ export class MetricsCalculator {
     
     // Count conversions by conversion date
     if (convertedDate && isConverted) {
+      // Block future conversions
+      if (this.isFutureDate(convertedDate)) {
+        console.log('[MetricsCalculator] Future conversion blocked:', {
+          quote_number: quote.quote_number,
+          converted_date: convertedDate,
+          estToday: this.estToday.toISOString()
+        });
+        return;
+      }
+      
       if (this.isToday(convertedDate)) {
         this.metrics.convertedToday++;
         this.metrics.convertedTodayDollars += totalDollars;

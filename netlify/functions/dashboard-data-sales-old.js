@@ -157,6 +157,11 @@ function processIntoDashboardFormat(quotesData) {
     }
     return new Date(dateValue);
   };
+  
+  // Get EST reference time for consistent date comparisons
+  const estString = now.toLocaleString("en-US", {timeZone: "America/New_York"});
+  const estToday = new Date(estString);
+  estToday.setHours(0, 0, 0, 0);
 
   // Group quotes by salesperson
   const salespersonStats = {};
@@ -182,9 +187,25 @@ function processIntoDashboardFormat(quotesData) {
     }
     
     if (quote.converted_date) {
-      convertedCount++;
-      salespersonStats[sp].quotesConverted++;
-      salespersonStats[sp].valueConverted += parseFloat(quote.total_dollars) || 0;
+      const convertedDate = parseBQDate(quote.converted_date);
+      if (convertedDate) {
+        // Check if conversion is in the future
+        const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        convertedEST.setHours(0, 0, 0, 0);
+        
+        if (convertedEST > estToday) {
+          console.log('[processIntoDashboardFormat] Future conversion blocked:', {
+            quote_number: quote.quote_number,
+            converted_date: quote.converted_date,
+            estToday: estToday.toISOString()
+          });
+          // Skip this future conversion
+        } else {
+          convertedCount++;
+          salespersonStats[sp].quotesConverted++;
+          salespersonStats[sp].valueConverted += parseFloat(quote.total_dollars) || 0;
+        }
+      }
     }
     
     // Log sample data for first few quotes
@@ -259,7 +280,14 @@ function processWeekData(quotesData) {
     
     const dayConverted = quotesData.filter(q => {
       const convertedDate = q.converted_date ? new Date(q.converted_date) : null;
-      return convertedDate && convertedDate >= date && convertedDate < nextDate;
+      if (!convertedDate) return false;
+      
+      // Check if conversion is in the future
+      const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedEST.setHours(0, 0, 0, 0);
+      if (convertedEST > estToday) return false;
+      
+      return convertedDate >= date && convertedDate < nextDate;
     });
     
     const sent = dayQuotes.length;
@@ -309,7 +337,14 @@ function processMonthData(quotesData) {
     
     const weekConverted = quotesData.filter(q => {
       const convertedDate = q.converted_date ? new Date(q.converted_date) : null;
-      return convertedDate && convertedDate >= weekStart && convertedDate < weekEnd;
+      if (!convertedDate) return false;
+      
+      // Check if conversion is in the future
+      const convertedEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedEST.setHours(0, 0, 0, 0);
+      if (convertedEST > estToday) return false;
+      
+      return convertedDate >= weekStart && convertedDate < weekEnd;
     });
     
     const sent = weekQuotes.length;
