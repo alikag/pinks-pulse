@@ -394,8 +394,19 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   );
   
   // Enhanced debugging for date issues
+  const currentESTTime = new Date().toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
   console.log('[Date Calculation Debug - Enhanced]', {
-    actualToday_UTC: actualToday.toISOString(),
+    server_time_UTC: actualToday.toISOString(),
+    current_EST_time_full: currentESTTime,
     estDateParts: estDateParts,
     estToday_constructed: estToday.toString(),
     estToday_ISO: estToday.toISOString(),
@@ -812,14 +823,32 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       salespersonStats[sp].valueConverted += totalDollars;
       
       if (isToday(convertedDate)) {
-        metrics.convertedToday++;
-        metrics.convertedTodayDollars += totalDollars;
-        console.log('[Converted Today Debug] Quote converted today:', {
+        // Double-check this is not a future conversion
+        const convertedDateESTCheck = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        convertedDateESTCheck.setHours(0, 0, 0, 0);
+        
+        console.log('[Converted Today Debug - Enhanced]', {
           quoteNumber: quote.quote_number,
-          convertedDate: convertedDate.toLocaleDateString(),
-          estToday: estToday.toLocaleDateString(),
+          raw_converted_date: quote.converted_date,
+          parsed_converted_date: convertedDate.toISOString(),
+          convertedDate_local: convertedDate.toLocaleDateString(),
+          convertedDate_EST: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+          estToday_local: estToday.toLocaleDateString(),
+          estToday_ISO: estToday.toISOString(),
+          isToday_result: isToday(convertedDate),
+          convertedDateEST_time: convertedDateESTCheck.getTime(),
+          estToday_time: estToday.getTime(),
+          times_equal: convertedDateESTCheck.getTime() === estToday.getTime(),
           totalDollars
         });
+        
+        // Only count if truly today and not in the future
+        if (convertedDateESTCheck.getTime() === estToday.getTime() && convertedDateESTCheck <= estToday) {
+          metrics.convertedToday++;
+          metrics.convertedTodayDollars += totalDollars;
+        } else {
+          console.log('[CONVERTED TODAY BLOCKED] Date mismatch or future date');
+        }
       }
       if (isThisWeek(convertedDate)) {
         // CRITICAL: Don't count conversions from the future
