@@ -880,8 +880,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           });
         }
         
-        // Add to recent converted quotes only if not from the future
-        if (convertedDateEST <= estToday) {
+        // Add to recent converted quotes
+        {
           recentConvertedQuotes.push({
             dateConverted: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
             quoteNumber: quote.quote_number || quote.Quote_Number,
