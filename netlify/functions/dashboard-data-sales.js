@@ -119,63 +119,87 @@ exports.handler = async (event, context) => {
     const bigquery = new BigQuery(bigqueryConfig);
     console.log('[dashboard-data-sales] BigQuery client created');
 
-    // Query for quotes data
+    // ============================================
+    // QUERY 1: FETCH ALL QUOTES DATA
+    // ============================================
+    // Purpose: Get all quotes to calculate conversion rates, daily metrics, and salesperson performance
+    // This is the foundation for most KPI calculations
     const quotesQuery = `
       SELECT 
-        quote_number,
-        quote_id,
-        client_name,
-        salesperson,
-        status,
-        total_dollars,
-        sent_date,
-        converted_date,
-        days_to_convert,
-        job_numbers
+        quote_number,        -- Unique identifier for the quote
+        quote_id,            -- Jobber's internal ID (base64 encoded)
+        client_name,         -- Customer name for display
+        salesperson,         -- Who sent the quote (for performance tracking)
+        status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
+        total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
+        sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
+        converted_date,      -- When customer said YES (for "Converted Today" metrics)
+        days_to_convert,     -- How long it took to close (not currently used)
+        job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-      WHERE sent_date IS NOT NULL
-      ORDER BY sent_date DESC
+      WHERE sent_date IS NOT NULL  -- Only include quotes that were actually sent
+      ORDER BY sent_date DESC      -- Most recent first for display purposes
     `;
 
-    // Query for jobs data (for OTB calculations)
+    // ============================================
+    // QUERY 2: FETCH JOBS DATA FOR "ON THE BOOKS"
+    // ============================================
+    // Purpose: Get scheduled jobs to calculate future revenue (OTB = On The Books)
+    // Shows what revenue is already locked in for future dates
     const jobsQuery = `
       SELECT 
-        Job_Number,
-        Date,
-        Date_Converted,
-        SalesPerson,
-        Job_type,
-        Calculated_Value
+        Job_Number,          -- Unique job identifier
+        Date,                -- When the job is scheduled to happen
+        Date_Converted,      -- When the quote became a job
+        SalesPerson,         -- Who closed the deal
+        Job_type,            -- 'RECURRING' or 'ONE_OFF' (important for 2026 recurring metric)
+        Calculated_Value     -- Revenue value of the job (excluding sales tax)
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      WHERE Date IS NOT NULL
+      WHERE Date IS NOT NULL     -- Must have a scheduled date
         AND (
+          -- === CURRENT MONTH LOGIC ===
           -- Include ALL jobs in current month (past, present, and future)
+          -- This shows total month revenue, not just remaining
           (EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(YEAR FROM CURRENT_DATE())
            AND EXTRACT(MONTH FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(MONTH FROM CURRENT_DATE()))
-          -- Also include future jobs for next month
+          
+          -- === FUTURE JOBS LOGIC ===
+          -- Also include ALL future jobs (for next month OTB and beyond)
           OR PARSE_DATE('%Y-%m-%d', Date) > CURRENT_DATE()
         )
-      ORDER BY Date
+      ORDER BY Date  -- Chronological order for processing
     `;
 
-    // Query for speed to lead calculations - join requests and quotes
+    // ============================================
+    // QUERY 3: CALCULATE SPEED TO LEAD METRICS
+    // ============================================
+    // Purpose: Measure how fast we respond to customer requests
+    // Faster response = higher close rate (proven correlation)
     const speedToLeadQuery = `
       WITH speed_data AS (
         SELECT 
-          r.quote_number,
-          r.requested_on_date,
-          q.sent_date,
-          q.salesperson,
+          r.quote_number,                    -- Links request to quote
+          r.requested_on_date,               -- When customer asked for quote
+          q.sent_date,                       -- When we sent the quote
+          q.salesperson,                     -- Who handled it
+          
+          -- Calculate time difference in MINUTES
+          -- This is the key metric: how fast did we respond?
           TIMESTAMP_DIFF(
-            CAST(q.sent_date AS TIMESTAMP), 
-            CAST(r.requested_on_date AS TIMESTAMP), 
-            MINUTE
+            CAST(q.sent_date AS TIMESTAMP),      -- End time (quote sent)
+            CAST(r.requested_on_date AS TIMESTAMP), -- Start time (request received)
+            MINUTE                                -- Unit: minutes
           ) as minutes_to_quote
+          
         FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
+        
+        -- Join requests to quotes on quote_number
         INNER JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
           ON r.quote_number = q.quote_number
-        WHERE r.requested_on_date IS NOT NULL 
-          AND q.sent_date IS NOT NULL
+          
+        WHERE r.requested_on_date IS NOT NULL    -- Must have request date
+          AND q.sent_date IS NOT NULL            -- Must have sent date
+          -- Only look at last 30 days for current performance
           AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
       )
       SELECT 
@@ -185,12 +209,16 @@ exports.handler = async (event, context) => {
         salesperson,
         minutes_to_quote
       FROM speed_data
-      WHERE minutes_to_quote >= 0
-      AND minutes_to_quote < 10080  -- Exclude anything over 7 days as likely data issues
-      LIMIT 1000
+      WHERE minutes_to_quote >= 0        -- Exclude negative times (data errors)
+        AND minutes_to_quote < 10080     -- Exclude >7 days (10080 min) as likely data issues
+      LIMIT 1000  -- Performance limit, we don't need more than this
     `;
 
-    // Query for reviews count this week - simplified for now
+    // ============================================
+    // QUERY 4: COUNT GOOGLE REVIEWS THIS WEEK
+    // ============================================
+    // Purpose: Track reputation building through review acquisition
+    // NOTE: This is now deprecated - we scrape Google Maps directly instead
     const reviewsQuery = `
       SELECT COUNT(*) as reviews_count
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.google_reviews\`
@@ -460,32 +488,49 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     return d >= quarterStart && d <= quarterEnd;
   };
 
-  // Initialize metrics
+  // ================================================
+  // INITIALIZE ALL METRICS TO ZERO
+  // ================================================
+  // This object stores all calculated values that will be displayed on the dashboard
   let metrics = {
-    quotesToday: 0,
-    convertedToday: 0,
-    convertedTodayDollars: 0,
-    quotesThisWeek: 0,
-    convertedThisWeek: 0,
-    convertedThisWeekDollars: 0,
-    quotes30Days: 0,
-    converted30Days: 0,
-    speedToLeadSum: 0,
-    speedToLeadCount: 0,
-    recurringRevenue2026: 0,
-    nextMonthOTB: 0,
-    thisMonthOTB: 0,
-    thisWeekOTB: 0,
-    // For proper CVR calculation
-    quotesThisWeekConverted: 0,
-    quotes30DaysConverted: 0,
-    // NEW: Track last week's quotes and conversions for meaningful CVR
-    quotesLastWeek: 0,
-    quotesLastWeekConverted: 0,
-    // Weekly OTB breakdown for current month
-    weeklyOTBBreakdown: {},
-    // Monthly OTB data for all 12 months of 2025
-    monthlyOTBData: {
+    // === TODAY'S METRICS ===
+    quotesToday: 0,              // KPI: "Quotes Sent Today" - Count of quotes sent today
+    convertedToday: 0,           // Count of quotes that converted today (not displayed)
+    convertedTodayDollars: 0,    // KPI: "Converted Today ($)" - Dollar value of today's conversions
+    
+    // === THIS WEEK METRICS (Sunday-Saturday) ===
+    quotesThisWeek: 0,           // Total quotes sent this week (for CVR calculation)
+    convertedThisWeek: 0,        // Count of quotes converted this week
+    convertedThisWeekDollars: 0, // KPI: "Converted This Week ($)" - Revenue from this week's conversions
+    
+    // === 30-DAY ROLLING METRICS ===
+    quotes30Days: 0,             // Total quotes sent in last 30 days
+    converted30Days: 0,          // Count of conversions in last 30 days (not used)
+    
+    // === SPEED TO LEAD TRACKING ===
+    speedToLeadSum: 0,           // Sum of all response times in minutes
+    speedToLeadCount: 0,         // Count of quotes with speed data
+    // Average = speedToLeadSum / speedToLeadCount
+    
+    // === FUTURE REVENUE METRICS ===
+    recurringRevenue2026: 0,     // KPI: "2026 Recurring" - Recurring jobs scheduled for 2026
+    nextMonthOTB: 0,             // KPI: "Next Month OTB" - Jobs scheduled for next month
+    thisMonthOTB: 0,             // Jobs scheduled for current month (not displayed)
+    thisWeekOTB: 0,              // Jobs scheduled for current week (not displayed)
+    
+    // === CONVERSION RATE CALCULATIONS ===
+    // IMPORTANT: These track quotes BY SEND DATE that eventually converted
+    quotesThisWeekConverted: 0,  // Quotes SENT this week that have converted (any time)
+    quotes30DaysConverted: 0,    // Quotes SENT in last 30 days that have converted
+    
+    // === SMART CVR FALLBACK DATA ===
+    // When no conversions yet this week, we show last week's rate
+    quotesLastWeek: 0,           // Total quotes sent last week
+    quotesLastWeekConverted: 0,  // Quotes sent last week that converted
+    
+    // === CHART DATA STRUCTURES ===
+    weeklyOTBBreakdown: {},      // Week-by-week OTB for 5-week chart
+    monthlyOTBData: {            // Month-by-month OTB for yearly chart
       1: 0,   // January
       2: 0,   // February
       3: 0,   // March

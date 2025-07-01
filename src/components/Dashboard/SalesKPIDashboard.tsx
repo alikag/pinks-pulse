@@ -1,3 +1,19 @@
+/**
+ * SALES KPI DASHBOARD - MAIN COMPONENT
+ * ====================================
+ * This is the heart of Pink's Pulse Dashboard. It displays all KPIs, charts, and business metrics.
+ * 
+ * WHAT THIS COMPONENT DOES:
+ * 1. Fetches data from backend (quotes, jobs, conversions)
+ * 2. Calculates and displays KPIs (Key Performance Indicators)
+ * 3. Renders interactive charts for data visualization
+ * 4. Shows Google reviews scraped from Maps
+ * 5. Provides detailed calculation info when KPIs are clicked
+ * 
+ * DATA FLOW:
+ * useDashboardData hook → Backend API → BigQuery → Process data → Display here
+ */
+
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle, LogOut } from 'lucide-react'
 import Chart from 'chart.js/auto'
@@ -6,27 +22,34 @@ import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
 
-// Types
+/**
+ * KPI INTERFACE
+ * Defines the structure of each Key Performance Indicator card
+ */
 interface KPI {
-  id: string
-  label: string
-  value: number
-  target: number
-  format: 'currency' | 'percentage' | 'number' | 'time'
-  status: 'success' | 'warning' | 'danger' | 'normal'
-  trend?: number
-  isLive?: boolean
-  lastUpdated?: Date
-  subtitle?: string
-  sparklineData?: number[]
+  id: string                    // Unique identifier (e.g., 'quotes-sent-today')
+  label: string                 // Display name (e.g., 'Quotes Sent Today')
+  value: number                 // Current value (e.g., 8)
+  target: number                // Target value (e.g., 12)
+  format: 'currency' | 'percentage' | 'number' | 'time'  // How to display the value
+  status: 'success' | 'warning' | 'danger' | 'normal'    // Color coding based on performance
+  trend?: number                // Optional trend percentage
+  isLive?: boolean              // Is this real-time data?
+  lastUpdated?: Date            // When was this last updated?
+  subtitle?: string             // Additional info (e.g., 'Target: 12')
+  sparklineData?: number[]      // Mini chart data (if applicable)
 }
 
+/**
+ * GOOGLE REVIEW INTERFACE
+ * Structure for reviews scraped from Google Maps
+ */
 interface GoogleReview {
   id: string
   author: string
   rating: number
   text: string
-  time: string
+  time: string    // Relative time (e.g., "2 days ago")
 }
 
 const SalesKPIDashboard: React.FC = () => {
@@ -290,6 +313,18 @@ const SalesKPIDashboard: React.FC = () => {
     }
   }
 
+  /**
+   * GET KPI CALCULATION DETAILS
+   * ===========================
+   * This function returns the exact calculation formula and explanation for each KPI.
+   * Used when users click on a KPI card to understand how the number is calculated.
+   * 
+   * IMPORTANT: These formulas must match EXACTLY what the backend calculates!
+   * If you change backend logic, update these formulas too.
+   * 
+   * @param kpiId - The unique identifier of the KPI (e.g., 'quotes-sent-today')
+   * @returns Object with formula (SQL-like), description (plain English), and optional notes
+   */
   const getKPICalculationDetails = (kpiId: string): { formula: string; description: string; notes?: string } => {
     switch (kpiId) {
       case 'quotes-sent-today':
