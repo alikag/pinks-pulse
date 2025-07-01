@@ -242,6 +242,23 @@ const SalesKPIDashboard: React.FC = () => {
       try {
         // Use the Playwright scraper to get fresh reviews from Google Maps
         const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
+        
+        // Check if response is OK
+        if (!response.ok) {
+          console.error('[Google Reviews Scraper] HTTP error:', response.status, response.statusText)
+          setGoogleReviews([])
+          return
+        }
+        
+        // Check Content-Type to ensure it's JSON
+        const contentType = response.headers.get("content-type")
+        if (!contentType || !contentType.includes("application/json")) {
+          console.error('[Google Reviews Scraper] Response is not JSON, got:', contentType)
+          console.error('[Google Reviews Scraper] Likely getting an HTML error page')
+          setGoogleReviews([])
+          return
+        }
+        
         const result = await response.json()
         
         console.log('[Google Reviews Scraper] Fetch result:', {
@@ -273,7 +290,7 @@ const SalesKPIDashboard: React.FC = () => {
           }
         } else {
           // No reviews available or scraper failed
-          console.error('[Google Reviews Scraper] No reviews found or error:', result.error)
+          console.error('[Google Reviews Scraper] No reviews found or error:', result.error || 'Unknown error')
           setGoogleReviews([])
         }
       } catch (error) {
@@ -329,50 +346,50 @@ const SalesKPIDashboard: React.FC = () => {
     switch (kpiId) {
       case 'quotes-sent-today':
         return {
-          formula: 'COUNT(quotes WHERE DATE(sent_date) = TODAY_EST)',
-          description: 'Counts quotes where sent_date equals today in EST timezone. All dates converted to EST before comparison.',
+          formula: 'COUNT(*) FROM v_quotes WHERE DATE(sent_date) = TODAY_EST',
+          description: 'Counts quotes where sent_date equals today in EST timezone from BigQuery view: jobber_data.v_quotes',
           notes: 'Includes all quotes sent between 12:00 AM and 11:59 PM EST. Target: 12 quotes daily.'
         }
       case 'converted-today':
         return {
-          formula: 'SUM(total_dollars WHERE DATE(converted_date) = TODAY_EST AND status IN ("Converted", "Won", "Accepted", "Complete"))',
-          description: 'Sum of quote values that changed to converted status today, regardless of original send date.',
+          formula: 'SUM(total_dollars) FROM v_quotes WHERE DATE(converted_date) = TODAY_EST AND status IN ("Converted", "Won", "Accepted", "Complete")',
+          description: 'Sum of quote values that changed to converted status today from BigQuery view: jobber_data.v_quotes',
           notes: 'Tracks revenue realized today. May include quotes sent days/weeks ago that just converted.'
         }
       case 'converted-week':
         return {
-          formula: 'SUM(total_dollars WHERE converted_date >= SUNDAY_START AND converted_date < NEXT_SUNDAY AND status IN ("Converted", "Won", "Accepted", "Complete"))',
-          description: 'Total revenue from quotes that converted during the current Sunday-Saturday week.',
+          formula: 'SUM(total_dollars) FROM v_quotes WHERE converted_date >= SUNDAY_START AND converted_date < NEXT_SUNDAY AND status IN ("Converted", "Won", "Accepted", "Complete")',
+          description: 'Total revenue from quotes that converted during the current Sunday-Saturday week. Source: jobber_data.v_quotes',
           notes: 'Week boundaries: Sunday 12:00 AM to Saturday 11:59:59 PM EST. Shows both count and dollar value.'
         }
       case 'cvr-week':
         return {
-          formula: 'IF no conversions this week: Use (last_week_sent_converted ÷ last_week_sent_total × 100), ELSE: (this_week_sent_converted ÷ this_week_sent_total × 100)',
-          description: 'Smart conversion rate that falls back to last week\'s performance when current week has no conversions yet.',
+          formula: 'IF no conversions: (COUNT(converted) FROM v_quotes WHERE sent_date = LAST_WEEK) ÷ (COUNT(*) FROM v_quotes WHERE sent_date = LAST_WEEK) × 100, ELSE: Normal calculation',
+          description: 'Smart conversion rate using jobber_data.v_quotes. Falls back to last week\'s rate when current week has no conversions yet.',
           notes: 'Prevents showing 0% early in the week. Tracks quotes by SEND date, not conversion date.'
         }
       case 'recurring-2026':
         return {
-          formula: 'SUM(Calculated_Value WHERE YEAR(job_date) = 2026 AND Job_type = "RECURRING")',
-          description: 'Sum of all recurring job values scheduled in 2026 from the v_jobs table.',
+          formula: 'SUM(Calculated_Value) FROM v_jobs WHERE YEAR(Date) = 2026 AND Job_type = "RECURRING"',
+          description: 'Sum of all recurring job values scheduled in 2026 from BigQuery view: jobber_data.v_jobs',
           notes: 'Only includes jobs explicitly marked as RECURRING type. Target: $1M for the year.'
         }
       case 'next-month-otb':
         return {
-          formula: 'SUM(Calculated_Value WHERE MONTH(job_date) = NEXT_MONTH AND YEAR(job_date) = CURRENT_OR_NEXT_YEAR)',
-          description: 'Total value of all jobs (recurring and one-off) scheduled for the next calendar month.',
+          formula: 'SUM(Calculated_Value) FROM v_jobs WHERE MONTH(Date) = NEXT_MONTH AND YEAR(Date) = CURRENT_OR_NEXT_YEAR',
+          description: 'Total value of all jobs scheduled for next calendar month from BigQuery view: jobber_data.v_jobs',
           notes: 'Updates on the 1st of each month. Includes jobs already scheduled, not potential quotes.'
         }
       case 'speed-to-lead':
         return {
-          formula: 'AVG(TIMESTAMP_DIFF(sent_date, requested_on_date, MINUTE)) WHERE sent_date >= TODAY - 30 DAYS',
-          description: 'Average minutes between customer request timestamp and quote sent timestamp over rolling 30 days.',
+          formula: 'AVG(TIMESTAMP_DIFF(q.sent_date, r.requested_on_date, MINUTE)) FROM v_requests r JOIN v_quotes q ON r.quote_number = q.quote_number',
+          description: 'Average response time calculated by joining jobber_data.v_requests and jobber_data.v_quotes on quote_number.',
           notes: 'Calculated in minutes, displayed as hours/minutes. Target: 1440 min (24 hours).'
         }
       case 'recurring-cvr':
         return {
-          formula: '(COUNT(quotes WHERE sent_date >= TODAY - 30 AND status IN ("Converted", "Won", "Accepted", "Complete")) ÷ COUNT(quotes WHERE sent_date >= TODAY - 30)) × 100',
-          description: 'Percentage of quotes sent in the last 30 days that have converted to jobs (at any point).',
+          formula: '(COUNT(converted) FROM v_quotes WHERE sent_date >= TODAY - 30) ÷ (COUNT(*) FROM v_quotes WHERE sent_date >= TODAY - 30) × 100',
+          description: 'Percentage of quotes from jobber_data.v_quotes sent in last 30 days that have converted.',
           notes: 'Rolling 30-day window. Includes quotes that may have converted after the 30-day period.'
         }
       case 'avg-qpd':
@@ -510,33 +527,41 @@ const SalesKPIDashboard: React.FC = () => {
         const chartData = data.timeSeries[chartPeriodKey]
         console.log('[Converted This Week Chart] Chart data:', chartData)
         
+        // Get current day index (0 = Sunday, 6 = Saturday)
+        const currentDayIndex = new Date().getDay()
+        
+        // Trim data to only show up to current day
+        const trimmedLabels = chartData.labels.slice(0, currentDayIndex + 1)
+        const trimmedQuotesSent = chartData.quotesSent.slice(0, currentDayIndex + 1)
+        const trimmedQuotesConverted = chartData.quotesConverted.slice(0, currentDayIndex + 1)
+        
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: chartData.labels,
+            labels: trimmedLabels,
             datasets: [{
               label: 'Sent Quotes',
-              data: chartData.quotesSent,
+              data: trimmedQuotesSent,
               borderColor: '#fb923c',
               backgroundColor: 'rgba(251, 146, 60, 0.1)',
               fill: false,
               tension: 0.4,
-              pointBackgroundColor: '#fb923c',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 4,
+              pointBackgroundColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#fb923c'),
+              pointBorderColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
+              pointBorderWidth: trimmedLabels.map((_, i) => i === currentDayIndex ? 3 : 2),
+              pointRadius: trimmedLabels.map((_, i) => i === currentDayIndex ? 6 : 4),
               pointHoverRadius: 6
             }, {
-              label: 'Converted',
-              data: chartData.quotesConverted,
+              label: 'Converted ($)',
+              data: trimmedQuotesConverted,
               borderColor: '#3b82f6',
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
               fill: false,
               tension: 0.4,
-              pointBackgroundColor: '#3b82f6',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 4,
+              pointBackgroundColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#3b82f6'),
+              pointBorderColor: trimmedLabels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
+              pointBorderWidth: trimmedLabels.map((_, i) => i === currentDayIndex ? 3 : 2),
+              pointRadius: trimmedLabels.map((_, i) => i === currentDayIndex ? 6 : 4),
               pointHoverRadius: 6
             }]
           },
@@ -597,6 +622,10 @@ const SalesKPIDashboard: React.FC = () => {
           }
         })
         
+        // Calculate week average CVR
+        const weekAverage = data?.kpiMetrics?.cvrThisWeek || 0
+        const avgLineData = chartData.labels.map(() => weekAverage)
+        
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -607,7 +636,17 @@ const SalesKPIDashboard: React.FC = () => {
               backgroundColor: 'rgba(14, 165, 233, 0.8)',
               borderRadius: 4,
               borderWidth: 0,
-              minBarLength: 2 // Show minimal bar even for 0 values
+              minBarLength: 2, // Show minimal bar even for 0 values
+              type: 'bar'
+            }, {
+              label: 'Week Average',
+              data: avgLineData,
+              borderColor: '#F9ABAC',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: false,
+              type: 'line'
             }]
           },
           options: {
@@ -656,6 +695,14 @@ const SalesKPIDashboard: React.FC = () => {
           return data.kpiMetrics?.monthlyOTBData?.[monthNumber] || 0
         })
         
+        // Debug monthly OTB data
+        console.log('[Monthly OTB Chart Debug]', {
+          monthlyOTBData: data.kpiMetrics?.monthlyOTBData,
+          monthLabels,
+          monthlyOTB,
+          hasData: monthlyOTB.some(val => val > 0)
+        })
+        
         monthlyOTBChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -695,7 +742,12 @@ const SalesKPIDashboard: React.FC = () => {
                 grace: '5%' // Add 5% padding to the top for better visibility
               },
               x: {
-                grid: { display: false }
+                grid: { display: false },
+                ticks: {
+                  autoSkip: false, // Ensure all months are displayed
+                  maxRotation: 45, // Rotate labels if needed for space
+                  minRotation: 0
+                }
               }
             }
           }
@@ -1145,35 +1197,11 @@ const SalesKPIDashboard: React.FC = () => {
       }
     }
 
-    // Add resize listener for mobile responsiveness
-    let resizeTimer: NodeJS.Timeout;
-    const handleResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        // Recreate all charts on resize to handle mobile/desktop differences
-        if (weeklyOTBChartInstance.current) {
-          weeklyOTBChartInstance.current.destroy();
-          weeklyOTBChartInstance.current = null;
-        }
-        if (trendChartInstance.current) {
-          trendChartInstance.current.destroy();
-          trendChartInstance.current = null;
-        }
-        if (conversionChartInstance.current) {
-          conversionChartInstance.current.destroy();
-          conversionChartInstance.current = null;
-        }
-        // Force a re-render by calling setupCharts again
-        setupCharts();
-      }, 250);
-    };
-    
-    window.addEventListener('resize', handleResize);
+    // Remove resize listener that was causing issues
+    // Charts will handle responsiveness automatically through Chart.js responsive option
 
     // Cleanup
     return () => {
-      clearTimeout(resizeTimer);
-      window.removeEventListener('resize', handleResize);
       trendChartInstance.current?.destroy()
       conversionChartInstance.current?.destroy()
       monthlyOTBChartInstance.current?.destroy()
@@ -1560,7 +1588,7 @@ const SalesKPIDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium">On The Books by Month - 2025 YTD (Excluding Sales Tax)</h2>
                 </div>
-                <div className="h-48">
+                <div className="h-48 w-full min-w-0">
                   <canvas ref={monthlyOTBChartRef}></canvas>
                 </div>
               </div>
