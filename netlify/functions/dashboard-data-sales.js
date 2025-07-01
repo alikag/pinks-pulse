@@ -309,38 +309,36 @@ export const handler = async (event, context) => {
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
   // Helper to get current EST/EDT timezone offset
   const getESTOffset = (dateToCheck = new Date()) => {
-    // Create a date in EST/EDT timezone
-    const estDateStr = dateToCheck.toLocaleString("en-US", { 
-      timeZone: "America/New_York",
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    // Simple approach: check if the date falls within EDT period
+    // EDT runs from second Sunday in March to first Sunday in November
+    const year = dateToCheck.getFullYear();
+    const month = dateToCheck.getMonth(); // 0-11
+    const date = dateToCheck.getDate();
     
-    // Create the same date in UTC
-    const utcDateStr = dateToCheck.toLocaleString("en-US", { 
-      timeZone: "UTC",
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    // Get second Sunday in March
+    const march = new Date(year, 2, 1); // March 1st
+    const marchDay = march.getDay();
+    const secondSundayMarch = 14 - marchDay + (marchDay === 0 ? 0 : 7);
     
-    // Parse the hour from both
-    const estHour = parseInt(estDateStr.split(', ')[1].split(':')[0]);
-    const utcHour = parseInt(utcDateStr.split(', ')[1].split(':')[0]);
+    // Get first Sunday in November
+    const november = new Date(year, 10, 1); // November 1st
+    const novemberDay = november.getDay();
+    const firstSundayNovember = 1 + (7 - novemberDay) % 7;
     
-    // Calculate the offset
-    let offset = utcHour - estHour;
-    if (offset < 0) offset += 24;
-    
-    // During EDT (summer), EST is UTC-4; during EST (winter), EST is UTC-5
-    return offset === 4 ? '-04:00' : '-05:00';
+    // Check if date is in EDT period
+    if (month > 2 && month < 10) {
+      // April through October - definitely EDT
+      return '-04:00';
+    } else if (month === 2) {
+      // March - check if after second Sunday
+      return date >= secondSundayMarch ? '-04:00' : '-05:00';
+    } else if (month === 10) {
+      // November - check if before first Sunday
+      return date < firstSundayNovember ? '-04:00' : '-05:00';
+    } else {
+      // December through February - EST
+      return '-05:00';
+    }
   };
   
   // Helper function to parse dates - defined at the top
