@@ -33,6 +33,46 @@ exports.handler = async (event, context) => {
     };
   }
   
+  // Add health check endpoint
+  if (event.path && event.path.includes('/health')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      
+      // Simple query to test connection
+      const healthQuery = `SELECT 1 as test`;
+      const [rows] = await bigquery.query(healthQuery);
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: 'healthy',
+          bigquery: 'connected',
+          timestamp: new Date().toISOString()
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          status: 'error',
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }),
+      };
+    }
+  }
+  
   // Add debug endpoint to check quote statuses
   if (event.path && event.path.includes('/debug-quotes')) {
     try {
