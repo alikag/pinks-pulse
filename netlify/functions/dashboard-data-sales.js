@@ -125,21 +125,43 @@ export const handler = async (event, context) => {
     // Purpose: Get all quotes with ACCURATE conversion dates from jobs table
     // This fixes the issue where quote approval date differs from job creation date
     const quotesQuery = `
+      WITH quotes_with_jobs AS (
+        SELECT 
+          q.quote_number,
+          q.quote_id,
+          q.client_name,
+          q.salesperson,
+          q.status,
+          q.total_dollars,
+          q.sent_date,
+          q.converted_date as quote_converted_date,
+          q.days_to_convert,
+          q.job_numbers,
+          -- Get the first job's converted date if available
+          MIN(CAST(j.Date_Converted AS DATE)) as job_converted_date
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+        LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
+          ON CAST(j.Job_Number AS STRING) = q.job_numbers
+        WHERE q.sent_date IS NOT NULL
+          AND q.sent_date >= '2025-03-01'
+        GROUP BY 
+          q.quote_number, q.quote_id, q.client_name, q.salesperson,
+          q.status, q.total_dollars, q.sent_date, q.converted_date,
+          q.days_to_convert, q.job_numbers
+      )
       SELECT 
-        q.quote_number,        -- Unique identifier for the quote
-        q.quote_id,            -- Jobber's internal ID (base64 encoded)
-        q.client_name,         -- Customer name for display
-        q.salesperson,         -- Who sent the quote (for performance tracking)
-        q.status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
-        q.total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
-        q.sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
-        -- Simplified: just use the quote's converted_date
-        q.converted_date,      -- Conversion date from quotes table
-        q.days_to_convert,     -- How long it took to close (not currently used)
-        q.job_numbers          -- Associated job numbers if converted
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-      WHERE q.sent_date IS NOT NULL  -- Only include quotes that were actually sent
-        AND q.sent_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)  -- Limit to last 90 days for performance
+        quote_number,
+        quote_id,
+        client_name,
+        salesperson,
+        status,
+        total_dollars,
+        sent_date,
+        -- Use job converted date if available, otherwise quote converted date
+        COALESCE(job_converted_date, quote_converted_date) as converted_date,
+        days_to_convert,
+        job_numbers
+      FROM quotes_with_jobs
     `;
 
     // ============================================
@@ -227,10 +249,10 @@ export const handler = async (event, context) => {
     
     try {
       // Add timeout to prevent Netlify function timeout
-      const queryTimeout = 8000; // 8 seconds (leaving 2s buffer for processing)
+      const queryTimeout = 9000; // 9 seconds (leaving 1s buffer for processing)
       
       // Execute main queries in parallel for better performance with timeout
-      console.log('[dashboard-data-sales] Starting parallel queries with 8s timeout...');
+      console.log('[dashboard-data-sales] Starting parallel queries with 9s timeout...');
       const queryPromises = Promise.all([
         bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout }),
         bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout }),
@@ -240,7 +262,7 @@ export const handler = async (event, context) => {
       [[quotesData], [jobsData], [speedToLeadData]] = await Promise.race([
         queryPromises,
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout - exceeded 8 seconds')), queryTimeout)
+          setTimeout(() => reject(new Error('Query timeout - exceeded 9 seconds')), queryTimeout)
         )
       ]);
       
