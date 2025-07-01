@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle } from 'lucide-react'
+import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle, LogOut } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -213,40 +213,49 @@ const SalesKPIDashboard: React.FC = () => {
     ]
   }, [data, loading])
 
-  // Fetch Google Reviews
+  // Fetch Google Reviews directly from Google Maps
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch('/.netlify/functions/google-reviews-bigquery')
+        // Use the Playwright scraper to get fresh reviews from Google Maps
+        const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
         const result = await response.json()
         
-        console.log('[Google Reviews] Fetch result:', {
+        console.log('[Google Reviews Scraper] Fetch result:', {
           success: result.success,
           hasData: !!result.data,
           reviewCount: result.data?.reviews?.length || 0,
-          error: result.error,
-          message: result.message,
-          instructions: result.instructions,
-          method: result.data?.method
+          averageRating: result.data?.averageRating,
+          totalReviews: result.data?.totalReviews,
+          businessName: result.data?.businessName
         })
         
         if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews)) {
-          // Take the latest 3 reviews and format them
-          const latestReviews = result.data.reviews.slice(0, 3).map((review: any, index: number) => ({
+          // Take the latest 10 reviews and format them
+          const latestReviews = result.data.reviews.slice(0, 10).map((review: any, index: number) => ({
             id: `review-${index}`,
-            author: review.reviewerName || 'Anonymous',
+            author: review.author || 'Anonymous',
             rating: review.rating || 5,
             text: review.text || '',
-            time: review.date || 'Recently'
+            time: review.relativeTime || review.time || 'Recently'
           }))
           setGoogleReviews(latestReviews)
+          
+          // Also store the average rating and total reviews if needed
+          if (result.data.averageRating || result.data.totalReviews) {
+            console.log('[Google Reviews] Business stats:', {
+              averageRating: result.data.averageRating,
+              totalReviews: result.data.totalReviews
+            })
+          }
         } else {
-          // No reviews available
+          // No reviews available or scraper failed
+          console.error('[Google Reviews Scraper] No reviews found or error:', result.error)
           setGoogleReviews([])
         }
       } catch (error) {
-        console.error('Failed to fetch Google reviews:', error)
-        // No reviews available
+        console.error('Failed to fetch Google reviews from scraper:', error)
+        // Fallback to empty reviews
         setGoogleReviews([])
       }
     }
@@ -281,27 +290,102 @@ const SalesKPIDashboard: React.FC = () => {
     }
   }
 
+  const getKPICalculationDetails = (kpiId: string): { formula: string; description: string; notes?: string } => {
+    switch (kpiId) {
+      case 'quotes-sent-today':
+        return {
+          formula: 'COUNT(quotes WHERE DATE(sent_date) = TODAY_EST)',
+          description: 'Counts quotes where sent_date equals today in EST timezone. All dates converted to EST before comparison.',
+          notes: 'Includes all quotes sent between 12:00 AM and 11:59 PM EST. Target: 12 quotes daily.'
+        }
+      case 'converted-today':
+        return {
+          formula: 'SUM(total_dollars WHERE DATE(converted_date) = TODAY_EST AND status IN ("Converted", "Won", "Accepted", "Complete"))',
+          description: 'Sum of quote values that changed to converted status today, regardless of original send date.',
+          notes: 'Tracks revenue realized today. May include quotes sent days/weeks ago that just converted.'
+        }
+      case 'converted-week':
+        return {
+          formula: 'SUM(total_dollars WHERE converted_date >= SUNDAY_START AND converted_date < NEXT_SUNDAY AND status IN ("Converted", "Won", "Accepted", "Complete"))',
+          description: 'Total revenue from quotes that converted during the current Sunday-Saturday week.',
+          notes: 'Week boundaries: Sunday 12:00 AM to Saturday 11:59:59 PM EST. Shows both count and dollar value.'
+        }
+      case 'cvr-week':
+        return {
+          formula: 'IF no conversions this week: Use (last_week_sent_converted ÷ last_week_sent_total × 100), ELSE: (this_week_sent_converted ÷ this_week_sent_total × 100)',
+          description: 'Smart conversion rate that falls back to last week\'s performance when current week has no conversions yet.',
+          notes: 'Prevents showing 0% early in the week. Tracks quotes by SEND date, not conversion date.'
+        }
+      case 'recurring-2026':
+        return {
+          formula: 'SUM(Calculated_Value WHERE YEAR(job_date) = 2026 AND Job_type = "RECURRING")',
+          description: 'Sum of all recurring job values scheduled in 2026 from the v_jobs table.',
+          notes: 'Only includes jobs explicitly marked as RECURRING type. Target: $1M for the year.'
+        }
+      case 'next-month-otb':
+        return {
+          formula: 'SUM(Calculated_Value WHERE MONTH(job_date) = NEXT_MONTH AND YEAR(job_date) = CURRENT_OR_NEXT_YEAR)',
+          description: 'Total value of all jobs (recurring and one-off) scheduled for the next calendar month.',
+          notes: 'Updates on the 1st of each month. Includes jobs already scheduled, not potential quotes.'
+        }
+      case 'speed-to-lead':
+        return {
+          formula: 'AVG(TIMESTAMP_DIFF(sent_date, requested_on_date, MINUTE)) WHERE sent_date >= TODAY - 30 DAYS',
+          description: 'Average minutes between customer request timestamp and quote sent timestamp over rolling 30 days.',
+          notes: 'Calculated in minutes, displayed as hours/minutes. Target: 1440 min (24 hours).'
+        }
+      case 'recurring-cvr':
+        return {
+          formula: '(COUNT(quotes WHERE sent_date >= TODAY - 30 AND status IN ("Converted", "Won", "Accepted", "Complete")) ÷ COUNT(quotes WHERE sent_date >= TODAY - 30)) × 100',
+          description: 'Percentage of quotes sent in the last 30 days that have converted to jobs (at any point).',
+          notes: 'Rolling 30-day window. Includes quotes that may have converted after the 30-day period.'
+        }
+      case 'avg-qpd':
+        return {
+          formula: 'COUNT(quotes WHERE sent_date >= TODAY - 30 DAYS) ÷ 30',
+          description: 'Simple average of quotes sent per day over the last 30 calendar days.',
+          notes: 'Fixed 30-day denominator. Helps track sales activity consistency.'
+        }
+      case 'reviews-week':
+        return {
+          formula: 'COUNT(reviews WHERE review_date >= SUNDAY_START AND review_date < NEXT_SUNDAY)',
+          description: 'Count of Google reviews from BigQuery table where review date falls in current week.',
+          notes: 'Reviews manually added to BigQuery table. Target: 2 per week for reputation building.'
+        }
+      default:
+        return {
+          formula: 'Custom calculation',
+          description: 'Metric calculation details.',
+          notes: ''
+        }
+    }
+  }
+
   // Setup charts
   useEffect(() => {
-    // Setup charts with dark theme
-    Chart.defaults.color = 'rgba(255, 255, 255, 0.6)'
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'
+    const setupCharts = () => {
+      // Setup charts with dark theme
+      Chart.defaults.color = 'rgba(255, 255, 255, 0.6)'
+      Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)'
 
-    // Destroy existing charts
-    if (trendChartInstance.current) trendChartInstance.current.destroy()
-    if (conversionChartInstance.current) conversionChartInstance.current.destroy()
-    if (monthlyOTBChartInstance.current) monthlyOTBChartInstance.current.destroy()
-    if (weeklyOTBChartInstance.current) weeklyOTBChartInstance.current.destroy()
-    if (sparklineInstance.current) sparklineInstance.current.destroy()
-    if (speedDistributionInstance.current) speedDistributionInstance.current.destroy()
-    if (heatmapInstance.current) heatmapInstance.current.destroy()
-    if (waterfallInstance.current) waterfallInstance.current.destroy()
-    if (cohortInstance.current) cohortInstance.current.destroy()
+      // Destroy existing charts
+      if (trendChartInstance.current) trendChartInstance.current.destroy()
+      if (conversionChartInstance.current) conversionChartInstance.current.destroy()
+      if (monthlyOTBChartInstance.current) monthlyOTBChartInstance.current.destroy()
+      if (weeklyOTBChartInstance.current) weeklyOTBChartInstance.current.destroy()
+      if (sparklineInstance.current) sparklineInstance.current.destroy()
+      if (speedDistributionInstance.current) speedDistributionInstance.current.destroy()
+      if (heatmapInstance.current) heatmapInstance.current.destroy()
+      if (waterfallInstance.current) waterfallInstance.current.destroy()
+      if (cohortInstance.current) cohortInstance.current.destroy()
+      
+      // Destroy KPI sparklines
+      Object.values(kpiSparklineInstances.current).forEach(chart => {
+        if (chart) chart.destroy()
+      })
+    }
     
-    // Destroy KPI sparklines
-    Object.values(kpiSparklineInstances.current).forEach(chart => {
-      if (chart) chart.destroy()
-    })
+    setupCharts()
 
     // Daily Trend Sparkline
     if (sparklineRef.current) {
@@ -658,6 +742,18 @@ const SalesKPIDashboard: React.FC = () => {
         let weeklyOTB = weeklyOTBData
         
         
+        // Check if mobile
+        const isMobile = window.innerWidth < 768;
+        
+        // Debug logging
+        console.log('[Weekly OTB Debug]', {
+          weekLabels,
+          weeklyOTB,
+          isMobile,
+          weekRangesLength: weekRanges.length,
+          weeklyOTBDataLength: weeklyOTBData.length
+        });
+        
         weeklyOTBChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -668,7 +764,10 @@ const SalesKPIDashboard: React.FC = () => {
               backgroundColor: gradient,
               borderColor: '#22d3ee',
               borderWidth: 2,
-              borderRadius: 4
+              borderRadius: 4,
+              // Standard bar width
+              barPercentage: 0.8,
+              categoryPercentage: 0.9
             }]
           },
           options: {
@@ -1011,8 +1110,35 @@ const SalesKPIDashboard: React.FC = () => {
       }
     }
 
+    // Add resize listener for mobile responsiveness
+    let resizeTimer: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        // Recreate all charts on resize to handle mobile/desktop differences
+        if (weeklyOTBChartInstance.current) {
+          weeklyOTBChartInstance.current.destroy();
+          weeklyOTBChartInstance.current = null;
+        }
+        if (trendChartInstance.current) {
+          trendChartInstance.current.destroy();
+          trendChartInstance.current = null;
+        }
+        if (conversionChartInstance.current) {
+          conversionChartInstance.current.destroy();
+          conversionChartInstance.current = null;
+        }
+        // Force a re-render by calling setupCharts again
+        setupCharts();
+      }, 250);
+    };
+    
+    window.addEventListener('resize', handleResize);
+
     // Cleanup
     return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', handleResize);
       trendChartInstance.current?.destroy()
       conversionChartInstance.current?.destroy()
       monthlyOTBChartInstance.current?.destroy()
@@ -1061,7 +1187,7 @@ const SalesKPIDashboard: React.FC = () => {
         <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Pink's Logo" className="h-10 w-10 rounded-lg object-cover" />
+              <img src="/logo.png" alt="Pink's Logo" className="h-12 w-12 rounded-lg object-cover" />
               <span 
                 style={{
                   fontSize: "1.5rem",
@@ -1098,8 +1224,21 @@ const SalesKPIDashboard: React.FC = () => {
             </a>
           </nav>
 
+          {/* Logout button */}
+          <button
+            onClick={() => {
+              haptics.light();
+              localStorage.removeItem('dashboard_auth');
+              window.location.reload();
+            }}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-all text-sm mb-4 group"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </button>
+
           {/* Footer contact info */}
-          <div className="mt-auto pt-6 border-t border-white/10">
+          <div className="pt-6 border-t border-white/10">
             <p className="text-xs text-gray-500 text-center">
               Contact{' '}
               <a 
@@ -1235,7 +1374,11 @@ const SalesKPIDashboard: React.FC = () => {
               {secondRowKpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer"
+                  onClick={() => {
+                    haptics.light();
+                    setSelectedMetric(kpi);
+                  }}
                 >
                   <div className="space-y-2">
                     <h3 className="text-sm text-gray-400">{kpi.label}</h3>
@@ -1418,8 +1561,8 @@ const SalesKPIDashboard: React.FC = () => {
               {googleReviews.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="text-center">
-                    <p className="text-gray-400">No reviews available</p>
-                    <p className="text-xs text-gray-500 mt-2">Reviews will appear here once added to BigQuery</p>
+                    <p className="text-gray-400">Loading reviews from Google Maps...</p>
+                    <p className="text-xs text-gray-500 mt-2">If this persists, the scraper may need updating</p>
                   </div>
                 </div>
               ) : (
@@ -1793,10 +1936,35 @@ const SalesKPIDashboard: React.FC = () => {
                   <XCircle className="h-5 w-5" />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-8">
+              <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <p className="text-5xl font-bold mb-2">{formatValue(selectedMetric.value, selectedMetric.format)}</p>
                   <p className="text-gray-400">Target: {formatValue(selectedMetric.target, selectedMetric.format)}</p>
+                  
+                  {/* Calculation Details */}
+                  <div className="mt-6 space-y-4">
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-gray-300 mb-2">Calculation Formula</h3>
+                      <code className="text-xs text-blue-400 font-mono block p-2 bg-gray-900/50 rounded overflow-x-auto">
+                        {getKPICalculationDetails(selectedMetric.id).formula}
+                      </code>
+                    </div>
+                    
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-gray-300 mb-2">How it works</h3>
+                      <p className="text-sm text-gray-400">
+                        {getKPICalculationDetails(selectedMetric.id).description}
+                      </p>
+                    </div>
+                    
+                    {getKPICalculationDetails(selectedMetric.id).notes && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                        <p className="text-sm text-yellow-200">
+                          <span className="font-semibold">Note:</span> {getKPICalculationDetails(selectedMetric.id).notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-center">
                   <div className="relative w-24 h-24 md:w-32 md:h-32">

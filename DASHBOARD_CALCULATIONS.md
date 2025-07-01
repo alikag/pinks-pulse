@@ -257,12 +257,23 @@ WITH speed_data AS (
 - Caching of dashboard data (15-minute TTL)
 - Minimal data transformations in frontend
 
-### 5. Mobile Responsiveness
+### 5. Interactive Calculation Details
+- **Click any KPI card** to view detailed calculation information
+- **Modal displays**:
+  - SQL/logic formula (e.g., `COUNT(quotes WHERE DATE(sent_date) = TODAY_EST)`)
+  - Plain English description of how the calculation works
+  - Important notes about targets, data sources, or special behaviors
+- **Transparency**: Users can understand exactly how each metric is calculated
+- **Accessibility**: Calculation details help users trust and verify the data
+
+### 6. Mobile Responsiveness
 - Haptic feedback on interactions
 - Adjusted layouts for mobile screens
 - Touch-optimized controls
+- Responsive charts that adapt to screen size
+- Weekly OTB chart properly displays all 5 weeks on mobile
 
-### 6. Error Handling
+### 7. Error Handling
 - Graceful fallbacks for missing data
 - Type-safe calculations with null checks
 - User-friendly error messages

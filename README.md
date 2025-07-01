@@ -9,11 +9,12 @@ A comprehensive business analytics dashboard for Pink's Window Cleaning franchis
 - **[Setup Guide](./setup-guide.md)** - Initial setup and configuration
 
 ## Google Reviews Configuration
-- Reviews are sourced from BigQuery table: `jobber-data-warehouse-462721.jobber_data.google_reviews`
-- Add new reviews directly to BigQuery for full control
-- No Google Maps API required
+- Reviews are scraped directly from Google Maps in real-time
+- Uses Playwright scraper at `/.netlify/functions/scrape-google-reviews-playwright`
+- No API keys or manual updates required
+- Automatically fetches latest reviews every time dashboard loads
 - Displays up to 10 most recent reviews with automatic scrolling
-- Shows average rating and total review count from all reviews in the table
+- Shows actual Google Maps ratings and review counts
 
 ## Features
 
@@ -170,14 +171,22 @@ curl https://your-domain/.netlify/functions/scrape-google-reviews
 curl https://your-domain/.netlify/functions/scrape-google-reviews-playwright
 ```
 
-### Recent Updates (June 2025)
+### Recent Updates (July 2025)
+
+#### Latest Features
+- **KPI Calculation Context**: Click any KPI card to see detailed calculation formulas, explanations, and notes
+- **Logout Functionality**: Added subtle logout button in sidebar menu
+- **Improved Mobile Charts**: Fixed Weekly OTB chart to display all 5 weeks properly on mobile
+- **Enhanced Sidebar**: Larger logo (h-12 w-12) for better visibility
+- **Real-time Google Reviews**: Now scrapes reviews directly from Google Maps instead of BigQuery
 
 #### Dashboard UI Improvements
 - **Typography**: DDC Hardware industrial font style for Pink's branding
 - **Responsive Design**: Larger text on desktop (up to 7xl), mobile optimizations
 - **Color Scheme**: Consistent pink (#F9ABAC) hover effects throughout
 - **Navigation**: Clickable header scrolls to top, mobile menu slides with content
-- **Password Page**: Larger logo, overflow prevention, email link for admin contact
+- **Password Page**: Larger logo (h-40 w-40), overflow prevention, email link for admin contact
+- **Interactive KPIs**: All KPI cards are clickable to show calculation details
 
 #### Data Accuracy Enhancements
 - **Smart CVR Logic**: Shows last week's CVR when current week has no conversions yet
@@ -202,6 +211,13 @@ curl https://your-domain/.netlify/functions/scrape-google-reviews-playwright
 - **Haptic Feedback**: Touch feedback on all mobile interactions
 - **Type Safety**: TypeScript with proper null checks
 - **Performance**: 15-minute cache, optimized queries
+- **Responsive Charts**: Window resize handling for optimal mobile display
+
+#### KPI Calculation Details
+Each KPI now displays:
+- **Formula**: Exact SQL/logic used in backend (e.g., `COUNT(quotes WHERE DATE(sent_date) = TODAY_EST)`)
+- **Description**: Plain English explanation of the calculation
+- **Notes**: Additional context like targets, special behaviors, or data sources
 
 #### CVR Calculation Clarification
 - **CVR This Week (KPI Card)**: Overall weekly conversion rate, may show last week's rate if no conversions yet
