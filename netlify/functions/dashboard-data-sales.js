@@ -1386,16 +1386,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Salespersons This Week]:', salespersonsThisWeek.length, 'salespeople with activity');
   
   // Count quotes for this week
-  const weekStart = new Date(now_utc);
-  weekStart.setDate(now_utc.getDate() - now_utc.getDay());
+  const weekStart = new Date(estToday);
+  weekStart.setDate(estToday.getDate() - estToday.getDay());
   weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
   
   console.log('[dashboard-data-sales] Week calculation:', {
-    actualToday: now_utc.toISOString(),
-    dayOfWeek: now_utc.getDay(),
-    dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now_utc.getDay()],
+    actualToday: estToday.toISOString(),
+    dayOfWeek: estToday.getDay(),
+    dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][estToday.getDay()],
     weekStart: weekStart.toISOString(),
     weekEnd: weekEnd.toISOString()
   });
@@ -1508,7 +1508,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       jobberQuotes: jobberQuoteDebug,
       estToday: estDateString,
       currentESTTime: currentESTTime,
-      getESTOffset: todayOffset
+      getESTOffset: getESTOffset()
     }
   };
 }
