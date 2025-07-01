@@ -1282,16 +1282,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Salespersons This Week]:', salespersonsThisWeek.length, 'salespeople with activity');
   
   // Count quotes for this week
-  const weekStart = new Date(actualToday);
-  weekStart.setDate(actualToday.getDate() - actualToday.getDay());
+  const weekStart = new Date(now_utc);
+  weekStart.setDate(now_utc.getDate() - now_utc.getDay());
   weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
   
   console.log('[dashboard-data-sales] Week calculation:', {
-    actualToday: actualToday.toISOString(),
-    dayOfWeek: actualToday.getDay(),
-    dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][actualToday.getDay()],
+    actualToday: now_utc.toISOString(),
+    dayOfWeek: now_utc.getDay(),
+    dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now_utc.getDay()],
     weekStart: weekStart.toISOString(),
     weekEnd: weekEnd.toISOString()
   });
