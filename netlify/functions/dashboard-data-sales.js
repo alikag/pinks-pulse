@@ -33,6 +33,61 @@ export const handler = async (event, context) => {
     };
   }
   
+  // Add debug endpoint to check join issue
+  if (event.path && event.path.includes('/debug-join')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      
+      // Query to debug the join
+      const debugQuery = `
+        SELECT 
+          q.quote_number,
+          q.status,
+          q.job_numbers as quote_job_numbers,
+          q.converted_date as quote_converted_date,
+          j.Job_Number as job_number,
+          j.Date_Converted as job_date_converted,
+          CAST(j.Job_Number AS STRING) as job_number_string
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+        LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
+          ON q.job_numbers = CAST(j.Job_Number AS STRING)
+        WHERE q.status IN ('Converted', 'Won')
+          AND q.sent_date >= '2025-06-01'
+        LIMIT 10
+      `;
+      
+      const [rows] = await bigquery.query(debugQuery);
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Join debug data',
+          samples: rows,
+          totalRows: rows.length
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Debug query failed',
+          message: error.message
+        }),
+      };
+    }
+  }
+  
   // Add debug endpoint to check quote statuses
   if (event.path && event.path.includes('/debug-quotes')) {
     try {
