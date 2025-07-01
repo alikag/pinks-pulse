@@ -138,6 +138,8 @@ export const handler = async (event, context) => {
         job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
       WHERE sent_date IS NOT NULL  -- Only include quotes that were actually sent
+        -- CRITICAL: Filter out any conversions in the future
+        AND (converted_date IS NULL OR DATE(converted_date) <= CURRENT_DATE('America/New_York'))
       ORDER BY sent_date DESC      -- Most recent first for display purposes
     `;
 
@@ -713,6 +715,23 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   quotesData.forEach((quote, index) => {
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
+    
+    // AGGRESSIVE FILTERING: If converted_date is in the future, skip this quote entirely
+    if (convertedDate) {
+      const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedDateEST.setHours(0, 0, 0, 0);
+      
+      if (convertedDateEST > estToday) {
+        console.log('[QUOTE REJECTED - FUTURE CONVERSION DATE]', {
+          quote_number: quote.quote_number,
+          converted_date: quote.converted_date,
+          convertedDateEST: convertedDateEST.toISOString(),
+          estToday: estToday.toISOString(),
+          status: quote.status
+        });
+        return; // Skip this quote entirely
+      }
+    }
     
     // Debug first few quotes
     if (index < 3) {
@@ -1474,19 +1493,30 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
       convertedDateEST.setHours(0, 0, 0, 0);
       
-      // CRITICAL: Don't count conversions from the future
+      // AGGRESSIVE: Don't count conversions from the future OR from the current day if it's a future date
       if (convertedDateEST > today) {
-        console.log('[FUTURE CONVERSION BLOCKED]', {
+        console.log('[CHART: FUTURE CONVERSION BLOCKED]', {
           quote_converted_date: q.converted_date,
           convertedDateEST: convertedDateEST.toISOString(),
           today: today.toISOString(),
-          quote_number: q.quote_number
+          quote_number: q.quote_number,
+          dayBeingProcessed: date.toISOString()
         });
         return false;
       }
       
       // Check if the converted date falls on this specific day
-      return convertedDateEST.getTime() === date.getTime();
+      const matchesDay = convertedDateEST.getTime() === date.getTime();
+      if (matchesDay) {
+        console.log('[CHART: CONVERSION ALLOWED FOR DAY]', {
+          quote_number: q.quote_number,
+          converted_date: q.converted_date,
+          convertedDateEST: convertedDateEST.toISOString(),
+          dayDate: date.toISOString(),
+          today: today.toISOString()
+        });
+      }
+      return matchesDay;
     }).length;
     
     // Debug for all days
