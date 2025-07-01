@@ -133,18 +133,13 @@ export const handler = async (event, context) => {
         q.status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
         q.total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
         q.sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
-        -- Use job's Date_Converted if available, otherwise fall back to quote's converted_date
-        -- Cast both to same type (DATE) for COALESCE to work
-        COALESCE(
-          CAST(j.Date_Converted AS DATE),    -- When the job was actually created (accurate conversion date)
-          q.converted_date                    -- Fallback to quote's converted date if no job found
-        ) as converted_date,                  -- This is now the CORRECT conversion date
+        q.converted_date,      -- When quote was converted (temporary fix - using quote date directly)
         q.days_to_convert,     -- How long it took to close (not currently used)
         q.job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-      LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
-        ON q.job_numbers = CAST(j.Job_Number AS STRING)  -- Join on job number
       WHERE q.sent_date IS NOT NULL  -- Only include quotes that were actually sent
+        -- Limit to recent data to improve performance
+        AND DATE(q.sent_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
       ORDER BY q.sent_date DESC      -- Most recent first for display purposes
     `;
 
