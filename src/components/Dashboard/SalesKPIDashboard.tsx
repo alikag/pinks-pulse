@@ -633,10 +633,10 @@ const SalesKPIDashboard: React.FC = () => {
               fill: false,
               tension: 0.4,
               segment: {
-                borderDash: (ctx) => ctx.p0DataIndex > currentDayIndex ? [5, 5] : undefined
+                borderDash: (ctx) => ctx.p0DataIndex >= currentDayIndex ? [5, 5] : undefined
               },
-              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#fb923c'),
-              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
+              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#fb923c'),
+              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#ffffff'),
               pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
               pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
               pointHoverRadius: 6
@@ -648,10 +648,10 @@ const SalesKPIDashboard: React.FC = () => {
               fill: false,
               tension: 0.4,
               segment: {
-                borderDash: (ctx) => ctx.p0DataIndex > currentDayIndex ? [5, 5] : undefined
+                borderDash: (ctx) => ctx.p0DataIndex >= currentDayIndex ? [5, 5] : undefined
               },
-              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#3b82f6'),
-              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
+              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#3b82f6'),
+              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#ffffff'),
               pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
               pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
               pointHoverRadius: 6
@@ -685,7 +685,14 @@ const SalesKPIDashboard: React.FC = () => {
                 }
               },
               x: {
-                grid: { display: false }
+                grid: { display: false },
+                ticks: {
+                  callback: function(value, index) {
+                    const currentDayIndex = new Date().getDay();
+                    const label = this.getLabelForValue(value);
+                    return index === currentDayIndex ? label + ' (Today)' : label;
+                  }
+                }
               }
             }
           }
@@ -749,7 +756,21 @@ const SalesKPIDashboard: React.FC = () => {
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 1
+                borderWidth: 1,
+                callbacks: {
+                  label: function(context) {
+                    if (context.dataset.label === 'Week Average') {
+                      return `Week Average CVR: ${context.parsed.y.toFixed(1)}%`;
+                    }
+                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                  },
+                  afterLabel: function(context) {
+                    if (context.dataset.label === 'Week Average') {
+                      return 'Average conversion rate for the entire week';
+                    }
+                    return '';
+                  }
+                }
               }
             },
             scales: {
