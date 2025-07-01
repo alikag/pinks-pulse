@@ -100,6 +100,78 @@ export const handler = async (event, context) => {
     }
   }
   
+  // Add debug endpoint to check specific quote
+  if (event.path && event.path.includes('/debug-quote-676')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      
+      // Query to check quote 676 specifically
+      const debugQuery = `
+        SELECT 
+          'Quote Data' as source,
+          q.quote_number,
+          q.status,
+          q.job_numbers,
+          q.sent_date,
+          q.converted_date as quote_converted_date,
+          NULL as job_number,
+          NULL as job_date_converted,
+          NULL as job_scheduled_date
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+        WHERE q.quote_number = '676'
+        
+        UNION ALL
+        
+        SELECT 
+          'Job Data' as source,
+          '676' as quote_number,
+          NULL as status,
+          NULL as job_numbers,
+          NULL as sent_date,
+          NULL as quote_converted_date,
+          j.Job_Number,
+          j.Date_Converted as job_date_converted,
+          j.Date as job_scheduled_date
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
+        WHERE j.Job_Number IN (
+          SELECT job_numbers 
+          FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` 
+          WHERE quote_number = '676'
+        )
+        ORDER BY source
+      `;
+      
+      const [rows] = await bigquery.query(debugQuery);
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Quote 676 debug data',
+          data: rows
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Debug query failed',
+          message: error.message
+        }),
+      };
+    }
+  }
+  
   // Add debug endpoint to check quote statuses
   if (event.path && event.path.includes('/debug-quotes')) {
     try {
