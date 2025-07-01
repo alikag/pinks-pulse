@@ -471,8 +471,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     estToday_dateOnly: estToday.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
     dayOfWeek: estToday.getDay(),
     dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][estToday.getDay()],
-    referenceDate: referenceDate.toLocaleDateString(),
-    now: now.toLocaleDateString()
+    referenceDate: now_utc.toLocaleDateString(),
+    now: now_utc.toLocaleDateString()
   });
   
   // Helper function to extract Jobber ID from quote_id
@@ -1195,7 +1195,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesToday: metrics.quotesToday,
     quotesThisWeek: metrics.quotesThisWeek,
     quotes30Days: metrics.quotes30Days,
-    referenceDate: now.toISOString()
+    referenceDate: estToday.toISOString()
   });
   
   // Debug CVR calculation
@@ -1422,7 +1422,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     labels: timeSeries.week.labels,
     quotesSent: timeSeries.week.quotesSent,
     quotesConverted: timeSeries.week.quotesConverted,
-    referenceDate: now.toISOString()
+    referenceDate: estToday.toISOString()
   });
   
   // Calculate Quote Value Flow Waterfall data for current quarter
