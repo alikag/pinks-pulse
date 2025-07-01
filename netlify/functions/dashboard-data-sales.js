@@ -472,6 +472,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const estTodayString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00${todayOffset}`;
   const estToday = new Date(estTodayString);
   
+  // CRITICAL DEBUG: What date is being used as "today"?
+  console.log('🔴🔴🔴 CRITICAL: What is "today" being set to?', {
+    now_utc: now_utc.toISOString(),
+    estDateString: estDateString,
+    todayOffset: todayOffset,
+    estTodayString: estTodayString,
+    estToday_ISO: estToday.toISOString(),
+    estToday_local: estToday.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+    actual_current_time: new Date().toLocaleString("en-US", {timeZone: "America/New_York"})
+  });
+  
   // Enhanced debugging for date issues
   const currentESTTime = new Date().toLocaleString("en-US", {
     timeZone: "America/New_York",
@@ -941,14 +952,26 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       }
       
       if (isToday(convertedDate)) {
-        console.log('[Converted Today Debug - Clean]', {
+        console.log('🚨🚨🚨 CONVERTED TODAY FOUND - THIS SHOULD NOT HAPPEN ON 7/1! 🚨🚨🚨', {
           quoteNumber: quote.quote_number,
+          clientName: quote.client_name,
           raw_converted_date: quote.converted_date,
           parsed_converted_date: convertedDate.toISOString(),
           convertedDate_EST: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+          convertedDate_FULL_EST: convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
           estToday_EST: estDateString,
-          totalDollars
+          totalDollars,
+          isToday_result: isToday(convertedDate),
+          status: quote.status
         });
+        
+        // EMERGENCY CHECK: Is this actually July 1st?
+        const estDateParts = convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}).split('/');
+        const isActuallyJuly1 = estDateParts[0] === '7' && estDateParts[1] === '1';
+        
+        if (!isActuallyJuly1) {
+          console.error(`❌❌❌ CRITICAL BUG: Quote ${quote.quote_number} (${quote.client_name}) converted on ${convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"})} but isToday() returned true for July 1st!`);
+        }
         
         metrics.convertedToday++;
         metrics.convertedTodayDollars += totalDollars;
