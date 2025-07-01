@@ -48,8 +48,10 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 - **Display**: Shows actual count or "No quotes sent today" if 0
 
 ### 2. Converted Today ($)
-- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` = today (EST/EDT) AND not in the future
-- **Note**: These are quotes that converted today, regardless of when they were sent
+- **Calculation**: Sum of `total_dollars` for quotes where job's `Date_Converted` = today (EST/EDT) AND not in the future
+- **Data Source**: Uses v_jobs.Date_Converted (when job was created) via LEFT JOIN, not v_quotes.converted_date
+- **Note**: Tracks when jobs were actually created in the system, not just when quotes were approved
+- **Why**: A quote may be approved on one day but the job created the next day - we track job creation as the true conversion
 - **Future Protection**: Excludes conversions with timestamps later than current EST/EDT time
 - **Target**: $100,000
 - **Status**:
@@ -59,7 +61,8 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 - **Display**: Currency format with no decimals
 
 ### 3. Converted This Week ($)
-- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` is within current week (Sun-Sat) AND not in the future
+- **Calculation**: Sum of `total_dollars` for quotes where job's `Date_Converted` is within current week (Sun-Sat) AND not in the future
+- **Data Source**: Uses v_jobs.Date_Converted (when job was created) via LEFT JOIN, not v_quotes.converted_date
 - **Future Protection**: Excludes conversions with timestamps later than current EST/EDT time
 - **Subtitle**: Shows count and dollar value (e.g., "4 quotes - $5,384")
 - **Target**: $157,500
@@ -227,6 +230,13 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 1. **v_quotes**: Quote data including status, dates, and values
 2. **v_jobs**: Job scheduling and OTB calculations
 3. **google_reviews**: Customer review data
+
+### Critical JOIN: Quotes to Jobs
+- **Purpose**: Get accurate conversion dates
+- **Join Key**: v_quotes.job_numbers = v_jobs.Job_Number
+- **Why**: Quote approval date ≠ Job creation date
+- **Implementation**: LEFT JOIN with COALESCE(j.Date_Converted, q.converted_date)
+- **Result**: Conversion metrics reflect when jobs were created, not just quote approval
 
 ### Speed to Lead Calculation
 ```sql

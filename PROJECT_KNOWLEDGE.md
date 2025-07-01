@@ -84,6 +84,21 @@ The calculation was incorrectly assigning jobs to weeks. Now properly calculates
 - Shows average rating and total count
 - **Note**: No live integration with Google Reviews API - requires manual data entry
 
+## Critical Business Logic: Conversion Date Tracking
+
+### Quote Approval vs Job Creation
+- **Business Process**: Quotes are approved by customers, then jobs are created in the system
+- **Data Challenge**: Quote approval date ≠ Job creation date
+- **Solution**: JOIN v_quotes with v_jobs using job_numbers field
+- **Implementation**: Use COALESCE(j.Date_Converted, q.converted_date) for accurate conversion tracking
+- **Impact**: "Converted Today" and "Converted This Week" metrics now reflect when jobs were actually created
+
+### Why This Matters
+- Example: Quote #676 was approved June 30th but job was created July 1st
+- Without the JOIN: Shows as converted July 1st (incorrect for business metrics)
+- With the JOIN: Shows as converted when the job was actually created
+- This ensures conversion metrics align with operational reality
+
 ## Known Issues & TODOs
 
 ### 1. Google Reviews Data Integration

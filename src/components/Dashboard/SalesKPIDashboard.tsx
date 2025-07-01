@@ -468,15 +468,15 @@ const SalesKPIDashboard: React.FC = () => {
         }
       case 'converted-today':
         return {
-          formula: 'SUM(total_dollars) FROM v_quotes WHERE DATE(converted_date) = TODAY_EST AND status IN ("Converted", "Won", "Accepted", "Complete")',
-          description: 'Sum of quote values that changed to converted status today from BigQuery view: jobber_data.v_quotes',
-          notes: 'Tracks revenue realized today. May include quotes sent days/weeks ago that just converted.'
+          formula: 'SUM(q.total_dollars) FROM v_quotes q LEFT JOIN v_jobs j ON q.job_numbers = j.Job_Number WHERE DATE(COALESCE(j.Date_Converted, q.converted_date)) = TODAY_EST',
+          description: 'Sum of quote values where the associated job was created today. Uses job creation date, not quote approval date.',
+          notes: 'Tracks when jobs are actually created in the system. A quote may be approved one day but the job created the next.'
         }
       case 'converted-week':
         return {
-          formula: 'SUM(total_dollars) FROM v_quotes WHERE converted_date >= SUNDAY_START AND converted_date < NEXT_SUNDAY AND status IN ("Converted", "Won", "Accepted", "Complete")',
-          description: 'Total revenue from quotes that converted during the current Sunday-Saturday week. Source: jobber_data.v_quotes',
-          notes: 'Week boundaries: Sunday 12:00 AM to Saturday 11:59:59 PM EST. Shows both count and dollar value.'
+          formula: 'SUM(q.total_dollars) FROM v_quotes q LEFT JOIN v_jobs j ON q.job_numbers = j.Job_Number WHERE COALESCE(j.Date_Converted, q.converted_date) >= SUNDAY_START AND < NEXT_SUNDAY',
+          description: 'Total revenue from quotes where jobs were created this week. Uses job creation date from v_jobs table.',
+          notes: 'Week boundaries: Sunday 12:00 AM to Saturday 11:59:59 PM EST. Reflects actual job creation, not just quote approval.'
         }
       case 'cvr-week':
         return {
