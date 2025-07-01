@@ -156,17 +156,11 @@ exports.handler = async (event, context) => {
         Calculated_Value     -- Revenue value of the job (excluding sales tax)
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       WHERE Date IS NOT NULL     -- Must have a scheduled date
-        AND (
-          -- === CURRENT MONTH LOGIC ===
-          -- Include ALL jobs in current month (past, present, and future)
-          -- This shows total month revenue, not just remaining
-          (EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(YEAR FROM CURRENT_DATE())
-           AND EXTRACT(MONTH FROM PARSE_DATE('%Y-%m-%d', Date)) = EXTRACT(MONTH FROM CURRENT_DATE()))
-          
-          -- === FUTURE JOBS LOGIC ===
-          -- Also include ALL future jobs (for next month OTB and beyond)
-          OR PARSE_DATE('%Y-%m-%d', Date) > CURRENT_DATE()
-        )
+        -- === INCLUDE ALL 2025 AND 2026 JOBS ===
+        -- Changed to include ALL jobs from 2025 (for monthly OTB including May/June)
+        -- AND 2026 jobs (for recurring revenue calculation)
+        -- This ensures we capture all relevant data for the dashboard
+        AND EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) IN (2025, 2026)
       ORDER BY Date  -- Chronological order for processing
     `;
 
