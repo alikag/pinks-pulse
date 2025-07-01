@@ -307,6 +307,15 @@ export const handler = async (event, context) => {
 };
 
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
+  // Helper to get current EST/EDT timezone offset
+  const getESTOffset = () => {
+    const now = new Date();
+    const januaryOffset = new Date(now.getFullYear(), 0, 1).getTimezoneOffset();
+    const julyOffset = new Date(now.getFullYear(), 6, 1).getTimezoneOffset();
+    const isDST = now.getTimezoneOffset() < Math.max(januaryOffset, julyOffset);
+    return isDST ? '-04:00' : '-05:00';
+  };
+  
   // Helper function to parse dates - defined at the top
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -315,7 +324,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       // Handle BigQuery date objects that come as { value: "2025-06-27" }
       if (typeof dateStr === 'object' && dateStr.value) {
         // Parse as EST/EDT timezone
-        const date = new Date(dateStr.value + 'T00:00:00-05:00');
+        const date = new Date(dateStr.value + 'T00:00:00' + getESTOffset());
         return date;
       }
       
@@ -328,7 +337,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       
       // For string dates without time, assume EST/EDT
       if (typeof dateStr === 'string' && !dateStr.includes('T')) {
-        return new Date(dateStr + 'T00:00:00-05:00');
+        return new Date(dateStr + 'T00:00:00' + getESTOffset());
       }
       
       return new Date(dateStr);
@@ -388,7 +397,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Parse the EST date string to get proper EST date
   // Format is MM/DD/YYYY, need to convert to YYYY-MM-DD for parsing
   const [month, day, year] = estDateString.split('/');
-  const estTodayString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00-05:00`;
+  const estTodayString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00${getESTOffset()}`;
   const estToday = new Date(estTodayString);
   
   // Enhanced debugging for date issues
@@ -435,6 +444,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   const isToday = (date) => {
     if (!date) return false;
+    
     // Get the date components in EST
     const dateEstStr = date.toLocaleDateString("en-US", {
       timeZone: "America/New_York",
@@ -443,8 +453,23 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       day: '2-digit'
     });
     
-    // Compare with today's EST date string
-    return dateEstStr === estDateString;
+    // Get the date in EST timezone for future comparison
+    const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const isNotFuture = dateInEST <= estToday;
+    
+    // Compare with today's EST date string AND ensure it's not in the future
+    const isMatchingDate = dateEstStr === estDateString;
+    
+    if (isMatchingDate && !isNotFuture) {
+      console.log('[Future conversion blocked in isToday]', {
+        quote_converted_date: date.toISOString(),
+        dateInEST: dateInEST.toISOString(),
+        estToday: estToday.toISOString(),
+        reason: 'Future date within same day'
+      });
+    }
+    
+    return isMatchingDate && isNotFuture;
   };
   
   const isThisWeek = (date) => {
