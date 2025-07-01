@@ -1446,6 +1446,29 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     conversionRate: quarterQuotesSent > 0 ? ((quarterQuotesConverted / quarterQuotesSent) * 100).toFixed(1) + '%' : '0%'
   });
   
+  // Collect debug info for browser console
+  const jobberQuoteDebug = [];
+  const dateParseDebug = [];
+  
+  // Process the same quotes again but collect debug info
+  quotesData.forEach(quote => {
+    const jobberQuotes = ['678', '676', '667', '657', '176'];
+    if (jobberQuotes.includes(quote.quote_number)) {
+      const convertedDate = parseDate(quote.converted_date);
+      jobberQuoteDebug.push({
+        quote_number: quote.quote_number,
+        client_name: quote.client_name,
+        raw_converted_date: quote.converted_date,
+        parsed_converted_date: convertedDate?.toISOString(),
+        convertedDate_EST: convertedDate?.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+        convertedDate_full_EST: convertedDate?.toLocaleString("en-US", {timeZone: "America/New_York"}),
+        isToday_result: convertedDate ? isToday(convertedDate) : false,
+        isThisWeek_result: convertedDate ? isThisWeek(convertedDate) : false,
+        estToday_EST: estDateString
+      });
+    }
+  });
+
   return {
     timeSeries,
     salespersons,
@@ -1455,7 +1478,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     speedDistribution, // Add speed distribution data
     waterfallData, // Add waterfall data
     lastUpdated: new Date(),
-    dataSource: 'bigquery'
+    dataSource: 'bigquery',
+    // DEBUG INFO - will show in browser console
+    debug: {
+      jobberQuotes: jobberQuoteDebug,
+      estToday: estDateString,
+      currentESTTime: currentESTTime,
+      getESTOffset: getESTOffset()
+    }
   };
 }
 

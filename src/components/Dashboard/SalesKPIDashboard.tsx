@@ -68,6 +68,34 @@ const SalesKPIDashboard: React.FC = () => {
         length: data.recentConvertedQuotes?.length || 0
       })
       
+      // CRITICAL DEBUG: Log Jobber quote processing results
+      if (data.debug) {
+        console.log('🚨 [JOBBER QUOTE DEBUG] - ROOT CAUSE ANALYSIS', {
+          estToday: data.debug.estToday,
+          currentESTTime: data.debug.currentESTTime,
+          estOffset: data.debug.getESTOffset,
+          jobberQuotes: data.debug.jobberQuotes
+        });
+        
+        // Log each Jobber quote individually for clarity
+        data.debug.jobberQuotes.forEach((quote: any) => {
+          console.log(`🔍 [QUOTE ${quote.quote_number}] ${quote.client_name}`, {
+            rawDate: quote.raw_converted_date,
+            parsedDate: quote.parsed_converted_date,
+            estDate: quote.convertedDate_EST,
+            fullESTTime: quote.convertedDate_full_EST,
+            isToday: quote.isToday_result,
+            isThisWeek: quote.isThisWeek_result,
+            expectedToday: quote.estToday_EST
+          });
+          
+          // Flag any issues
+          if (quote.isToday_result && !['07/01/2025', '7/1/2025'].includes(quote.convertedDate_EST)) {
+            console.warn(`❌ WRONG DATE: Quote ${quote.quote_number} shows as "today" but date is ${quote.convertedDate_EST}, not July 1st`);
+          }
+        });
+      }
+      
       // Haptic feedback if there are new conversions today
       if (data.kpiMetrics && data.kpiMetrics.convertedToday && data.kpiMetrics.convertedToday > 0) {
         haptics.success();
