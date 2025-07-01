@@ -57,8 +57,8 @@ exports.handler = async (event, context) => {
           salesperson,
           total_dollars
         FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
-        WHERE DATE(DATETIME(TIMESTAMP(sent_date), "America/New_York")) = DATE(DATETIME(CURRENT_TIMESTAMP(), "America/New_York"))
-           OR DATE(DATETIME(TIMESTAMP(converted_date), "America/New_York")) = DATE(DATETIME(CURRENT_TIMESTAMP(), "America/New_York"))
+        WHERE DATE(sent_date) = CURRENT_DATE()
+           OR DATE(converted_date) = CURRENT_DATE()
         ORDER BY sent_date DESC, converted_date DESC
         LIMIT 20
       `;
@@ -193,8 +193,8 @@ exports.handler = async (event, context) => {
           
         WHERE r.requested_on_date IS NOT NULL    -- Must have request date
           AND q.sent_date IS NOT NULL            -- Must have sent date
-          -- Only look at last 30 days for current performance (in EST timezone)
-          AND DATE(DATETIME(TIMESTAMP(r.requested_on_date), "America/New_York")) >= DATE_SUB(DATE(DATETIME(CURRENT_TIMESTAMP(), "America/New_York")), INTERVAL 30 DAY)
+          -- Only look at last 30 days for current performance
+          AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
       )
       SELECT 
         quote_number,
@@ -216,7 +216,7 @@ exports.handler = async (event, context) => {
     const reviewsQuery = `
       SELECT COUNT(*) as reviews_count
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.google_reviews\`
-      WHERE created_at >= FORMAT_TIMESTAMP('%Y-%m-%d', DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY), "America/New_York"))
+      WHERE created_at >= FORMAT_TIMESTAMP('%Y-%m-%d', TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY))
     `;
 
     console.log('[dashboard-data-sales] Executing queries...');
