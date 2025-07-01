@@ -325,6 +325,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       if (typeof dateStr === 'object' && dateStr.value) {
         // Parse as EST/EDT timezone
         const date = new Date(dateStr.value + 'T00:00:00' + getESTOffset());
+        
+        // DEBUG: Log conversion for problematic dates
+        if (dateStr.value && (dateStr.value.includes('2025-06-29') || dateStr.value.includes('2025-06-30') || dateStr.value.includes('2025-07-01'))) {
+          console.log('[DATE PARSE DEBUG - Object]', {
+            input: dateStr,
+            offset: getESTOffset(),
+            constructed_string: dateStr.value + 'T00:00:00' + getESTOffset(),
+            result_iso: date.toISOString(),
+            result_est: date.toLocaleDateString("en-US", {timeZone: "America/New_York"})
+          });
+        }
+        
         return date;
       }
       
@@ -332,12 +344,38 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       if (typeof dateStr === 'string' && dateStr.includes('UTC')) {
         // Remove the microseconds and UTC suffix
         const cleanedDate = dateStr.replace(/\.\d{6} UTC$/, '').replace(' ', 'T') + 'Z';
-        return new Date(cleanedDate);
+        const date = new Date(cleanedDate);
+        
+        // DEBUG: Log UTC conversion for problematic dates
+        if (dateStr.includes('2025-06-29') || dateStr.includes('2025-06-30') || dateStr.includes('2025-07-01')) {
+          console.log('[DATE PARSE DEBUG - UTC]', {
+            input: dateStr,
+            cleaned: cleanedDate,
+            result_iso: date.toISOString(),
+            result_est: date.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+            result_est_full: date.toLocaleString("en-US", {timeZone: "America/New_York"})
+          });
+        }
+        
+        return date;
       }
       
       // For string dates without time, assume EST/EDT
       if (typeof dateStr === 'string' && !dateStr.includes('T')) {
-        return new Date(dateStr + 'T00:00:00' + getESTOffset());
+        const date = new Date(dateStr + 'T00:00:00' + getESTOffset());
+        
+        // DEBUG: Log string conversion for problematic dates
+        if (dateStr.includes('2025-06-29') || dateStr.includes('2025-06-30') || dateStr.includes('2025-07-01')) {
+          console.log('[DATE PARSE DEBUG - String]', {
+            input: dateStr,
+            offset: getESTOffset(),
+            constructed_string: dateStr + 'T00:00:00' + getESTOffset(),
+            result_iso: date.toISOString(),
+            result_est: date.toLocaleDateString("en-US", {timeZone: "America/New_York"})
+          });
+        }
+        
+        return date;
       }
       
       return new Date(dateStr);
@@ -850,6 +888,23 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     if (convertedDate && isConverted) {
       salespersonStats[sp].quotesConverted++;
       salespersonStats[sp].valueConverted += totalDollars;
+      
+      // SPECIFIC DEBUG: Track the exact quotes from Jobber data
+      const jobberQuotes = ['678', '676', '667', '657', '176'];
+      if (jobberQuotes.includes(quote.quote_number)) {
+        console.log('[JOBBER QUOTE TRACKING]', {
+          quote_number: quote.quote_number,
+          client_name: quote.client_name,
+          raw_converted_date: quote.converted_date,
+          parsed_converted_date: convertedDate.toISOString(),
+          convertedDate_EST: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+          convertedDate_full_EST: convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
+          isToday_result: isToday(convertedDate),
+          isThisWeek_result: isThisWeek(convertedDate),
+          estToday_EST: estDateString,
+          totalDollars
+        });
+      }
       
       if (isToday(convertedDate)) {
         console.log('[Converted Today Debug - Clean]', {
