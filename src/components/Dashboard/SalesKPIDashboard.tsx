@@ -275,24 +275,31 @@ const SalesKPIDashboard: React.FC = () => {
             setGoogleReviews([
               {
                 id: 'fallback-1',
-                author: 'Recent Customer',
+                author: 'Charley Mitcherson',
                 rating: 5,
-                text: 'Pink\'s Window Services did an amazing job! Professional, on time, and great attention to detail.',
-                time: '2 days ago'
+                text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
+                time: '3 days ago'
               },
               {
                 id: 'fallback-2',
-                author: 'Hudson Valley Resident',
+                author: 'Paul Falanga',
                 rating: 5,
-                text: 'Best window cleaning service in the area. They handle our commercial property and always exceed expectations.',
-                time: '1 week ago'
+                text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
+                time: '5 days ago'
               },
               {
                 id: 'fallback-3',
-                author: 'Business Owner',
+                author: 'Colleen Bicknese',
+                rating: 4,
+                text: 'Our estimator never requested to see the interior so he WAY underestimated how long it would take to complete the job. The 2 window techs were fantastic, they did a very good job. They had to come back to do the exterior after finishing the interior, and between the weather and sick employees it took 2 weeks to get it all done.',
+                time: 'a week ago'
+              },
+              {
+                id: 'fallback-4',
+                author: 'Iva Walsh',
                 rating: 5,
-                text: 'Reliable and thorough. Pink\'s has been maintaining our storefront windows for years. Highly recommend!',
-                time: '2 weeks ago'
+                text: 'I have given one star review before because the company went on our property without permission. I hope then can figure it out and before then go they need to obtain the permission. I just got my windows clean by Pink\'s. Amazing job!!!! I will have my windows done exclusively by this company!!! I would even request Dylan and Sael. These guys are professional, pleasant and very, very good. They left the windows beautifully clean and the house in perfect condition as well.',
+                time: 'a week ago'
               }
             ])
             return
@@ -337,24 +344,31 @@ const SalesKPIDashboard: React.FC = () => {
           setGoogleReviews([
             {
               id: 'fallback-1',
-              author: 'Recent Customer',
+              author: 'Charley Mitcherson',
               rating: 5,
-              text: 'Pink\'s Window Services did an amazing job! Professional, on time, and great attention to detail.',
-              time: '2 days ago'
+              text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
+              time: '3 days ago'
             },
             {
               id: 'fallback-2',
-              author: 'Hudson Valley Resident',
+              author: 'Paul Falanga',
               rating: 5,
-              text: 'Best window cleaning service in the area. They handle our commercial property and always exceed expectations.',
-              time: '1 week ago'
+              text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
+              time: '5 days ago'
             },
             {
               id: 'fallback-3',
-              author: 'Business Owner',
+              author: 'Colleen Bicknese',
+              rating: 4,
+              text: 'Our estimator never requested to see the interior so he WAY underestimated how long it would take to complete the job. The 2 window techs were fantastic, they did a very good job. They had to come back to do the exterior after finishing the interior, and between the weather and sick employees it took 2 weeks to get it all done.',
+              time: 'a week ago'
+            },
+            {
+              id: 'fallback-4',
+              author: 'Iva Walsh',
               rating: 5,
-              text: 'Reliable and thorough. Pink\'s has been maintaining our storefront windows for years. Highly recommend!',
-              time: '2 weeks ago'
+              text: 'I have given one star review before because the company went on our property without permission. I hope then can figure it out and before then go they need to obtain the permission. I just got my windows clean by Pink\'s. Amazing job!!!! I will have my windows done exclusively by this company!!! I would even request Dylan and Sael. These guys are professional, pleasant and very, very good. They left the windows beautifully clean and the house in perfect condition as well.',
+              time: 'a week ago'
             }
           ])
         }
