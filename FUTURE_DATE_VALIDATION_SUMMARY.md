@@ -1,7 +1,12 @@
 # Future Date Validation Implementation Summary
 
 ## Overview
-Added future date validation across all dashboard data functions to prevent future-dated conversions from affecting current KPI metrics, chart data, and recent activity lists.
+Added comprehensive future date validation and dynamic timezone handling across all dashboard data functions to prevent future-dated conversions from affecting current KPI metrics, chart data, and recent activity lists.
+
+## CRITICAL FIX (July 2025)
+- **Root Cause**: Hardcoded EST timezone offset (-05:00) during Daylight Saving Time period
+- **Solution**: Dynamic timezone offset detection using `getESTOffset()` function
+- **Impact**: Fixes timezone bugs causing false positive conversions during summer months
 
 ## Files Updated
 
@@ -35,10 +40,12 @@ Added future date validation across all dashboard data functions to prevent futu
 - Prevents future conversions from affecting time series charts
 
 ### 5. `/netlify/functions/dashboard-data-sales.js`
-- Already had comprehensive future date validation implemented
+- **MAJOR UPDATE**: Fixed critical daylight saving time bug
+- Added `getESTOffset()` function for dynamic timezone offset detection
+- Enhanced `isToday()` function with future date protection matching `isThisWeek()`
 - Blocks future conversions in KPI calculations (lines 826-840)
 - Blocks future conversions in chart data (lines 1454-1463)
-- Used as reference pattern for other files
+- Now properly handles EST (-05:00) vs EDT (-04:00) automatically
 
 ### 6. `/netlify/functions/dashboard-data-v2.js`
 - Uses MetricsCalculator which now has future date validation
@@ -46,6 +53,39 @@ Added future date validation across all dashboard data functions to prevent futu
 
 ### 7. `/netlify/functions/dashboard-data-nofilter.js`
 - No changes needed - this is a raw data endpoint without filtering
+
+## Dynamic Timezone Offset (New Implementation)
+
+```javascript
+// Dynamic EST/EDT detection based on Daylight Saving Time
+const getESTOffset = () => {
+  const now = new Date();
+  const januaryOffset = new Date(now.getFullYear(), 0, 1).getTimezoneOffset();
+  const julyOffset = new Date(now.getFullYear(), 6, 1).getTimezoneOffset();
+  const isDST = now.getTimezoneOffset() < Math.max(januaryOffset, julyOffset);
+  return isDST ? '-04:00' : '-05:00';
+};
+
+// Usage in date parsing
+const date = new Date(dateStr.value + 'T00:00:00' + getESTOffset());
+```
+
+## Enhanced Future Date Protection
+
+```javascript
+const isToday = (date) => {
+  if (!date) return false;
+  
+  // Get date string in EST/EDT
+  const dateEstStr = date.toLocaleDateString("en-US", {timeZone: "America/New_York"});
+  
+  // Check if date is in the future (including same day, different time)
+  const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
+  const isNotFuture = dateInEST <= estToday;
+  
+  return dateEstStr === estDateString && isNotFuture;
+};
+```
 
 ## Implementation Pattern
 

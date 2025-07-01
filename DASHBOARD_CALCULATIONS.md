@@ -16,8 +16,10 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 
 ### Timezone
 - **All calculations use EST/EDT timezone** (America/New_York)
-- Server timestamps are converted to EST using: `new Date().toLocaleString("en-US", {timeZone: "America/New_York"})`
-- This ensures consistency regardless of server location
+- **Dynamic timezone offset**: Automatically switches between EST (-05:00) and EDT (-04:00) based on daylight saving time
+- Server timestamps are converted to EST/EDT using: `new Date().toLocaleString("en-US", {timeZone: "America/New_York"})`
+- Date parsing uses dynamic offset: `getESTOffset()` returns `-04:00` during DST, `-05:00` during standard time
+- This ensures consistency regardless of server location and season
 
 ### Week Definition
 - **Weeks run Sunday through Saturday**
@@ -31,7 +33,8 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 ### Date Parsing from BigQuery
 - BigQuery dates come as objects: `{ value: "2025-06-27" }`
 - UTC timestamps: `"2025-06-27 17:05:33.000000 UTC"`
-- Parsing logic handles both formats and converts to EST
+- Parsing logic handles both formats and converts to EST/EDT with dynamic timezone offset
+- Future date protection: Conversions are filtered out if they occur in the future (including later on the same day)
 
 ## KPI Cards
 
@@ -45,8 +48,9 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 - **Display**: Shows actual count or "No quotes sent today" if 0
 
 ### 2. Converted Today ($)
-- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` = today (EST)
+- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` = today (EST/EDT) AND not in the future
 - **Note**: These are quotes that converted today, regardless of when they were sent
+- **Future Protection**: Excludes conversions with timestamps later than current EST/EDT time
 - **Target**: $100,000
 - **Status**:
   - Green: ≥ $100,000
@@ -55,7 +59,8 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 - **Display**: Currency format with no decimals
 
 ### 3. Converted This Week ($)
-- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` is within current week (Sun-Sat)
+- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` is within current week (Sun-Sat) AND not in the future
+- **Future Protection**: Excludes conversions with timestamps later than current EST/EDT time
 - **Subtitle**: Shows count and dollar value (e.g., "4 quotes - $5,384")
 - **Target**: $157,500
 - **Status**:
