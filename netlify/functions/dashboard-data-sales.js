@@ -1,6 +1,6 @@
-const { BigQuery } = require('@google-cloud/bigquery');
+import { BigQuery } from '@google-cloud/bigquery';
 
-exports.handler = async (event, context) => {
+export async function handler(event, context) {
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -344,7 +344,7 @@ exports.handler = async (event, context) => {
       }),
     };
   }
-};
+}
 
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
   // Helper function to parse dates - defined at the top
@@ -1653,3 +1653,6 @@ function getMockDashboardData_REMOVED() {
     dataSource: 'mock'
   };
 }
+export const config = {
+  path: "/api/dashboard-data-sales"
+};
