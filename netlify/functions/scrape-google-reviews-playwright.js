@@ -3,14 +3,19 @@ import { chromium } from 'playwright-chromium';
 export default async (request, context) => {
   let browser = null;
   
+  console.log('[Scraper] Starting Google Reviews scraper...');
+  
   try {
     // Launch browser
+    console.log('[Scraper] Launching Chromium browser...');
     browser = await chromium.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
+    console.log('[Scraper] Browser launched successfully');
     
     const page = await browser.newPage();
+    console.log('[Scraper] New page created');
     
     // Set user agent
     await page.setExtraHTTPHeaders({
@@ -21,11 +26,11 @@ export default async (request, context) => {
     const url = 'https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7';
     await page.goto(url, { 
       waitUntil: 'domcontentloaded',
-      timeout: 60000 
+      timeout: 8000 // Reduced to fit within Netlify's 10-second limit
     });
     
-    // Wait for content to load
-    await page.waitForTimeout(3000);
+    // Wait for content to load (reduced for Netlify)
+    await page.waitForTimeout(1500);
     
     // Try to click on "More reviews" button if available
     try {
@@ -226,17 +231,30 @@ export default async (request, context) => {
     });
     
   } catch (error) {
-    console.error('Error scraping with Playwright:', error);
+    console.error('[Scraper] Error scraping with Playwright:', {
+      message: error.message,
+      stack: error.stack,
+      type: error.constructor.name
+    });
     
     if (browser) {
       await browser.close();
     }
     
+    // Check if it's a browser launch error
+    const isBrowserError = error.message.includes('chromium') || 
+                         error.message.includes('launch') || 
+                         error.message.includes('executable') ||
+                         error.message.includes('Failed to launch');
+    
     return new Response(JSON.stringify({
       success: false,
       error: error.message,
-      stack: error.stack,
-      suggestion: 'Ensure playwright-chromium is installed as a dependency'
+      errorType: isBrowserError ? 'BROWSER_LAUNCH_FAILED' : 'SCRAPING_ERROR',
+      suggestion: isBrowserError 
+        ? 'Playwright may not work on Netlify Free tier. Use simple scraper as fallback.'
+        : 'Check logs for details. The scraper may need updating.',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: {
