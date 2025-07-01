@@ -714,12 +714,13 @@ const SalesKPIDashboard: React.FC = () => {
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => {
+                  callback: (value: any) => {
                     // Format as currency for better readability
-                    if (value >= 1000) {
-                      return `$${(value / 1000).toFixed(1)}k`;
+                    const numValue = Number(value);
+                    if (numValue >= 1000) {
+                      return `$${(numValue / 1000).toFixed(1)}k`;
                     }
-                    return `$${value}`;
+                    return `$${numValue}`;
                   }
                 }
               },
