@@ -687,9 +687,9 @@ const SalesKPIDashboard: React.FC = () => {
               x: {
                 grid: { display: false },
                 ticks: {
-                  callback: function(value, index) {
+                  callback: function(_value, index) {
                     const currentDayIndex = new Date().getDay();
-                    const label = this.getLabelForValue(value);
+                    const label = this.getLabelForValue(index);
                     return index === currentDayIndex ? label + ' (Today)' : label;
                   }
                 }
