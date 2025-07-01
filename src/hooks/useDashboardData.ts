@@ -8,31 +8,38 @@ export const useDashboardData = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        console.log('Fetching dashboard data...');
-        const dashboardData = await BigQueryService.fetchDashboardData();
-        console.log('Dashboard data received:', dashboardData);
-        setData(dashboardData);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch dashboard data');
-        console.error('Error in useDashboardData:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching dashboard data...');
+      const dashboardData = await BigQueryService.fetchDashboardData();
+      console.log('Dashboard data received:', dashboardData);
+      setData(dashboardData);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch dashboard data');
+      console.error('Error in useDashboardData:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
+
+  const refetch = () => {
+    console.log('Refetching dashboard data...');
+    fetchData();
+  };
 
   return {
     data,
     loading,
     error,
     selectedPeriod,
-    setSelectedPeriod
+    setSelectedPeriod,
+    refetch
   };
 };

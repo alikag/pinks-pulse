@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle, LogOut } from 'lucide-react'
+import { Menu, TrendingUp, XCircle, Trophy, Clock, AlertCircle, CheckCircle, LogOut, RefreshCw } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -56,7 +56,7 @@ const SalesKPIDashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
-  const { data, loading, error } = useDashboardData()
+  const { data, loading, error, refetch } = useDashboardData()
   const mainContentRef = useRef<HTMLElement>(null)
   
   // Debug converted quotes and haptic feedback for conversions
@@ -236,9 +236,8 @@ const SalesKPIDashboard: React.FC = () => {
     ]
   }, [data, loading])
 
-  // Fetch Google Reviews directly from Google Maps
-  useEffect(() => {
-    const fetchReviews = async () => {
+  // Fetch Google Reviews function
+  const fetchReviews = async () => {
       try {
         // Use the Playwright scraper to get fresh reviews from Google Maps
         let response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
@@ -386,7 +385,9 @@ const SalesKPIDashboard: React.FC = () => {
         ])
       }
     }
-    
+  
+  // Fetch reviews on mount
+  useEffect(() => {
     fetchReviews()
   }, [])
 
@@ -1469,6 +1470,28 @@ const SalesKPIDashboard: React.FC = () => {
             </div>
             
             <div className="flex-1"></div>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={() => {
+                haptics.medium();
+                refetch();
+                fetchReviews();
+              }}
+              disabled={loading}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+                ${loading 
+                  ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed' 
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                }
+              `}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="text-sm font-medium">
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </span>
+            </button>
           </header>
 
           {/* Main Content */}
