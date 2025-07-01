@@ -822,11 +822,24 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         });
       }
       if (isThisWeek(convertedDate)) {
-        metrics.convertedThisWeek++;
-        metrics.convertedThisWeekDollars += totalDollars;
+        // CRITICAL: Don't count conversions from the future
+        const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        convertedDateEST.setHours(0, 0, 0, 0);
+        
+        if (convertedDateEST > estToday) {
+          console.log('[FUTURE CONVERSION BLOCKED IN KPI]', {
+            quote_number: quote.quote_number,
+            converted_date: quote.converted_date,
+            convertedDateEST: convertedDateEST.toISOString(),
+            estToday: estToday.toISOString()
+          });
+          // Skip this future conversion - don't add to metrics
+        } else {
+          metrics.convertedThisWeek++;
+          metrics.convertedThisWeekDollars += totalDollars;
+        }
         
         // Debug: Log ALL converted quotes this week to debug the date issue
-        const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
         console.log('[This Week Conversion Debug]', {
           quote_number: quote.quote_number,
           raw_converted_date: quote.converted_date,
@@ -874,24 +887,26 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           });
         }
         
-        // Add to recent converted quotes
-        recentConvertedQuotes.push({
-          dateConverted: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
-          quoteNumber: quote.quote_number || quote.Quote_Number,
-          jobNumber: quote.job_numbers || quote.Job_Numbers,
-          date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString("en-US", {timeZone: "America/New_York"}) : '',
-          jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
-          clientName: quote.client_name || quote.Client_Name,
-          salesPerson: quote.salesperson || quote.Salesperson,
-          // Construct Jobber URL - use the internal Jobber ID
-          // For now, always use quotes URL since we don't have the job's internal ID
-          jobberLink: jobberId ? 
-            `https://secure.getjobber.com/quotes/${jobberId}` : 
-            'https://secure.getjobber.com',
-          visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
-          totalDollars: totalDollars,
-          status: quote.status || quote.Status
-        });
+        // Add to recent converted quotes only if not from the future
+        if (convertedDateEST <= estToday) {
+          recentConvertedQuotes.push({
+            dateConverted: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+            quoteNumber: quote.quote_number || quote.Quote_Number,
+            jobNumber: quote.job_numbers || quote.Job_Numbers,
+            date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString("en-US", {timeZone: "America/New_York"}) : '',
+            jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
+            clientName: quote.client_name || quote.Client_Name,
+            salesPerson: quote.salesperson || quote.Salesperson,
+            // Construct Jobber URL - use the internal Jobber ID
+            // For now, always use quotes URL since we don't have the job's internal ID
+            jobberLink: jobberId ? 
+              `https://secure.getjobber.com/quotes/${jobberId}` : 
+              'https://secure.getjobber.com',
+            visitTitle: quote.visit_title || quote.Visit_Title || quote.client_name || quote.Client_Name,
+            totalDollars: totalDollars,
+            status: quote.status || quote.Status
+          });
+        }
       }
       if (isLast30Days(convertedDate)) {
         metrics.converted30Days++;
@@ -1434,6 +1449,17 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       // Convert the converted date to EST for comparison
       const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
       convertedDateEST.setHours(0, 0, 0, 0);
+      
+      // CRITICAL: Don't count conversions from the future
+      if (convertedDateEST > today) {
+        console.log('[FUTURE CONVERSION BLOCKED]', {
+          quote_converted_date: q.converted_date,
+          convertedDateEST: convertedDateEST.toISOString(),
+          today: today.toISOString(),
+          quote_number: q.quote_number
+        });
+        return false;
+      }
       
       // Check if the converted date falls on this specific day
       return convertedDateEST.getTime() === date.getTime();
