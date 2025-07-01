@@ -231,11 +231,23 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 2. **v_jobs**: Job scheduling and OTB calculations
 3. **google_reviews**: Customer review data
 
-### Critical JOIN: Quotes to Jobs
-- **Purpose**: Get accurate conversion dates
-- **Join Key**: v_quotes.job_numbers = v_jobs.Job_Number
+### Dynamic Job Conversion Date Lookup
+- **Purpose**: Get accurate conversion dates from jobs table
+- **Implementation**: Correlated subquery for scalable performance
+  ```sql
+  COALESCE(
+    (SELECT CAST(j.Date_Converted AS DATE)
+     FROM v_jobs j 
+     WHERE CAST(j.Job_Number AS STRING) = q.job_numbers 
+     LIMIT 1),
+    q.converted_date
+  )
+  ```
 - **Why**: Quote approval date ≠ Job creation date
-- **Implementation**: LEFT JOIN with COALESCE(j.Date_Converted, q.converted_date)
+- **Benefits**: 
+  - No timeout issues from large JOINs
+  - Scales with data volume
+  - Only looks up job data when needed
 - **Result**: Conversion metrics reflect when jobs were created, not just quote approval
 
 ### Speed to Lead Calculation

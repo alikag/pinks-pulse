@@ -89,9 +89,19 @@ The calculation was incorrectly assigning jobs to weeks. Now properly calculates
 ### Quote Approval vs Job Creation
 - **Business Process**: Quotes are approved by customers, then jobs are created in the system
 - **Data Challenge**: Quote approval date ≠ Job creation date
-- **Solution**: JOIN v_quotes with v_jobs using job_numbers field
-- **Implementation**: Use COALESCE(j.Date_Converted, q.converted_date) for accurate conversion tracking
+- **Solution**: Dynamic lookup of job conversion dates using correlated subquery
+- **Implementation**: 
+  ```sql
+  COALESCE(
+    (SELECT CAST(j.Date_Converted AS DATE)
+     FROM v_jobs j 
+     WHERE CAST(j.Job_Number AS STRING) = q.job_numbers 
+     LIMIT 1),
+    q.converted_date
+  )
+  ```
 - **Impact**: "Converted Today" and "Converted This Week" metrics now reflect when jobs were actually created
+- **Performance**: Subquery approach avoids JOIN timeouts and scales with data volume
 
 ### Why This Matters
 - Example: Quote #676 was approved June 30th but job was created July 1st
