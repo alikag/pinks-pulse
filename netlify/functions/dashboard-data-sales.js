@@ -308,12 +308,39 @@ export const handler = async (event, context) => {
 
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
   // Helper to get current EST/EDT timezone offset
-  const getESTOffset = () => {
-    const now = new Date();
-    const januaryOffset = new Date(now.getFullYear(), 0, 1).getTimezoneOffset();
-    const julyOffset = new Date(now.getFullYear(), 6, 1).getTimezoneOffset();
-    const isDST = now.getTimezoneOffset() < Math.max(januaryOffset, julyOffset);
-    return isDST ? '-04:00' : '-05:00';
+  const getESTOffset = (dateToCheck = new Date()) => {
+    // Create a date in EST/EDT timezone
+    const estDateStr = dateToCheck.toLocaleString("en-US", { 
+      timeZone: "America/New_York",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Create the same date in UTC
+    const utcDateStr = dateToCheck.toLocaleString("en-US", { 
+      timeZone: "UTC",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Parse the hour from both
+    const estHour = parseInt(estDateStr.split(', ')[1].split(':')[0]);
+    const utcHour = parseInt(utcDateStr.split(', ')[1].split(':')[0]);
+    
+    // Calculate the offset
+    let offset = utcHour - estHour;
+    if (offset < 0) offset += 24;
+    
+    // During EDT (summer), EST is UTC-4; during EST (winter), EST is UTC-5
+    return offset === 4 ? '-04:00' : '-05:00';
   };
   
   // Helper function to parse dates - defined at the top
@@ -323,15 +350,19 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     try {
       // Handle BigQuery date objects that come as { value: "2025-06-27" }
       if (typeof dateStr === 'object' && dateStr.value) {
+        // Create a temporary date to check the offset for that specific date
+        const tempDate = new Date(dateStr.value + 'T12:00:00Z'); // Use noon UTC to avoid edge cases
+        const offset = getESTOffset(tempDate);
+        
         // Parse as EST/EDT timezone
-        const date = new Date(dateStr.value + 'T00:00:00' + getESTOffset());
+        const date = new Date(dateStr.value + 'T00:00:00' + offset);
         
         // DEBUG: Log conversion for problematic dates
         if (dateStr.value && (dateStr.value.includes('2025-06-29') || dateStr.value.includes('2025-06-30') || dateStr.value.includes('2025-07-01'))) {
           console.log('[DATE PARSE DEBUG - Object]', {
             input: dateStr,
-            offset: getESTOffset(),
-            constructed_string: dateStr.value + 'T00:00:00' + getESTOffset(),
+            offset: offset,
+            constructed_string: dateStr.value + 'T00:00:00' + offset,
             result_iso: date.toISOString(),
             result_est: date.toLocaleDateString("en-US", {timeZone: "America/New_York"})
           });
@@ -362,14 +393,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       
       // For string dates without time, assume EST/EDT
       if (typeof dateStr === 'string' && !dateStr.includes('T')) {
-        const date = new Date(dateStr + 'T00:00:00' + getESTOffset());
+        // Create a temporary date to check the offset for that specific date
+        const tempDate = new Date(dateStr + 'T12:00:00Z');
+        const offset = getESTOffset(tempDate);
+        const date = new Date(dateStr + 'T00:00:00' + offset);
         
         // DEBUG: Log string conversion for problematic dates
         if (dateStr.includes('2025-06-29') || dateStr.includes('2025-06-30') || dateStr.includes('2025-07-01')) {
           console.log('[DATE PARSE DEBUG - String]', {
             input: dateStr,
-            offset: getESTOffset(),
-            constructed_string: dateStr + 'T00:00:00' + getESTOffset(),
+            offset: offset,
+            constructed_string: dateStr + 'T00:00:00' + offset,
             result_iso: date.toISOString(),
             result_est: date.toLocaleDateString("en-US", {timeZone: "America/New_York"})
           });
@@ -435,7 +469,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Parse the EST date string to get proper EST date
   // Format is MM/DD/YYYY, need to convert to YYYY-MM-DD for parsing
   const [month, day, year] = estDateString.split('/');
-  const estTodayString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00${getESTOffset()}`;
+  // Get the proper offset for today's date
+  const todayOffset = getESTOffset(now_utc);
+  const estTodayString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00${todayOffset}`;
   const estToday = new Date(estTodayString);
   
   // Enhanced debugging for date issues
@@ -1484,7 +1520,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       jobberQuotes: jobberQuoteDebug,
       estToday: estDateString,
       currentESTTime: currentESTTime,
-      getESTOffset: getESTOffset()
+      getESTOffset: todayOffset
     }
   };
 }
