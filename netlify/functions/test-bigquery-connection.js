@@ -1,4 +1,6 @@
-exports.handler = async (event, context) => {
+import { BigQuery } from '@google-cloud/bigquery';
+
+export const handler = async (event, context) => {
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -67,7 +69,7 @@ exports.handler = async (event, context) => {
   // Try to initialize BigQuery
   if (results.credentialsCheck.isValid) {
     try {
-      const { BigQuery } = require('@google-cloud/bigquery');
+      // BigQuery already imported at the top
       
       const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
       const bigquery = new BigQuery({

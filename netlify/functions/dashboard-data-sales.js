@@ -1,6 +1,6 @@
 import { BigQuery } from '@google-cloud/bigquery';
 
-export async function handler(event, context) {
+export const handler = async (event, context) => {
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -31,46 +31,6 @@ export async function handler(event, context) {
         }
       }),
     };
-  }
-  
-  // Add health check endpoint
-  if (event.path && event.path.includes('/health')) {
-    try {
-      const bigqueryConfig = {
-        projectId: process.env.BIGQUERY_PROJECT_ID
-      };
-      
-      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-        bigqueryConfig.credentials = credentials;
-      }
-      
-      const bigquery = new BigQuery(bigqueryConfig);
-      
-      // Simple query to test connection
-      const healthQuery = `SELECT 1 as test`;
-      const [rows] = await bigquery.query(healthQuery);
-      
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          status: 'healthy',
-          bigquery: 'connected',
-          timestamp: new Date().toISOString()
-        }),
-      };
-    } catch (error) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          status: 'error',
-          error: error.message,
-          timestamp: new Date().toISOString()
-        }),
-      };
-    }
   }
   
   // Add debug endpoint to check quote statuses
@@ -344,7 +304,7 @@ export async function handler(event, context) {
       }),
     };
   }
-}
+};
 
 function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek = 0) {
   // Helper function to parse dates - defined at the top
@@ -363,10 +323,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       if (typeof dateStr === 'string' && dateStr.includes('UTC')) {
         // Remove the microseconds and UTC suffix
         const cleanedDate = dateStr.replace(/\.\d{6} UTC$/, '').replace(' ', 'T') + 'Z';
-        const utcDate = new Date(cleanedDate);
-        // Convert UTC to EST/EDT for consistent comparison
-        // This ensures all dates are in the same timezone for day boundary comparisons
-        return utcDate;
+        return new Date(cleanedDate);
       }
       
       // For string dates without time, assume EST/EDT
@@ -381,24 +338,53 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
   };
 
-  // IMPORTANT: We use actual current EST date for all date comparisons
-  // We do NOT use activity-based dates as reference to avoid timezone confusion
+  // Find the most recent activity date (either sent or converted) to use as reference
+  // Use EST timezone for reference date
+  const estRefString = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+  let referenceDate = new Date(estRefString);
+  const allDates = [];
+  
+  quotesData.forEach(q => {
+    try {
+      if (q.sent_date) {
+        const sentDate = parseDate(q.sent_date);
+        if (sentDate && !isNaN(sentDate.getTime())) {
+          allDates.push(sentDate);
+        }
+      }
+      if (q.converted_date) {
+        const convertedDate = parseDate(q.converted_date);
+        if (convertedDate && !isNaN(convertedDate.getTime())) {
+          allDates.push(convertedDate);
+        }
+      }
+    } catch (e) {
+      console.log('[dashboard-data-sales] Error parsing date:', e.message, 'Quote:', q.quote_number);
+    }
+  });
+  
+  if (allDates.length > 0) {
+    // Use the most recent activity as our "today"
+    allDates.sort((a, b) => b - a);
+    referenceDate = allDates[0];
+    console.log('[dashboard-data-sales] Using reference date from most recent activity:', referenceDate);
+  }
+  
+  // Use the reference date and normalize to start of day
+  const now = new Date(referenceDate);
+  now.setHours(0, 0, 0, 0);
+  
+  // For week calculations, always use the actual current date in EST
   const actualToday = new Date();
+  // Convert to EST timezone string and parse back
   const estString = actualToday.toLocaleString("en-US", {timeZone: "America/New_York"});
   const estToday = new Date(estString);
   estToday.setHours(0, 0, 0, 0);
   
-  // Reference date is always the actual current date in EST
-  const now = new Date(estToday);
-  
-  console.log('[Date Reference] Using current EST date:', {
-    actualToday: actualToday.toISOString(),
-    estToday: estToday.toLocaleDateString(),
-    estTodayTime: estToday.getTime()
-  });
-  
   console.log('[Date Calculation Debug]', {
+    referenceDate: referenceDate.toLocaleDateString(),
     now: now.toLocaleDateString(),
+    actualToday: actualToday.toLocaleDateString(),
     estToday: estToday.toLocaleDateString(),
     estTodayTime: estToday.getTime()
   });
@@ -419,45 +405,25 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   };
 
   // Helper functions for date comparisons
-  // IMPORTANT: All these functions properly convert UTC dates to EST before comparison
-  // This ensures that a conversion at 10:30 PM EST Monday (2:30 AM UTC Tuesday) 
-  // is correctly identified as happening on Monday
   
   const isToday = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    
-    // Get the date components in EST timezone
-    const estYear = parseInt(d.toLocaleString("en-US", {timeZone: "America/New_York", year: 'numeric'}));
-    const estMonth = parseInt(d.toLocaleString("en-US", {timeZone: "America/New_York", month: 'numeric'})) - 1;
-    const estDay = parseInt(d.toLocaleString("en-US", {timeZone: "America/New_York", day: 'numeric'}));
-    
-    // Create a date object for the EST date at midnight
-    const estDate = new Date(estYear, estMonth, estDay, 0, 0, 0, 0);
-    
+    d.setHours(0, 0, 0, 0);
     // Use actual current EST date, not reference date
-    return estDate.getTime() === estToday.getTime();
+    return d.getTime() === estToday.getTime();
   };
   
   const isThisWeek = (date) => {
     if (!date) return false;
     const d = new Date(date);
-    
-    // Get the date components in EST timezone
-    const estYear = parseInt(d.toLocaleString("en-US", {timeZone: "America/New_York", year: 'numeric'}));
-    const estMonth = parseInt(d.toLocaleString("en-US", {timeZone: "America/New_York", month: 'numeric'})) - 1;
-    const estDay = parseInt(d.toLocaleString("en-US", {timeZone: "America/New_York", day: 'numeric'}));
-    
-    // Create a date object for the EST date
-    const estDate = new Date(estYear, estMonth, estDay, 0, 0, 0, 0);
-    
     // Sunday-Saturday weeks using EST date
     const weekStart = new Date(estToday);
     weekStart.setDate(estToday.getDate() - estToday.getDay()); // Sunday
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
-    return estDate >= weekStart && estDate < weekEnd;
+    return d >= weekStart && d < weekEnd;
   };
   
   const isLastWeek = (date) => {
@@ -735,9 +701,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         metrics.convertedTodayDollars += totalDollars;
         console.log('[Converted Today Debug] Quote converted today:', {
           quoteNumber: quote.quote_number,
-          rawConvertedDate: quote.converted_date,
-          parsedDate: convertedDate.toISOString(),
-          convertedDateLocal: convertedDate.toLocaleDateString(),
+          convertedDate: convertedDate.toLocaleDateString(),
           estToday: estToday.toLocaleDateString(),
           totalDollars
         });
@@ -1323,34 +1287,7 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
                          (q.converted_date !== null && q.converted_date !== undefined);
       if (!isConverted) return false;
       const convertedDate = parseDate(q.converted_date);
-      if (!convertedDate) return false;
-      
-      // Get the date components in EST timezone
-      const estYear = parseInt(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York", year: 'numeric'}));
-      const estMonth = parseInt(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York", month: 'numeric'})) - 1;
-      const estDay = parseInt(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York", day: 'numeric'}));
-      
-      // Create a date object for the EST date at midnight
-      const estConverted = new Date(estYear, estMonth, estDay, 0, 0, 0, 0);
-      
-      // Compare dates in EST timezone
-      const dateInEST = new Date(date);
-      dateInEST.setHours(0, 0, 0, 0);
-      
-      // Debug logging for timezone conversion
-      if (dayOffset === 1 && q.quote_number && dayConversions.length < 3) { // Log first few Monday conversions
-        console.log(`[Timezone Debug] Quote ${q.quote_number}:`, {
-          rawConvertedDate: q.converted_date,
-          parsedUTC: convertedDate.toISOString(),
-          estComponents: { year: estYear, month: estMonth + 1, day: estDay },
-          estDate: estConverted.toLocaleDateString(),
-          targetDate: dateInEST.toLocaleDateString(),
-          dayOfWeek: weekDays[date.getDay()],
-          matches: estConverted.getTime() === dateInEST.getTime()
-        });
-      }
-      
-      return estConverted.getTime() === dateInEST.getTime();
+      return convertedDate && convertedDate >= date && convertedDate < nextDate;
     }).length;
     
     // Debug for all days
@@ -1653,6 +1590,3 @@ function getMockDashboardData_REMOVED() {
     dataSource: 'mock'
   };
 }
-export const config = {
-  path: "/api/dashboard-data-sales"
-};
