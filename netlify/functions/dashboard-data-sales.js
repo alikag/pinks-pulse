@@ -133,18 +133,13 @@ export const handler = async (event, context) => {
         q.status,              -- Current status: 'Converted', 'Won', 'Awaiting Response', etc.
         q.total_dollars,       -- Quote value in dollars (what we'd earn if it converts)
         q.sent_date,           -- When quote was sent to customer (for "Quotes Sent Today")
-        -- Use LEFT JOIN instead of correlated subquery for BigQuery compatibility
-        COALESCE(
-          CAST(j.Date_Converted AS DATE),
-          q.converted_date
-        ) as converted_date,   -- Accurate conversion date from job creation
+        -- Simplified: just use the quote's converted_date
+        q.converted_date,      -- Conversion date from quotes table
         q.days_to_convert,     -- How long it took to close (not currently used)
         q.job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-      LEFT JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j 
-        ON CAST(j.Job_Number AS STRING) = q.job_numbers
       WHERE q.sent_date IS NOT NULL  -- Only include quotes that were actually sent
-      ORDER BY q.sent_date DESC      -- Most recent first for display purposes
+        AND q.sent_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)  -- Limit to last 90 days for performance
     `;
 
     // ============================================
@@ -226,20 +221,32 @@ export const handler = async (event, context) => {
     `;
 
     console.log('[dashboard-data-sales] Executing queries...');
+    const queryStartTime = Date.now();
     
     let quotesData, jobsData, speedToLeadData, reviewsData;
     
     try {
-      // Execute main queries in parallel for better performance
-      [[quotesData], [jobsData], [speedToLeadData]] = await Promise.all([
-        bigquery.query(quotesQuery),
-        bigquery.query(jobsQuery),
-        bigquery.query(speedToLeadQuery)
+      // Add timeout to prevent Netlify function timeout
+      const queryTimeout = 8000; // 8 seconds (leaving 2s buffer for processing)
+      
+      // Execute main queries in parallel for better performance with timeout
+      console.log('[dashboard-data-sales] Starting parallel queries with 8s timeout...');
+      const queryPromises = Promise.all([
+        bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout }),
+        bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout }),
+        bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout })
+      ]);
+      
+      [[quotesData], [jobsData], [speedToLeadData]] = await Promise.race([
+        queryPromises,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout - exceeded 8 seconds')), queryTimeout)
+        )
       ]);
       
       // Try to get reviews count, but don't fail if it doesn't work
       try {
-        [reviewsData] = await bigquery.query(reviewsQuery);
+        [reviewsData] = await bigquery.query({ query: reviewsQuery, timeoutMs: 2000 });
       } catch (reviewErr) {
         console.log('[dashboard-data-sales] Reviews query failed (non-critical):', reviewErr.message);
         reviewsData = [{ reviews_count: 0 }];
@@ -249,6 +256,8 @@ export const handler = async (event, context) => {
       throw new Error(`BigQuery query failed: ${queryError.message}`);
     }
     
+    const queryEndTime = Date.now();
+    console.log(`[dashboard-data-sales] Queries completed in ${queryEndTime - queryStartTime}ms`);
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
     
     
