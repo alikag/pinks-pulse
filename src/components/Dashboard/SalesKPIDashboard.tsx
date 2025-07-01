@@ -603,13 +603,9 @@ const SalesKPIDashboard: React.FC = () => {
         // Get current day index (0 = Sunday, 6 = Saturday)
         const currentDayIndex = new Date().getDay()
         
-        // Create data arrays with null values for future days
-        const processedQuotesSent = chartData.quotesSent.map((value, index) => 
-          index <= currentDayIndex ? value : null
-        )
-        const processedQuotesConverted = chartData.quotesConverted.map((value, index) => 
-          index <= currentDayIndex ? value : null
-        )
+        // Keep all data but we'll handle display in the chart options
+        const processedQuotesSent = chartData.quotesSent
+        const processedQuotesConverted = chartData.quotesConverted
         
         trendChartInstance.current = new Chart(ctx, {
           type: 'line',
@@ -622,7 +618,9 @@ const SalesKPIDashboard: React.FC = () => {
               backgroundColor: 'rgba(251, 146, 60, 0.1)',
               fill: false,
               tension: 0.4,
-              spanGaps: false,
+              segment: {
+                borderDash: (ctx) => ctx.p0DataIndex > currentDayIndex ? [5, 5] : undefined
+              },
               pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#fb923c'),
               pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
               pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
@@ -635,7 +633,9 @@ const SalesKPIDashboard: React.FC = () => {
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
               fill: false,
               tension: 0.4,
-              spanGaps: false,
+              segment: {
+                borderDash: (ctx) => ctx.p0DataIndex > currentDayIndex ? [5, 5] : undefined
+              },
               pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#3b82f6'),
               pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#ff6b6b' : '#ffffff'),
               pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
