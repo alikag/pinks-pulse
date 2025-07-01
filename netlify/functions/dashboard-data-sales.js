@@ -474,7 +474,11 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 7);
     
-    return dateInEST >= weekStart && dateInEST < weekEnd;
+    // Check if date is in this week AND not in the future
+    const isInWeekRange = dateInEST >= weekStart && dateInEST < weekEnd;
+    const isNotFuture = dateInEST <= estToday;
+    
+    return isInWeekRange && isNotFuture;
   };
   
   const isLastWeek = (date) => {
@@ -855,37 +859,28 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
         convertedDateEST.setHours(0, 0, 0, 0);
         
+        // Extra validation - isThisWeek should already block future dates, but double-check
         if (convertedDateEST > estToday) {
-          console.log('[FUTURE CONVERSION BLOCKED IN KPI]', {
+          console.log('[FUTURE CONVERSION BLOCKED IN THIS WEEK KPI - SHOULD NOT HAPPEN]', {
             quote_number: quote.quote_number,
             converted_date: quote.converted_date,
             convertedDateEST: convertedDateEST.toISOString(),
-            estToday: estToday.toISOString()
+            estToday: estToday.toISOString(),
+            isThisWeek_result: isThisWeek(convertedDate)
           });
           // Skip this future conversion - don't add to metrics
         } else {
+          console.log('[CONVERSION ADDED TO THIS WEEK]', {
+            quote_number: quote.quote_number,
+            converted_date: quote.converted_date,
+            convertedDateEST: convertedDateEST.toISOString(),
+            estToday: estToday.toISOString(),
+            totalDollars
+          });
           metrics.convertedThisWeek++;
           metrics.convertedThisWeekDollars += totalDollars;
         }
         
-        // Debug: Log ALL converted quotes this week to debug the date issue
-        console.log('[This Week Conversion Debug]', {
-          quote_number: quote.quote_number,
-          raw_converted_date: quote.converted_date,
-          parsed_converted_date: convertedDate.toISOString(),
-          converted_date_EST: convertedDateEST.toISOString(),
-          converted_date_local_string: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
-          current_EST_date: estToday.toISOString(),
-          current_EST_string: estToday.toLocaleDateString("en-US"),
-          week_start: (() => {
-            const ws = new Date(estToday);
-            ws.setDate(estToday.getDate() - estToday.getDay());
-            ws.setHours(0, 0, 0, 0);
-            return ws.toISOString();
-          })(),
-          client_name: quote.client_name,
-          status: quote.status
-        });
         
         // Debug: Log the first few converted quotes to see what IDs we have
         if (recentConvertedQuotes.length < 3) {
