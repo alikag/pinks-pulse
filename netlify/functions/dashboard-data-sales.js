@@ -138,8 +138,6 @@ export const handler = async (event, context) => {
         job_numbers          -- Associated job numbers if converted
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
       WHERE sent_date IS NOT NULL  -- Only include quotes that were actually sent
-        -- CRITICAL: Filter out any conversions in the future
-        AND (converted_date IS NULL OR DATE(converted_date) <= CURRENT_DATE('America/New_York'))
       ORDER BY sent_date DESC      -- Most recent first for display purposes
     `;
 
@@ -376,24 +374,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const now = new Date(referenceDate);
   now.setHours(0, 0, 0, 0);
   
-  // For week calculations, always use the actual current date in EST
-  const actualToday = new Date();
+  // ROOT CAUSE FIX: Get current EST date properly
+  const now_utc = new Date();
   
-  // Get EST date components directly to avoid timezone conversion issues
-  const estDateParts = actualToday.toLocaleDateString("en-US", {
+  // Get the current time in EST as a string, then parse it back
+  const estDateString = now_utc.toLocaleDateString("en-US", {
     timeZone: "America/New_York",
     year: 'numeric',
-    month: '2-digit',
+    month: '2-digit', 
     day: '2-digit'
-  }).split('/');
+  });
   
-  // Create date using EST components (month is 0-indexed in JS)
-  const estToday = new Date(
-    parseInt(estDateParts[2]), // year
-    parseInt(estDateParts[0]) - 1, // month (0-indexed)
-    parseInt(estDateParts[1]), // day
-    0, 0, 0, 0 // midnight
-  );
+  // Parse the EST date string to get proper EST date
+  // Format is MM/DD/YYYY, need to convert to YYYY-MM-DD for parsing
+  const [month, day, year] = estDateString.split('/');
+  const estTodayString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00-05:00`;
+  const estToday = new Date(estTodayString);
   
   // Enhanced debugging for date issues
   const currentESTTime = new Date().toLocaleString("en-US", {
@@ -406,13 +402,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     second: '2-digit'
   });
   
-  console.log('[Date Calculation Debug - Enhanced]', {
-    server_time_UTC: actualToday.toISOString(),
+  console.log('[Date Calculation Debug - ROOT CAUSE FIX]', {
+    server_time_UTC: now_utc.toISOString(),
     current_EST_time_full: currentESTTime,
-    estDateParts: estDateParts,
+    estDateString: estDateString,
+    estTodayString: estTodayString,
     estToday_constructed: estToday.toString(),
     estToday_ISO: estToday.toISOString(),
-    estToday_dateOnly: `${parseInt(estDateParts[0])}/${parseInt(estDateParts[1])}/${parseInt(estDateParts[2])}`,
+    estToday_dateOnly: estToday.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
     dayOfWeek: estToday.getDay(),
     dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][estToday.getDay()],
     referenceDate: referenceDate.toLocaleDateString(),
@@ -439,16 +436,15 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const isToday = (date) => {
     if (!date) return false;
     // Get the date components in EST
-    const estDateStr = date.toLocaleDateString("en-US", {
+    const dateEstStr = date.toLocaleDateString("en-US", {
       timeZone: "America/New_York",
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
     });
-    const todayDateStr = `${estDateParts[0]}/${estDateParts[1]}/${estDateParts[2]}`;
     
-    // Compare the date strings directly
-    return estDateStr === todayDateStr;
+    // Compare with today's EST date string
+    return dateEstStr === estDateString;
   };
   
   const isThisWeek = (date) => {
@@ -716,34 +712,19 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
     
-    // AGGRESSIVE FILTERING: If converted_date is in the future, skip this quote entirely
-    if (convertedDate) {
-      const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      convertedDateEST.setHours(0, 0, 0, 0);
-      
-      if (convertedDateEST > estToday) {
-        console.log('[QUOTE REJECTED - FUTURE CONVERSION DATE]', {
-          quote_number: quote.quote_number,
-          converted_date: quote.converted_date,
-          convertedDateEST: convertedDateEST.toISOString(),
-          estToday: estToday.toISOString(),
-          status: quote.status
-        });
-        return; // Skip this quote entirely
-      }
-    }
-    
     // Debug first few quotes
     if (index < 3) {
-      console.log('[Quote Debug]', {
+      console.log('[Quote Debug - Clean]', {
         quote_number: quote.quote_number,
         sent_date: quote.sent_date,
         converted_date: quote.converted_date,
         parsedSentDate: sentDate ? sentDate.toISOString() : null,
         parsedConvertedDate: convertedDate ? convertedDate.toISOString() : null,
         status: quote.status,
-        isThisWeekSent: sentDate ? isThisWeek(sentDate) : false,
-        isThisWeekConverted: convertedDate ? isThisWeek(convertedDate) : false
+        isToday_sent: sentDate ? isToday(sentDate) : false,
+        isToday_converted: convertedDate ? isToday(convertedDate) : false,
+        isThisWeek_sent: sentDate ? isThisWeek(sentDate) : false,
+        isThisWeek_converted: convertedDate ? isThisWeek(convertedDate) : false
       });
     }
     const totalDollars = parseFloat(quote.total_dollars) || 0;
@@ -846,59 +827,28 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       salespersonStats[sp].valueConverted += totalDollars;
       
       if (isToday(convertedDate)) {
-        // Double-check this is not a future conversion
-        const convertedDateESTCheck = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-        convertedDateESTCheck.setHours(0, 0, 0, 0);
-        
-        console.log('[Converted Today Debug - Enhanced]', {
+        console.log('[Converted Today Debug - Clean]', {
           quoteNumber: quote.quote_number,
           raw_converted_date: quote.converted_date,
           parsed_converted_date: convertedDate.toISOString(),
-          convertedDate_local: convertedDate.toLocaleDateString(),
           convertedDate_EST: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
-          estToday_local: estToday.toLocaleDateString(),
-          estToday_ISO: estToday.toISOString(),
-          isToday_result: isToday(convertedDate),
-          convertedDateEST_time: convertedDateESTCheck.getTime(),
-          estToday_time: estToday.getTime(),
-          times_equal: convertedDateESTCheck.getTime() === estToday.getTime(),
+          estToday_EST: estDateString,
           totalDollars
         });
         
-        // Only count if truly today and not in the future
-        if (convertedDateESTCheck.getTime() === estToday.getTime() && convertedDateESTCheck <= estToday) {
-          metrics.convertedToday++;
-          metrics.convertedTodayDollars += totalDollars;
-        } else {
-          console.log('[CONVERTED TODAY BLOCKED] Date mismatch or future date');
-        }
+        metrics.convertedToday++;
+        metrics.convertedTodayDollars += totalDollars;
       }
       if (isThisWeek(convertedDate)) {
-        // CRITICAL: Don't count conversions from the future
-        const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-        convertedDateEST.setHours(0, 0, 0, 0);
+        console.log('[Conversion Added To This Week - Clean]', {
+          quote_number: quote.quote_number,
+          converted_date: quote.converted_date,
+          convertedDate_EST: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
+          totalDollars
+        });
         
-        // Extra validation - isThisWeek should already block future dates, but double-check
-        if (convertedDateEST > estToday) {
-          console.log('[FUTURE CONVERSION BLOCKED IN THIS WEEK KPI - SHOULD NOT HAPPEN]', {
-            quote_number: quote.quote_number,
-            converted_date: quote.converted_date,
-            convertedDateEST: convertedDateEST.toISOString(),
-            estToday: estToday.toISOString(),
-            isThisWeek_result: isThisWeek(convertedDate)
-          });
-          // Skip this future conversion - don't add to metrics
-        } else {
-          console.log('[CONVERSION ADDED TO THIS WEEK]', {
-            quote_number: quote.quote_number,
-            converted_date: quote.converted_date,
-            convertedDateEST: convertedDateEST.toISOString(),
-            estToday: estToday.toISOString(),
-            totalDollars
-          });
-          metrics.convertedThisWeek++;
-          metrics.convertedThisWeekDollars += totalDollars;
-        }
+        metrics.convertedThisWeek++;
+        metrics.convertedThisWeekDollars += totalDollars;
         
         
         // Debug: Log the first few converted quotes to see what IDs we have
@@ -1493,30 +1443,8 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
       convertedDateEST.setHours(0, 0, 0, 0);
       
-      // AGGRESSIVE: Don't count conversions from the future OR from the current day if it's a future date
-      if (convertedDateEST > today) {
-        console.log('[CHART: FUTURE CONVERSION BLOCKED]', {
-          quote_converted_date: q.converted_date,
-          convertedDateEST: convertedDateEST.toISOString(),
-          today: today.toISOString(),
-          quote_number: q.quote_number,
-          dayBeingProcessed: date.toISOString()
-        });
-        return false;
-      }
-      
       // Check if the converted date falls on this specific day
-      const matchesDay = convertedDateEST.getTime() === date.getTime();
-      if (matchesDay) {
-        console.log('[CHART: CONVERSION ALLOWED FOR DAY]', {
-          quote_number: q.quote_number,
-          converted_date: q.converted_date,
-          convertedDateEST: convertedDateEST.toISOString(),
-          dayDate: date.toISOString(),
-          today: today.toISOString()
-        });
-      }
-      return matchesDay;
+      return convertedDateEST.getTime() === date.getTime();
     }).length;
     
     // Debug for all days
