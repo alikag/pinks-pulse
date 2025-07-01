@@ -1410,7 +1410,14 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     
     const dayQuotes = quotesData.filter(q => {
       const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
-      return sentDate && sentDate >= date && sentDate < nextDate;
+      if (!sentDate) return false;
+      
+      // Convert the sent date to EST for comparison
+      const sentDateEST = new Date(sentDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      sentDateEST.setHours(0, 0, 0, 0);
+      
+      // Check if the sent date falls on this specific day
+      return sentDateEST.getTime() === date.getTime();
     });
     
     // For the "Converted" line: count quotes that were CONVERTED on this day
@@ -1422,15 +1429,30 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
                          (q.converted_date !== null && q.converted_date !== undefined);
       if (!isConverted) return false;
       const convertedDate = parseDate(q.converted_date);
-      return convertedDate && convertedDate >= date && convertedDate < nextDate;
+      if (!convertedDate) return false;
+      
+      // Convert the converted date to EST for comparison
+      const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedDateEST.setHours(0, 0, 0, 0);
+      
+      // Check if the converted date falls on this specific day
+      return convertedDateEST.getTime() === date.getTime();
     }).length;
     
     // Debug for all days
-    if (dayQuotes.length > 0) {
-      console.log(`[Day ${dayOffset} - ${weekDays[date.getDay()]}] Found ${dayQuotes.length} quotes sent`);
-      dayQuotes.forEach(q => {
-        console.log(`  Quote ${q.quote_number}: status="${q.status}", converted_date=${q.converted_date}`);
+    if (dayConversions > 0 || dayOffset <= today.getDay()) {
+      console.log(`[processWeekData Day ${dayOffset} - ${weekDays[date.getDay()]} ${date.toLocaleDateString()}]`, {
+        date: date.toISOString(),
+        dayQuotesSent: dayQuotes.length,
+        dayConversions: dayConversions,
+        isToday: date.getTime() === today.getTime(),
+        isFuture: date > today
       });
+      
+      // Log any conversions found for debugging
+      if (dayConversions > 0) {
+        console.log(`[CONVERSION FOUND] ${dayConversions} conversion(s) on ${weekDays[date.getDay()]} ${date.toLocaleDateString()}`);
+      }
     }
     
     // For CVR calculation: count quotes SENT on this day that have converted (any time)
