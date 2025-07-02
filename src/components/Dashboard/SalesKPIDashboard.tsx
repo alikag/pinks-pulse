@@ -1698,7 +1698,7 @@ const SalesKPIDashboard: React.FC = () => {
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 italic">
-                  *By send date, not conversion date
+                  *CVR = quotes converted in week ÷ quotes sent in week
                 </p>
               </div>
             </div>

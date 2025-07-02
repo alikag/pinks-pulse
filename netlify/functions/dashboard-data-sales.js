@@ -1868,7 +1868,8 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     const weekCVR = sent > 0 ? Math.round((converted / sent) * 100) : 0;
     
     // Format label with week start date (e.g., "Week of 6/24")
-    const weekLabel = `Week of ${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
+    const isCurrentWeek = weekOffset === 0;
+    const weekLabel = `Week of ${weekStart.getMonth() + 1}/${weekStart.getDate()}${isCurrentWeek ? ' (current)' : ''}`;
     
     // Debug logging
     console.log(`[processWeekData] ${weekLabel}:`, {
@@ -1877,7 +1878,7 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       sent: sent,
       converted: converted,
       cvr: weekCVR,
-      isCurrentWeek: weekOffset === 0
+      isCurrentWeek: isCurrentWeek
     });
     
     weekData.labels.push(weekLabel);
