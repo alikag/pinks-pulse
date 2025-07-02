@@ -670,7 +670,7 @@ const SalesKPIDashboard: React.FC = () => {
               pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
               pointHoverRadius: 6
             }, {
-              label: 'Converted ($)',
+              label: 'Converted',
               data: processedQuotesConverted,
               borderColor: '#3b82f6',
               backgroundColor: 'rgba(59, 130, 246, 0.1)',

@@ -1778,7 +1778,7 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
     }).length;
     
     const sent = dayQuotes.length;
-    const converted = dayConversionDollars;  // For the converted line (conversion dollars on this day)
+    const converted = dayConversions.length;  // For the converted line (number of quotes converted on this day)
     
     // For Weekly CVR %: quotes sent on this day that have converted / quotes sent on this day
     const dailyCVR = sent > 0 ? Math.round((dayQuotesConverted / sent) * 100) : 0;
