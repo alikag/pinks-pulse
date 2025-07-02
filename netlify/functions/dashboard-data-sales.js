@@ -1596,6 +1596,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Process time series data
   const timeSeries = {
     week: processWeekData(quotesData, now_utc, parseDate, estToday),
+    currentWeekDaily: processCurrentWeekDaily(quotesData, now_utc, parseDate, estToday),
     month: processMonthData(quotesData, now_utc, parseDate),
     year: processYearData(quotesData, now_utc, parseDate),
     all: processAllTimeData(quotesData, now_utc, parseDate)
@@ -1697,8 +1698,93 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
 }
 
 // Time series processing functions
+function processCurrentWeekDaily(quotesData, referenceDate, parseDate, estToday) {
+  // Show daily data for the current week (for "Converted This Week" chart)
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekData = {
+    labels: [],
+    quotesSent: [],
+    quotesConverted: [],
+    conversionRate: [],
+    totalSent: 0,
+    totalConverted: 0
+  };
+  
+  // Use the estToday passed from the main function for consistency
+  const today = new Date(estToday);
+  today.setHours(0, 0, 0, 0);
+  
+  // Calculate the start of the week (Sunday)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  
+  console.log('[processCurrentWeekDaily] Week calculation:', {
+    today: today.toISOString(),
+    dayOfWeek: today.getDay(),
+    weekStart: weekStart.toISOString()
+  });
+  
+  // Loop through each day of the week starting from Sunday
+  for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + dayOffset);
+    date.setHours(0, 0, 0, 0);
+    
+    const dayQuotes = quotesData.filter(q => {
+      const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
+      if (!sentDate) return false;
+      
+      // Convert the sent date to EST for comparison
+      const sentDateEST = new Date(sentDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      sentDateEST.setHours(0, 0, 0, 0);
+      
+      // Check if the sent date falls on this specific day
+      return sentDateEST.getTime() === date.getTime();
+    });
+    
+    // Count quotes converted on this day
+    const dayConversions = quotesData.filter(q => {
+      if (!q.converted_date) return false;
+      const statusLower = q.status ? q.status.toLowerCase().trim() : '';
+      const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                         statusLower === 'accepted' || statusLower === 'complete' ||
+                         (q.converted_date !== null && q.converted_date !== undefined);
+      if (!isConverted) return false;
+      const convertedDate = parseDate(q.converted_date);
+      if (!convertedDate) return false;
+      
+      // Convert the converted date to EST for comparison
+      const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      convertedDateEST.setHours(0, 0, 0, 0);
+      
+      // Check if the converted date falls on this specific day
+      return convertedDateEST.getTime() === date.getTime();
+    });
+    
+    const sent = dayQuotes.length;
+    const converted = dayConversions.length;
+    
+    // Format label with day and date (e.g., "Mon 12/25")
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const dateLabel = `${weekDays[date.getDay()]} ${month}/${day}`;
+    
+    weekData.labels.push(dateLabel);
+    weekData.quotesSent.push(sent);
+    weekData.quotesConverted.push(converted);
+    weekData.totalSent += sent;
+    weekData.totalConverted += converted;
+  }
+  
+  return {
+    ...weekData,
+    period: 'This Week'
+  };
+}
+
 function processWeekData(quotesData, referenceDate, parseDate, estToday) {
-  // NEW: Show last 6 weeks of conversion data
+  // Show last 6 weeks of CVR data (for "Weekly Conversion Rates" chart)
   const weeksToShow = 6;
   const weekData = {
     labels: [],

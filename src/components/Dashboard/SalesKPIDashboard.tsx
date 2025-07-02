@@ -643,9 +643,8 @@ const SalesKPIDashboard: React.FC = () => {
         gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)')
         gradient.addColorStop(1, 'rgba(14, 165, 233, 0)')
         
-        // Default to week view
-        const chartPeriodKey: keyof typeof data.timeSeries = 'week'
-        const chartData = data.timeSeries[chartPeriodKey]
+        // Use currentWeekDaily for the "Converted This Week" chart
+        const chartData = data.timeSeries.currentWeekDaily || data.timeSeries.week
         console.log('[Converted This Week Chart] Chart data:', chartData)
         
         // Get current day index (0 = Sunday, 6 = Saturday)
