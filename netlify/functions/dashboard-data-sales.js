@@ -1670,6 +1670,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   let quarterCountSentAndLost = 0;
   let quarterCountSentAndPending = 0;
   
+  // Debug: track all statuses we see
+  const statusCounts = {};
+  
   quotesData.forEach(quote => {
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
@@ -1677,6 +1680,20 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
     
     if (sentDate && isThisQuarter(sentDate)) {
+      // Track status for debugging
+      statusCounts[statusLower] = (statusCounts[statusLower] || 0) + 1;
+      
+      // Debug specific quotes
+      if (quarterQuotesSent < 10) { // Only log if not too many
+        console.log(`[Quote ${quote.quote_number}]`, {
+          status: statusLower,
+          sentDate: sentDate?.toLocaleDateString(),
+          convertedDate: convertedDate?.toLocaleDateString(),
+          hasConvertedDate: !!convertedDate,
+          value: value
+        });
+      }
+      
       if (convertedDate || statusLower === 'converted' || statusLower === 'won' || 
           statusLower === 'accepted' || statusLower === 'complete') {
         quarterValueSentAndConverted += value;
@@ -1691,6 +1708,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         quarterValuePending += value;
         quarterCountSentAndPending++;
       }
+    }
+  });
+  
+  console.log('[Waterfall Status Debug]:', {
+    quarterLabel,
+    statusCounts,
+    counts: {
+      sent: quarterQuotesSent,
+      converted: quarterCountSentAndConverted,
+      lost: quarterCountSentAndLost,
+      pending: quarterCountSentAndPending
     }
   });
   
@@ -1710,27 +1738,39 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   if (quarterValueSent > 0) {
     const activeQuotes = quarterValueSent - quarterValueLostOrArchived;
+    const pendingCount = quarterQuotesSent - quarterCountSentAndConverted - quarterCountSentAndLost;
     
     waterfallData.push(
       { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
       { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent }
     );
     
-    // Show losses as negative (red)
+    // Show losses as negative (red) if any
     if (quarterValueLostOrArchived > 0) {
       waterfallData.push({
-        label: 'Lost/Archived',
+        label: `Lost/Archived (${quarterCountSentAndLost})`,
         value: -quarterValueLostOrArchived,
         cumulative: activeQuotes
       });
     }
     
-    // Show active quotes (converted + pending)
-    waterfallData.push({
-      label: `Active (${quarterCountSentAndConverted} converted, ${quarterQuotesSent - quarterCountSentAndConverted - quarterCountSentAndLost} pending)`,
-      value: 0,
-      cumulative: activeQuotes
-    });
+    // Show conversions if any
+    if (quarterValueSentAndConverted > 0) {
+      waterfallData.push({
+        label: `Converted (${quarterCountSentAndConverted})`,
+        value: quarterValueSentAndConverted,
+        cumulative: activeQuotes
+      });
+    }
+    
+    // Show final status
+    if (pendingCount > 0 || quarterCountSentAndConverted > 0) {
+      waterfallData.push({
+        label: `Active (${quarterCountSentAndConverted} converted, ${pendingCount} pending)`,
+        value: 0,
+        cumulative: activeQuotes
+      });
+    }
   } else {
     // No quotes sent yet
     waterfallData.push(
