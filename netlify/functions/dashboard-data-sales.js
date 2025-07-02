@@ -1636,12 +1636,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   quotesData.forEach(quote => {
     const sentDate = parseDate(quote.sent_date);
+    const convertedDate = parseDate(quote.converted_date);
+    const value = parseFloat(quote.total_dollars) || 0;
+    
+    // Count quotes sent this quarter
     if (sentDate && isThisQuarter(sentDate)) {
-      const value = parseFloat(quote.total_dollars) || 0;
       quarterQuotesSent++;
       quarterValueSent += value;
-      
-      if (quote.status && quote.status.toLowerCase() === 'converted') {
+    }
+    
+    // Count quotes converted this quarter (regardless of when sent)
+    if (convertedDate && isThisQuarter(convertedDate)) {
+      const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
+      const isConverted = statusLower === 'converted' || statusLower === 'won' || 
+                         statusLower === 'accepted' || statusLower === 'complete' ||
+                         (quote.converted_date !== null && quote.converted_date !== undefined);
+      if (isConverted) {
         quarterQuotesConverted++;
         quarterValueConverted += value;
       }
@@ -1649,14 +1659,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   });
   
   
-  const quarterValueNotConverted = quarterValueSent - quarterValueConverted;
-  
-  // Build waterfall data
+  // Build waterfall data showing sent vs converted (different approach since they're independent)
   const waterfallData = [
     { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
     { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
-    { label: 'Not Converted', value: -quarterValueNotConverted, cumulative: quarterValueConverted },
-    { label: 'Converted', value: quarterValueConverted, cumulative: quarterValueConverted }
+    { label: 'Converted This Quarter', value: quarterValueConverted, cumulative: quarterValueSent + quarterValueConverted },
+    { label: 'Net Position', value: 0, cumulative: quarterValueSent + quarterValueConverted }
   ];
   
   console.log('[Quote Value Flow Waterfall]:', {
