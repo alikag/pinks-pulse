@@ -760,31 +760,19 @@ const SalesKPIDashboard: React.FC = () => {
           }
         })
         
-        // Calculate week average CVR
-        const weekAverage = data?.kpiMetrics?.cvrThisWeek || 0
-        const avgLineData = chartData.labels.map(() => weekAverage)
-        
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: chartData.labels,
             datasets: [{
-              label: 'CVR %',
+              label: 'Conversion Rate',
               data: chartData.conversionRate,
-              backgroundColor: 'rgba(14, 165, 233, 0.8)',
+              backgroundColor: chartData.labels.map((_, index) => 
+                index === chartData.labels.length - 1 ? '#F9ABAC' : 'rgba(14, 165, 233, 0.8)'
+              ),
               borderRadius: 4,
               borderWidth: 0,
-              minBarLength: 2, // Show minimal bar even for 0 values
-              type: 'bar'
-            }, {
-              label: 'Week Average',
-              data: avgLineData,
-              borderColor: '#F9ABAC',
-              borderWidth: 2,
-              borderDash: [5, 5],
-              pointRadius: 0,
-              fill: false,
-              type: 'line'
+              minBarLength: 2 // Show minimal bar even for 0 values
             }]
           },
           options: {
@@ -798,16 +786,12 @@ const SalesKPIDashboard: React.FC = () => {
                 borderWidth: 1,
                 callbacks: {
                   label: function(context) {
-                    if (context.dataset.label === 'Week Average') {
-                      return `Week Average CVR: ${context.parsed.y.toFixed(1)}%`;
-                    }
-                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                    return `Conversion Rate: ${context.parsed.y}%`;
                   },
                   afterLabel: function(context) {
-                    if (context.dataset.label === 'Week Average') {
-                      return 'Average conversion rate for the entire week';
-                    }
-                    return '';
+                    const sent = chartData.quotesSent[context.dataIndex];
+                    const converted = chartData.quotesConverted[context.dataIndex];
+                    return [`${converted} converted / ${sent} sent`];
                   }
                 }
               }
@@ -1697,7 +1681,7 @@ const SalesKPIDashboard: React.FC = () => {
               {/* Weekly CVR % */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4 flex items-center justify-between">
-                  <span>Weekly CVR % <span className="text-xs font-normal text-gray-400">(by Send Date)</span></span>
+                  <span>Weekly Conversion Rates</span>
                   {data?.kpiMetrics?.cvrThisWeek && (
                     <span className="text-sm text-gray-400">
                       Week Avg: {data.kpiMetrics.cvrThisWeek}%
