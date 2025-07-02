@@ -1119,6 +1119,24 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         metrics.convertedThisWeek++;
         metrics.convertedThisWeekDollars += totalDollars;
         
+        // Also update salesperson weekly stats for conversions this week
+        if (!salespersonWeekStats[sp]) {
+          salespersonWeekStats[sp] = {
+            name: sp,
+            quotesSent: 0,
+            quotesConverted: 0,
+            valueSent: 0,
+            valueConverted: 0,
+            speedToLeadSum: 0,
+            speedToLeadCount: 0
+          };
+        }
+        // Only increment if not already counted (quote sent this week that converted)
+        if (!isThisWeek(sentDate)) {
+          salespersonWeekStats[sp].quotesConverted++;
+          salespersonWeekStats[sp].valueConverted += totalDollars;
+        }
+        
         
         // Debug: Log the first few converted quotes to see what IDs we have
         if (recentConvertedQuotes.length < 3) {
