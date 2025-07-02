@@ -1594,13 +1594,26 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   });
   
   // Process time series data
-  const timeSeries = {
-    week: processWeekData(quotesData, now_utc, parseDate, estToday),
-    currentWeekDaily: processCurrentWeekDaily(quotesData, now_utc, parseDate, estToday),
-    month: processMonthData(quotesData, now_utc, parseDate),
-    year: processYearData(quotesData, now_utc, parseDate),
-    all: processAllTimeData(quotesData, now_utc, parseDate)
-  };
+  let timeSeries;
+  try {
+    timeSeries = {
+      week: processWeekData(quotesData, now_utc, parseDate, estToday),
+      currentWeekDaily: processCurrentWeekDaily(quotesData, now_utc, parseDate, estToday),
+      month: processMonthData(quotesData, now_utc, parseDate),
+      year: processYearData(quotesData, now_utc, parseDate),
+      all: processAllTimeData(quotesData, now_utc, parseDate)
+    };
+  } catch (timeSeriesError) {
+    console.error('[dashboard-data-sales] Error processing time series:', timeSeriesError);
+    // Fallback to basic structure
+    timeSeries = {
+      week: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+      currentWeekDaily: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+      month: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+      year: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+      all: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 }
+    };
+  }
   
   console.log('[dashboard-data-sales] Week time series data:', {
     labels: timeSeries.week.labels,
