@@ -1659,12 +1659,31 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   });
   
   
-  // Build waterfall data showing sent vs converted (different approach since they're independent)
+  // Build waterfall data showing the flow of quotes this quarter
+  // Note: We track quotes sent this quarter and their conversion status
+  let quarterValueSentAndConverted = 0;
+  let quarterValueSentNotConverted = 0;
+  
+  // Calculate which quotes sent this quarter have converted
+  quotesData.forEach(quote => {
+    const sentDate = parseDate(quote.sent_date);
+    const convertedDate = parseDate(quote.converted_date);
+    const value = parseFloat(quote.total_dollars) || 0;
+    
+    if (sentDate && isThisQuarter(sentDate)) {
+      if (convertedDate) {
+        quarterValueSentAndConverted += value;
+      } else {
+        quarterValueSentNotConverted += value;
+      }
+    }
+  });
+  
   const waterfallData = [
     { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
     { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
-    { label: 'Converted This Quarter', value: quarterValueConverted, cumulative: quarterValueSent + quarterValueConverted },
-    { label: 'Net Position', value: 0, cumulative: quarterValueSent + quarterValueConverted }
+    { label: 'Converted', value: -quarterValueSentAndConverted, cumulative: quarterValueSentNotConverted },
+    { label: 'Outstanding', value: 0, cumulative: quarterValueSentNotConverted }
   ];
   
   console.log('[Quote Value Flow Waterfall]:', {
