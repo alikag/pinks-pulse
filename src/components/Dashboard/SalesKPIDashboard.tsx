@@ -307,13 +307,20 @@ const SalesKPIDashboard: React.FC = () => {
             setGoogleReviews([
               {
                 id: 'fallback-1',
-                author: 'Kathryn Heekin',
+                author: 'Val Paverd',
                 rating: 5,
-                text: 'Dylan and Sael were both gentlemen and friendly. There work was excellent!',
-                time: 'an hour ago'
+                text: 'AWESOME! I haven\'t been able to stop staring out of my crystal clear windows all day! Matt B, Thomas, and Matt S did an amazing job on our windows. They also cleared out our gutters and cleaned our roof and skylights. So much more light comes in now. HIGHLY RECOMMEND!!!',
+                time: '19 minutes ago'
               },
               {
                 id: 'fallback-2',
+                author: 'Kathryn Heekin',
+                rating: 5,
+                text: 'Dylan and Sael were both gentlemen and friendly. There work was excellent!',
+                time: '2 hours ago'
+              },
+              {
+                id: 'fallback-3',
                 author: 'Charley Mitcherson',
                 rating: 5,
                 text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
@@ -383,20 +390,34 @@ const SalesKPIDashboard: React.FC = () => {
           setGoogleReviews([
             {
               id: 'fallback-1',
+              author: 'Val Paverd',
+              rating: 5,
+              text: 'AWESOME! I haven\'t been able to stop staring out of my crystal clear windows all day! Matt B, Thomas, and Matt S did an amazing job on our windows. They also cleared out our gutters and cleaned our roof and skylights. So much more light comes in now. HIGHLY RECOMMEND!!!',
+              time: '19 minutes ago'
+            },
+            {
+              id: 'fallback-2',
+              author: 'Kathryn Heekin',
+              rating: 5,
+              text: 'Dylan and Sael were both gentlemen and friendly. There work was excellent!',
+              time: '2 hours ago'
+            },
+            {
+              id: 'fallback-3',
               author: 'Charley Mitcherson',
               rating: 5,
               text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
               time: '3 days ago'
             },
             {
-              id: 'fallback-2',
+              id: 'fallback-4',
               author: 'Paul Falanga',
               rating: 5,
               text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
               time: '5 days ago'
             },
             {
-              id: 'fallback-3',
+              id: 'fallback-5',
               author: 'Colleen Bicknese',
               rating: 4,
               text: 'Our estimator never requested to see the interior so he WAY underestimated how long it would take to complete the job. The 2 window techs were fantastic, they did a very good job. They had to come back to do the exterior after finishing the interior, and between the weather and sick employees it took 2 weeks to get it all done.',

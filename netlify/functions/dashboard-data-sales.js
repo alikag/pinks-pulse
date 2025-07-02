@@ -435,8 +435,8 @@ export const handler = async (event, context) => {
     // Process data into dashboard format
     let dashboardData;
     try {
-      // Manually set to 1 for Kathryn Heekin's review today
-      const reviewsThisWeek = 1; // reviewsData[0]?.reviews_count || 0;
+      // Manually set to 2 for Kathryn Heekin's and Val Paverd's reviews today
+      const reviewsThisWeek = 2; // reviewsData[0]?.reviews_count || 0;
       dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek);
     } catch (processError) {
       console.error('[dashboard-data-sales] Error processing data:', processError);
