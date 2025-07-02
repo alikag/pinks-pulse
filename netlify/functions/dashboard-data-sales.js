@@ -1698,14 +1698,26 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     total: quarterValueSentAndConverted + quarterValueLostOrArchived + actualPending
   });
   
-  // Waterfall shows the breakdown of quotes sent this quarter
-  const waterfallData = [
-    { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
-    { label: 'Pending', value: actualPending, cumulative: actualPending },
-    { label: 'Converted', value: quarterValueSentAndConverted, cumulative: actualPending + quarterValueSentAndConverted },
-    { label: 'Lost/Archived', value: quarterValueLostOrArchived, cumulative: quarterValueSent },
-    { label: 'Total Sent', value: 0, cumulative: quarterValueSent }
-  ];
+  // Build waterfall showing quote pipeline for this quarter
+  let waterfallData = [];
+  
+  if (quarterValueSent > 0) {
+    // Normal waterfall when we have sent quotes this quarter
+    waterfallData = [
+      { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
+      { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
+      { label: 'Converted', value: -quarterValueSentAndConverted, cumulative: quarterValueSent - quarterValueSentAndConverted },
+      { label: 'Lost/Archived', value: -quarterValueLostOrArchived, cumulative: actualPending },
+      { label: 'Still Pending', value: 0, cumulative: actualPending }
+    ];
+  } else {
+    // Show conversions from previous quarters if no new quotes sent this quarter
+    waterfallData = [
+      { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
+      { label: 'No Quotes Sent Yet', value: 0.01, cumulative: 0.01 }, // Small value to show bar
+      { label: 'Conversions from Prior Quarters', value: quarterValueConverted, cumulative: quarterValueConverted }
+    ];
+  }
   
   console.log('[Quote Value Flow Waterfall]:', {
     quarter: quarterLabel,
@@ -1713,6 +1725,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesConverted: quarterQuotesConverted,
     valueSent: quarterValueSent,
     valueConverted: quarterValueConverted,
+    valueeSentAndConverted: quarterValueSentAndConverted,
+    valueLostOrArchived: quarterValueLostOrArchived,
+    valuePending: actualPending,
+    waterfallData: waterfallData,
     conversionRate: quarterQuotesSent > 0 ? ((quarterQuotesConverted / quarterQuotesSent) * 100).toFixed(1) + '%' : '0%'
   });
   
