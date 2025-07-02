@@ -1687,12 +1687,24 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
   });
   
+  // Calculate the actual pending amount (quotes sent but not converted or lost)
+  const actualPending = quarterValueSent - quarterValueSentAndConverted - quarterValueLostOrArchived;
+  
+  console.log('[Waterfall Breakdown]:', {
+    sent: quarterValueSent,
+    converted: quarterValueSentAndConverted,
+    lost: quarterValueLostOrArchived,
+    pending: actualPending,
+    total: quarterValueSentAndConverted + quarterValueLostOrArchived + actualPending
+  });
+  
+  // Waterfall shows the breakdown of quotes sent this quarter
   const waterfallData = [
     { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
-    { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
-    { label: 'Converted', value: quarterValueSentAndConverted, cumulative: quarterValueSent },
-    { label: 'Lost/Archived', value: -quarterValueLostOrArchived, cumulative: quarterValueSent - quarterValueLostOrArchived },
-    { label: 'Still Pending', value: 0, cumulative: quarterValuePending }
+    { label: 'Pending', value: actualPending, cumulative: actualPending },
+    { label: 'Converted', value: quarterValueSentAndConverted, cumulative: actualPending + quarterValueSentAndConverted },
+    { label: 'Lost/Archived', value: quarterValueLostOrArchived, cumulative: quarterValueSent },
+    { label: 'Total Sent', value: 0, cumulative: quarterValueSent }
   ];
   
   console.log('[Quote Value Flow Waterfall]:', {
