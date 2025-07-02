@@ -1660,21 +1660,29 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   
   
   // Build waterfall data showing the flow of quotes this quarter
-  // Note: We track quotes sent this quarter and their conversion status
+  // Track different statuses of quotes sent this quarter
   let quarterValueSentAndConverted = 0;
-  let quarterValueSentNotConverted = 0;
+  let quarterValueLostOrArchived = 0;
+  let quarterValuePending = 0;
   
-  // Calculate which quotes sent this quarter have converted
+  // Calculate status of quotes sent this quarter
   quotesData.forEach(quote => {
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
     const value = parseFloat(quote.total_dollars) || 0;
+    const statusLower = quote.status ? quote.status.toLowerCase().trim() : '';
     
     if (sentDate && isThisQuarter(sentDate)) {
-      if (convertedDate) {
+      if (convertedDate || statusLower === 'converted' || statusLower === 'won' || 
+          statusLower === 'accepted' || statusLower === 'complete') {
         quarterValueSentAndConverted += value;
+      } else if (statusLower === 'archived' || statusLower === 'lost' || 
+                 statusLower === 'rejected' || statusLower === 'declined' || 
+                 statusLower === 'dead' || statusLower === 'cancelled') {
+        quarterValueLostOrArchived += value;
       } else {
-        quarterValueSentNotConverted += value;
+        // Status is likely 'sent', 'pending', 'draft', or similar
+        quarterValuePending += value;
       }
     }
   });
@@ -1682,8 +1690,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   const waterfallData = [
     { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
     { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
-    { label: 'Converted', value: -quarterValueSentAndConverted, cumulative: quarterValueSentNotConverted },
-    { label: 'Outstanding', value: 0, cumulative: quarterValueSentNotConverted }
+    { label: 'Converted', value: quarterValueSentAndConverted, cumulative: quarterValueSent },
+    { label: 'Lost/Archived', value: -quarterValueLostOrArchived, cumulative: quarterValueSent - quarterValueLostOrArchived },
+    { label: 'Still Pending', value: 0, cumulative: quarterValuePending }
   ];
   
   console.log('[Quote Value Flow Waterfall]:', {
