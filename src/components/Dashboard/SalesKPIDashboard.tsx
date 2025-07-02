@@ -144,6 +144,11 @@ const SalesKPIDashboard: React.FC = () => {
     
     const metrics = data.kpiMetrics;
     
+    // Get next month name
+    const currentDate = new Date();
+    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const nextMonthName = nextMonth.toLocaleDateString('en-US', { month: 'long' });
+    
     return [
       {
         id: 'quotes-sent-today',
@@ -198,7 +203,7 @@ const SalesKPIDashboard: React.FC = () => {
       },
       {
         id: 'next-month-otb',
-        label: 'Next Month OTB',
+        label: `${nextMonthName} OTB`,
         subtitle: 'Target: $125k',
         value: metrics.nextMonthOTB,
         target: 125000,
@@ -701,9 +706,6 @@ const SalesKPIDashboard: React.FC = () => {
                 borderWidth: 1,
                 callbacks: {
                   label: (context) => {
-                    if (context.dataset.label === 'Converted ($)') {
-                      return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`;
-                    }
                     return `${context.dataset.label}: ${context.parsed.y}`;
                   }
                 }
@@ -715,12 +717,9 @@ const SalesKPIDashboard: React.FC = () => {
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
                   callback: (value: any) => {
-                    // Format as currency for better readability
+                    // Format as number for quote counts
                     const numValue = Number(value);
-                    if (numValue >= 1000) {
-                      return `$${(numValue / 1000).toFixed(1)}k`;
-                    }
-                    return `$${numValue}`;
+                    return numValue.toString();
                   }
                 }
               },
