@@ -1406,17 +1406,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // - If we have conversions this week already, use this week's CVR
   // - Otherwise, use last week's CVR as a more meaningful metric
   // - This avoids showing 0% CVR just because today's quotes haven't had time to convert
+  // Calculate CVR based on quotes converted this week / quotes sent this week
   let smartWeeklyCVR = 0;
-  if (metrics.quotesThisWeekConverted > 0 && metrics.quotesThisWeek > 0) {
-    // We have conversions this week, use current week CVR
-    smartWeeklyCVR = parseFloat(((metrics.quotesThisWeekConverted / metrics.quotesThisWeek) * 100).toFixed(1));
-    console.log('[Smart CVR] Using current week CVR:', smartWeeklyCVR);
-  } else if (metrics.quotesLastWeek > 0) {
-    // No conversions this week yet, use last week's CVR as a proxy
-    smartWeeklyCVR = parseFloat(((metrics.quotesLastWeekConverted / metrics.quotesLastWeek) * 100).toFixed(1));
-    console.log('[Smart CVR] Using last week CVR as proxy:', smartWeeklyCVR);
+  if (metrics.quotesThisWeek > 0) {
+    // Use quotes converted this week (regardless of when sent) divided by quotes sent this week
+    smartWeeklyCVR = parseFloat(((metrics.convertedThisWeek / metrics.quotesThisWeek) * 100).toFixed(1));
+    console.log('[Smart CVR] CVR calculation:', {
+      convertedThisWeek: metrics.convertedThisWeek,
+      quotesThisWeek: metrics.quotesThisWeek,
+      cvr: smartWeeklyCVR
+    });
   } else {
-    console.log('[Smart CVR] No data available for CVR calculation');
+    console.log('[Smart CVR] No quotes sent this week for CVR calculation');
   }
   
   const kpiMetrics = {
