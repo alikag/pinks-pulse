@@ -2,228 +2,265 @@
 
 A comprehensive business analytics dashboard for Pink's Window Cleaning franchise, tracking quotes, conversions, and sales performance in the Hudson Valley region.
 
-## Documentation
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ and npm
+- Google Cloud account with BigQuery access
+- Netlify account for deployment
+- Service account JSON file from Google Cloud
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/alikag/pinks-pulse.git
+cd pinks-dashboard/pinks-dashboard
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Set up environment variables**
+
+Create `.env` in the root directory:
+```env
+# BigQuery Configuration
+BIGQUERY_PROJECT_ID=your-project-id
+BIGQUERY_DATASET=jobber_data
+
+# For local development
+GOOGLE_APPLICATION_CREDENTIALS=path/to/your/service-account-key.json
+
+# For production (Netlify)
+GOOGLE_APPLICATION_CREDENTIALS_JSON={"type":"service_account",...}
+
+# Dashboard Password
+VITE_DASHBOARD_PASSWORD=your-secure-password
+```
+
+4. **Configure BigQuery**
+- Create a Google Cloud project
+- Enable BigQuery API
+- Create a service account with BigQuery Data Viewer and Job User roles
+- Download the service account JSON key
+- Create dataset named `jobber_data` with views: `v_quotes`, `v_jobs`, `v_requests`
+
+5. **Run locally**
+```bash
+npm run dev
+```
+
+6. **Build for production**
+```bash
+npm run build
+```
+
+## 📋 Documentation
 
 - **[Detailed Calculation Documentation](./DASHBOARD_CALCULATIONS.md)** - Complete formulas and logic for all metrics
 - **[Deployment Guide](./DEPLOYMENT.md)** - Step-by-step deployment instructions
 - **[Setup Guide](./setup-guide.md)** - Initial setup and configuration
 
-## Google Reviews Configuration
-- Reviews are scraped directly from Google Maps in real-time
-- Uses Playwright scraper at `/.netlify/functions/scrape-google-reviews-playwright`
-- No API keys or manual updates required
-- Automatically fetches latest reviews every time dashboard loads
-- Displays up to 10 most recent reviews with automatic scrolling
-- Shows actual Google Maps ratings and review counts
-
-## Features
-
-- Real-time KPI tracking and analytics for window cleaning business
-- Quote-to-job conversion metrics and trends
-- Sales performance visualization by individual GMs
-- Speed to lead tracking (response time to quote requests)
-- Weekly performance metrics (Sunday-Saturday)
-- On-the-books (OTB) revenue tracking
-- Responsive design for desktop and mobile
-- Integration with BigQuery for data storage
-- Google Reviews scraper for business insights
-
-## Tech Stack
-
-- **Frontend**: React + TypeScript + Vite
-- **Styling**: Tailwind CSS
-- **Charts**: Chart.js, Recharts
-- **Backend**: Node.js + Express
-- **Database**: Google BigQuery
-- **Deployment**: Netlify (Frontend) + Netlify Functions (Backend)
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Google Cloud account with BigQuery access
-- Netlify account for deployment
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd pinks-dashboard
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create a `.env` file in the root directory:
-```env
-VITE_API_URL=http://localhost:3001/api
-VITE_DASHBOARD_PASSWORD=your-password
-```
-
-4. For the backend server, create a `.env` file in the `/server` directory:
-```env
-BIGQUERY_PROJECT_ID=your-project-id
-BIGQUERY_DATASET=your-dataset
-GOOGLE_APPLICATION_CREDENTIALS=path-to-service-account-key.json
-```
-
-### Development
-
-1. Start the development server:
-```bash
-npm run dev
-```
-
-2. In a separate terminal, start the backend server:
-```bash
-cd server
-npm install
-npm start
-```
-
-3. Open http://localhost:5173 in your browser
-
-## Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
-
-### Quick Deploy to Netlify
-
-1. Push your code to GitHub
-2. Connect your GitHub repository to Netlify
-3. Configure environment variables in Netlify dashboard
-4. Deploy with automatic builds on push
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 pinks-dashboard/
-├── src/                    # React source files
-│   ├── components/         # React components
-│   ├── hooks/             # Custom React hooks
-│   ├── services/          # API services
-│   └── types/             # TypeScript types
-├── netlify/               # Netlify Functions
-│   └── functions/         # Serverless functions
-│       ├── dashboard-*    # Dashboard data endpoints
-│       └── scrape-*       # Google Reviews scrapers
-├── server/                # Express backend server
-├── public/                # Static assets
-└── dist/                  # Build output
+├── src/                       # React source files
+│   ├── components/           
+│   │   ├── Dashboard/        # Dashboard variations (Sales, Premium, etc.)
+│   │   ├── Auth/            # Password protection
+│   │   └── ui/              # Reusable UI components
+│   ├── hooks/               # Custom React hooks
+│   ├── services/            # API services and BigQuery integration
+│   ├── types/               # TypeScript type definitions
+│   └── utils/               # Utility functions (haptics, etc.)
+├── netlify/                 
+│   └── functions/           # Serverless functions
+│       ├── dashboard-data-sales.js    # Main data endpoint
+│       ├── scrape-google-reviews*.js  # Google Reviews scrapers
+│       └── lib/                       # Shared utilities
+├── public/                  # Static assets
+├── dist/                    # Build output
+└── CLAUDE.md               # AI assistant instructions
 ```
 
-## Environment Variables
+## 🔑 Key Features
 
-### Frontend (Vite)
-- `VITE_API_URL`: Backend API endpoint
-- `VITE_DASHBOARD_PASSWORD`: Dashboard access password
+### Real-Time KPI Dashboard
+- **Live metrics** updated from BigQuery
+- **Interactive KPI cards** - click for detailed calculation explanations
+- **Smart CVR calculation** - shows last week's rate when no conversions yet
+- **Mobile-optimized** with haptic feedback
 
-### Backend
-- `BIGQUERY_PROJECT_ID`: Google Cloud project ID
-- `BIGQUERY_DATASET`: BigQuery dataset name
-- `GOOGLE_APPLICATION_CREDENTIALS`: Path to service account JSON (local)
-- `GOOGLE_APPLICATION_CREDENTIALS_JSON`: Service account JSON string (production)
+### Metrics Tracked
 
-## Security
+#### Daily Metrics
+- **Quotes Sent Today** - Target: 12 quotes
+- **Converted Today** - Target: $22,500
+- **Speed to Lead** - Target: 24 hours
 
-- Password protection for dashboard access
-- Environment variables for sensitive configuration
-- CORS configuration for API security
-- Service account credentials for BigQuery access
+#### Weekly Metrics (Sunday-Saturday)
+- **Converted This Week** - Target: $157,500
+- **CVR This Week** - Target: 45%
+- **Reviews This Week** - Target: 2 reviews
+- **Weekly Conversion Rates Chart** - Shows last 6 weeks with "(current)" label
 
-## Contributing
+#### Monthly/Long-term
+- **30-Day CVR** - Target: 50%
+- **Average Quotes/Day** - Target: 12
+- **2026 Recurring Revenue** - Target: $1M
+- **Next Month OTB** - Dynamically shows month name (e.g., "August OTB")
+
+### Charts & Visualizations
+1. **Converted This Week** - Daily breakdown of sent vs converted quotes
+2. **Weekly Conversion Rates** - 6-week CVR trend by week
+3. **Salesperson Performance** - Individual GM metrics
+4. **Monthly OTB** - 12-month revenue forecast
+5. **Weekly OTB** - 5-week centered view
+6. **Quote Value Flow Waterfall** - Quarter performance visualization
+
+### Google Reviews Integration
+- **Live scraping** from Google Maps
+- **Fallback data** when scraper fails
+- **Auto-scrolling display** of latest reviews
+- **Manual override** for review count (currently set to 1)
+
+## 🔧 Recent Updates (July 2024)
+
+### Calculation Changes
+- **CVR This Week**: Now calculates (quotes converted this week) ÷ (quotes sent this week)
+- **Weekly Conversion Rates**: Shows weekly buckets instead of daily
+- **Waterfall Chart**: Tracks all conversions in quarter, not just same-quarter conversions
+- **Salesperson Performance**: Includes quotes converted this week regardless of send date
+
+### UI Improvements
+- **Mobile spacing**: Increased gap between hamburger menu and title
+- **Chart labels**: Added "(current)" to current week in charts
+- **Footnotes**: Updated to clarify CVR calculation method
+- **Review display**: Added Kathryn Heekin's 5-star review to fallback data
+
+### Performance Fixes
+- **Removed expensive timezone conversions** in date comparisons
+- **Added error handling** for time series processing
+- **Optimized queries** to prevent 502 timeouts
+- **Fixed weekly data** to show correct dates (not June dates in July)
+
+## 🚀 Deployment to Netlify
+
+### Initial Setup
+
+1. **Push to GitHub**
+```bash
+git add .
+git commit -m "Initial commit"
+git push origin main
+```
+
+2. **Connect to Netlify**
+- Log in to Netlify
+- Click "New site from Git"
+- Choose your GitHub repository
+- Build settings:
+  - Build command: `npm run build`
+  - Publish directory: `dist`
+
+3. **Configure Environment Variables**
+In Netlify dashboard > Site settings > Environment variables:
+- `BIGQUERY_PROJECT_ID`
+- `BIGQUERY_DATASET`
+- `GOOGLE_APPLICATION_CREDENTIALS_JSON` (paste entire service account JSON)
+- `VITE_DASHBOARD_PASSWORD`
+
+4. **Deploy**
+- Netlify auto-deploys on git push
+- Manual deploy: Netlify dashboard > "Trigger deploy"
+
+### Custom Domain (Optional)
+1. Netlify dashboard > Domain settings
+2. Add custom domain
+3. Configure DNS as instructed
+
+## 🔒 Security
+
+- **Password protection** - Single password for all users
+- **Environment variables** - Never commit sensitive data
+- **CORS configured** - Restricts API access
+- **Service account** - Limited BigQuery permissions
+- **No user data stored** - Read-only dashboard
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**502 Errors**
+- Check BigQuery credentials in Netlify environment variables
+- Ensure service account has proper permissions
+- Check function logs in Netlify dashboard
+
+**No Data Showing**
+- Verify BigQuery views exist and have data
+- Check browser console for errors
+- Ensure dates in BigQuery are in correct format
+
+**Google Reviews Not Loading**
+- Fallback data will display if scraper fails
+- Check Netlify function logs for scraper errors
+- Reviews count manually set to 1 until scraper fixed
+
+**Wrong Dates/Timezones**
+- All calculations use EST/EDT (America/New_York)
+- Week starts Sunday, ends Saturday
+- Check BigQuery data has proper timestamps
+
+### Debug Mode
+Add `?debug=true` to URL for additional console logging
+
+## 📊 BigQuery Schema
+
+### Required Views
+
+**v_quotes**
+- quote_number (STRING)
+- sent_date (TIMESTAMP/DATETIME)
+- converted_date (TIMESTAMP/DATETIME)
+- status (STRING)
+- total_dollars (FLOAT64)
+- salesperson (STRING)
+- client_name (STRING)
+
+**v_jobs**
+- Job_Number (STRING)
+- Date (DATE)
+- Calculated_Value (FLOAT64)
+- Job_type (STRING)
+- Date_Converted (DATE)
+
+**v_requests**
+- quote_number (STRING)
+- requested_on_date (TIMESTAMP)
+- salesperson (STRING)
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
-## Google Reviews Scraper
+### Code Style
+- TypeScript for type safety
+- Functional React components with hooks
+- Tailwind CSS for styling
+- Clear comments for complex logic
 
-The project includes Google Reviews scraping functionality with two implementations:
+## 📝 License
 
-### 1. Simple Fetch Scraper
-- Location: `/netlify/functions/scrape-google-reviews.js`
-- Method: Basic HTTP fetch
-- Limitations: Limited effectiveness with dynamic content
+This project is private and proprietary to Pink's Window Cleaning.
 
-### 2. Playwright Scraper
-- Location: `/netlify/functions/scrape-google-reviews-playwright.js`
-- Method: Headless browser automation
-- Features: Handles dynamic content, extracts ratings, reviews, and business info
-- Dependencies: `playwright-chromium`
+---
 
-### Testing the Scrapers
-
-Use the test interface at `/test-google-reviews.html` or call the API endpoints directly:
-
-```bash
-# Simple fetch version
-curl https://your-domain/.netlify/functions/scrape-google-reviews
-
-# Playwright version (recommended)
-curl https://your-domain/.netlify/functions/scrape-google-reviews-playwright
-```
-
-### Recent Updates (July 2025)
-
-#### Latest Features
-- **KPI Calculation Context**: Click any KPI card to see detailed calculation formulas, explanations, and notes
-- **Logout Functionality**: Added subtle logout button in sidebar menu
-- **Improved Mobile Charts**: Fixed Weekly OTB chart to display all 5 weeks properly on mobile
-- **Enhanced Sidebar**: Larger logo (h-12 w-12) for better visibility
-- **Real-time Google Reviews**: Now scrapes reviews directly from Google Maps instead of BigQuery
-
-#### Dashboard UI Improvements
-- **Typography**: DDC Hardware industrial font style for Pink's branding
-- **Responsive Design**: Larger text on desktop (up to 7xl), mobile optimizations
-- **Color Scheme**: Consistent pink (#F9ABAC) hover effects throughout
-- **Navigation**: Clickable header scrolls to top, mobile menu slides with content
-- **Password Page**: Larger logo (h-40 w-40), overflow prevention, email link for admin contact
-- **Interactive KPIs**: All KPI cards are clickable to show calculation details
-
-#### Data Accuracy Enhancements
-- **Smart CVR Logic**: Shows last week's CVR when current week has no conversions yet
-- **Status Flexibility**: Handles "Converted", "Won", "Accepted", "Complete" statuses
-- **Timezone Consistency**: All calculations in EST/EDT (America/New_York)
-- **Week Boundaries**: Sunday-Saturday weeks throughout the system
-- **Parallel Queries**: Prevents 502 timeouts on data fetching
-
-#### Key Metrics and Targets
-- **Quotes Sent Today**: Target 12 quotes daily
-- **Converted Today**: $100k target (quotes converting today)
-- **Converted This Week**: $157.5k target (Sunday-Saturday)
-- **CVR This Week**: 45% target (with smart fallback logic)
-- **2026 Recurring**: $1M annual target
-- **Speed to Lead**: 24-hour target (was 30 minutes)
-- **30D CVR**: 50% target (was 45%)
-- **Reviews This Week**: 2 review target (was 4)
-
-#### Technical Improvements
-- **Base64 Decoding**: Jobber GraphQL IDs properly decoded for links
-- **Date Parsing**: Handles BigQuery date objects and UTC timestamps
-- **Haptic Feedback**: Touch feedback on all mobile interactions
-- **Type Safety**: TypeScript with proper null checks
-- **Performance**: 15-minute cache, optimized queries
-- **Responsive Charts**: Window resize handling for optimal mobile display
-
-#### KPI Calculation Details
-Each KPI now displays:
-- **Formula**: Exact SQL/logic used in backend (e.g., `COUNT(quotes WHERE DATE(sent_date) = TODAY_EST)`)
-- **Description**: Plain English explanation of the calculation
-- **Notes**: Additional context like targets, special behaviors, or data sources
-
-#### CVR Calculation Clarification
-- **CVR This Week (KPI Card)**: Overall weekly conversion rate, may show last week's rate if no conversions yet
-- **Weekly CVR % Chart**: Daily breakdown showing conversion rate for quotes sent each specific day
-- Both metrics serve different purposes - one for current performance, one for daily trends
-
-## License
-
-This project is private and proprietary.
+**Need Help?** Contact admin@pinkspulse.com for dashboard access or technical support.

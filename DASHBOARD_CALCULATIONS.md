@@ -6,7 +6,8 @@
 3. [KPI Cards](#kpi-cards)
 4. [Charts and Visualizations](#charts-and-visualizations)
 5. [Data Sources](#data-sources)
-6. [Special Considerations](#special-considerations)
+6. [Recent Changes (July 2024)](#recent-changes-july-2024)
+7. [Special Considerations](#special-considerations)
 
 ## Overview
 
@@ -30,11 +31,22 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
   weekStart.setHours(0, 0, 0, 0);
   ```
 
+### Quarter Definition
+- **Q1**: January - March
+- **Q2**: April - June  
+- **Q3**: July - September
+- **Q4**: October - December
+- Quarter start calculation:
+  ```javascript
+  const quarterStartMonth = (currentQuarter - 1) * 3;
+  const quarterStart = new Date(currentYear, quarterStartMonth, 1);
+  ```
+
 ### Date Parsing from BigQuery
 - BigQuery dates come as objects: `{ value: "2025-06-27" }`
 - UTC timestamps: `"2025-06-27 17:05:33.000000 UTC"`
 - Parsing logic handles both formats and converts to EST/EDT with dynamic timezone offset
-- Future date protection: Conversions are filtered out if they occur in the future (including later on the same day)
+- Future date protection: Conversions are filtered out if they occur in the future
 
 ## KPI Cards
 
@@ -43,42 +55,34 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 - **Target**: 12 quotes
 - **Status**: 
   - Green (success): ≥ 12
-  - Yellow (warning): ≥ 6
-  - Red (danger): < 6
+  - Yellow (warning): ≥ 8
+  - Red (danger): < 8
 - **Display**: Shows actual count or "No quotes sent today" if 0
 
 ### 2. Converted Today ($)
-- **Calculation**: Sum of `total_dollars` for quotes where job's `Date_Converted` = today (EST/EDT) AND not in the future
-- **Data Source**: Uses v_jobs.Date_Converted (when job was created) via LEFT JOIN, not v_quotes.converted_date
-- **Note**: Tracks when jobs were actually created in the system, not just when quotes were approved
-- **Why**: A quote may be approved on one day but the job created the next day - we track job creation as the true conversion
-- **Future Protection**: Excludes conversions with timestamps later than current EST/EDT time
-- **Target**: $100,000
+- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` = today (EST)
+- **Target**: $22,500
 - **Status**:
-  - Green: ≥ $100,000
-  - Yellow: ≥ $50,000
-  - Red: < $50,000
+  - Green: ≥ $22,500
+  - Yellow: > $15,000
+  - Normal: ≤ $15,000
 - **Display**: Currency format with no decimals
 
 ### 3. Converted This Week ($)
-- **Calculation**: Sum of `total_dollars` for quotes where job's `Date_Converted` is within current week (Sun-Sat) AND not in the future
-- **Data Source**: Uses v_jobs.Date_Converted (when job was created) via LEFT JOIN, not v_quotes.converted_date
-- **Future Protection**: Excludes conversions with timestamps later than current EST/EDT time
-- **Subtitle**: Shows count and dollar value (e.g., "4 quotes - $5,384")
+- **Calculation**: Sum of `total_dollars` for quotes where `converted_date` is within current week (Sun-Sat)
 - **Target**: $157,500
 - **Status**:
   - Green: ≥ $157,500
-  - Yellow: ≥ $100,000
-  - Red: < $100,000
+  - Yellow: > $100,000
+  - Red: ≤ $100,000
 
 ### 4. CVR This Week (%)
-- **IMPORTANT**: This is different from "Weekly CVR % (by Send Date)" chart
-- **Calculation**: 
+- **NEW CALCULATION (July 2024)**: 
   ```
-  (Quotes sent this week that have converted) ÷ (Total quotes sent this week) × 100
+  (Quotes converted this week) ÷ (Quotes sent this week) × 100
   ```
-- **Smart Logic**: If no quotes sent this week have converted yet, shows last week's CVR as reference
-- **Indicator**: Shows "*Using last week's rate" when using fallback
+- **Old calculation**: (Quotes sent this week that eventually converted) ÷ (Quotes sent this week) × 100
+- **Change rationale**: Shows current week performance by comparing conversions happening this week vs quotes sent this week
 - **Target**: 45%
 - **Status**:
   - Green: ≥ 45%
@@ -86,7 +90,7 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
   - Red: < 30%
 
 ### 5. 2026 Recurring Revenue
-- **Calculation**: Sum of recurring revenue scheduled for 2026
+- **Calculation**: Sum of `Calculated_Value` for jobs where `Date` is in 2026 AND `Job_type` = "RECURRING"
 - **Target**: $1,000,000
 - **Status**:
   - Green: ≥ $1,000,000
@@ -95,6 +99,7 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 
 ### 6. Next Month OTB
 - **Calculation**: Sum of `Calculated_Value` for jobs where job date is in next calendar month
+- **Display**: Dynamic month name (e.g., "August OTB" instead of "Next Month OTB")
 - **Target**: $125,000
 - **Status**:
   - Green: ≥ $125,000
@@ -131,7 +136,8 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
   - Red: < 6
 
 ### 10. Reviews This Week
-- **Calculation**: Count of Google reviews where review date is within current week
+- **Calculation**: Manually set to 1 (temporary override)
+- **Normal calculation**: Count from BigQuery `google_reviews` table
 - **Target**: 2 reviews
 - **Status**:
   - Green: ≥ 2
@@ -141,180 +147,224 @@ Pink's Pulse is a real-time business analytics dashboard for Pink's Window Clean
 ## Charts and Visualizations
 
 ### 1. Converted This Week (Line Chart)
-- **X-axis**: Days of current week (Sun-Sat) with date labels (e.g., "Mon 6/30")
-- **Y-axis**: Dollar amount
+- **X-axis**: Days of current week (Sun-Sat) with date labels (e.g., "Mon 7/1")
+- **Y-axis**: Count (not dollars)
 - **Lines**:
-  - Blue line: Quotes sent on each day (by count)
-  - Green line: Quotes converted on each day (by dollar value)
-- **Calculation**: For each day, count quotes where `sent_date` = that day and sum dollars where `converted_date` = that day
+  - Orange line: Quotes sent on each day (count)
+  - Blue line: Quotes converted on each day (count)
+- **Current day**: Highlighted with pink dots
+- **Future days**: Dashed lines
+- **Data source**: Uses `currentWeekDaily` time series data
 
-### 2. Weekly CVR % (by Send Date) - Bar Chart
-- **IMPORTANT**: Different from "CVR This Week" KPI
-- **X-axis**: Days of current week (Sun-Sat)
+### 2. Weekly Conversion Rates (Bar Chart)
+- **NEW FORMAT (July 2024)**: Shows weekly CVR for last 6 weeks
+- **X-axis**: Week labels (e.g., "Week of 6/23", "Week of 6/30 (current)")
 - **Y-axis**: Conversion rate percentage
-- **Calculation for each day**:
+- **Calculation for each week**:
   ```
-  (Quotes sent on that day that eventually converted) ÷ (Total quotes sent on that day) × 100
+  (Quotes converted in that week) ÷ (Quotes sent in that week) × 100
   ```
-- **Note**: "*By send date, not conversion date" - Today's quotes typically show 0% until they convert
-- **Header**: Shows week average CVR
+- **Current week**: Highlighted in pink with "(current)" label
+- **Tooltip**: Shows conversion details (e.g., "5 converted / 20 sent")
+- **Footnote**: "*CVR = quotes converted in week ÷ quotes sent in week"
 
 ### 3. Speed to Lead Distribution (Donut Chart)
 - **Data**: Last 30 days of quotes
 - **Buckets**:
-  - 0-24 hours
-  - 1-2 days
-  - 2-3 days
-  - 3-4 days
-  - 4-5 days
-  - 5-7 days
-  - 7-14 days
-  - 14+ days
-- **Calculation**: For each quote, calculate minutes between request and send, categorize into buckets
+  - 0-24 hours (0-1440 min)
+  - 1-2 days (1440-2880 min)
+  - 2-3 days (2880-4320 min)
+  - 3-4 days (4320-5760 min)
+  - 4-5 days (5760-7200 min)
+  - 5-7 days (7200-10080 min)
+  - 7-14 days (10080-20160 min)
+  - 14+ days (20160+ min)
 
 ### 4. Salesperson Performance (This Week)
 - **Filter**: Only shows salespeople with activity this week
 - **Metrics per person**:
   - Quotes sent this week
-  - Quotes converted (sent this week that have converted)
+  - Quotes converted this week (NEW: includes all conversions this week, not just from quotes sent this week)
   - Dollar value sent
   - Dollar value converted
   - Conversion rate %
   - Average speed to lead
 - **Sort**: By converted dollar value (descending)
-- **Visualization**: Horizontal bar chart showing converted dollars
 
 ### 5. Monthly OTB (Bar Chart)
-- **X-axis**: Months (Jan-Dec 2025)
-- **Y-axis**: Dollar amount
-- **Calculation**: Sum of `Calculated_Value` for jobs in each month
-- **Includes**: All jobs (past, present, and future) for current year
+- **X-axis**: All 12 months of 2025
+- **Y-axis**: Dollar amount (formatted as $Xk)
+- **Data**: Sum of `Calculated_Value` for jobs in each month
+- **Current month**: Highlighted differently
 
-### 6. Weekly OTB (This Month) - Bar Chart
-- **Shows**: 5 weeks centered on current week
-- **X-axis**: Week labels (e.g., "Jun 9-15")
+### 6. Weekly OTB (5-Week View)
+- **Shows**: 5 weeks centered on current week (2 before, current, 2 after)
+- **X-axis**: Week date ranges
 - **Y-axis**: Dollar amount
 - **Current week**: Highlighted in purple
-- **Calculation**: Sum of job values for each Sunday-Saturday week
 
-### 7. Google Reviews
-- **Source**: BigQuery table `jobber_data.google_reviews`
-- **Display**: Average rating, total count, and scrolling recent reviews
-- **Metrics**:
-  - Average rating (1-5 stars)
-  - Total review count
-  - Recent reviews with author, rating, text, and relative time
+### 7. Quote Value Flow Waterfall (This Quarter)
+- **NEW CALCULATION (July 2024)**: Tracks all conversions in quarter
+- **Shows**:
+  - Q3 Start: $0
+  - Quotes Sent: Value of quotes sent this quarter
+  - Converted This Quarter: Value of all quotes converted this quarter (regardless of when sent)
+  - Net Position: Combined total
+- **Old calculation**: Only showed quotes both sent and converted within same quarter
 
-### 8. Converted Quotes Table
-- **Shows**: Quotes that converted this week
+### 8. Google Reviews
+- **Primary source**: Live scraping from Google Maps
+- **Fallback**: Static list including Kathryn Heekin's review (July 2, 2024)
+- **Display**: 
+  - Auto-scrolling carousel
+  - Shows author, rating, text, and time
+  - Up to 10 most recent reviews
+
+### 9. Recent Converted Quotes
+- **Shows**: All quotes that converted this week
+- **Sort**: Most recent first
 - **Columns**:
   - Date Converted
-  - Quote Number (clickable Jobber link)
+  - Quote Number (with Jobber link)
   - Client Name
   - Sales Person
-  - Job Type
   - Total Value
-- **Sort**: Most recent conversions first
-- **Jobber Links**: Decoded from base64 GraphQL IDs
-
-### 9. Top $ Not Converted Table
-- **Shows**: Highest value quotes that haven't converted
-- **Filter**: Status = "Awaiting Response"
-- **Columns**: Same as Converted Quotes table
-- **Sort**: By dollar value (descending)
-- **Limit**: Top 10
 
 ## Data Sources
 
-### Primary Tables
-1. **v_quotes**: Quote data including status, dates, and values
-2. **v_jobs**: Job scheduling and OTB calculations
-3. **google_reviews**: Customer review data
+### Primary BigQuery Views
+1. **v_quotes**
+   - quote_number (STRING)
+   - sent_date (TIMESTAMP)
+   - converted_date (TIMESTAMP)
+   - status (STRING)
+   - total_dollars (FLOAT64)
+   - salesperson (STRING)
+   - client_name (STRING)
+   - job_numbers (STRING)
 
-### Dynamic Job Conversion Date Lookup
-- **Purpose**: Get accurate conversion dates from jobs table
-- **Implementation**: Correlated subquery for scalable performance
-  ```sql
-  COALESCE(
-    (SELECT CAST(j.Date_Converted AS DATE)
-     FROM v_jobs j 
-     WHERE CAST(j.Job_Number AS STRING) = q.job_numbers 
-     LIMIT 1),
-    q.converted_date
-  )
-  ```
-- **Why**: Quote approval date ≠ Job creation date
-- **Benefits**: 
-  - No timeout issues from large JOINs
-  - Scales with data volume
-  - Only looks up job data when needed
-- **Result**: Conversion metrics reflect when jobs were created, not just quote approval
+2. **v_jobs**
+   - Job_Number (STRING)
+   - Date (DATE)
+   - Calculated_Value (FLOAT64)
+   - Job_type (STRING)
+   - SalesPerson (STRING)
 
-### Speed to Lead Calculation
+3. **v_requests**
+   - quote_number (STRING)
+   - requested_on_date (TIMESTAMP)
+   - salesperson (STRING)
+
+### Speed to Lead Query
 ```sql
-WITH speed_data AS (
-  SELECT 
-    r.quote_number,
-    r.requested_on_date,
-    q.sent_date,
-    TIMESTAMP_DIFF(TIMESTAMP(q.sent_date), TIMESTAMP(r.requested_on_date), MINUTE) as minutes_to_quote
-  FROM requests r
-  JOIN quotes q ON r.quote_number = q.quote_number
-)
+SELECT 
+  r.quote_number,
+  r.requested_on_date,
+  q.sent_date,
+  q.salesperson,
+  TIMESTAMP_DIFF(
+    TIMESTAMP(q.sent_date), 
+    TIMESTAMP(r.requested_on_date), 
+    MINUTE
+  ) as minutes_to_quote
+FROM v_requests r
+JOIN v_quotes q ON r.quote_number = q.quote_number
+WHERE q.sent_date >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 35 DAY)
 ```
+
+## Recent Changes (July 2024)
+
+### Calculation Updates
+1. **CVR This Week**: Changed from "quotes sent this week that converted" to "quotes converted this week ÷ quotes sent this week"
+2. **Weekly Conversion Rates Chart**: Changed from daily view to weekly buckets (last 6 weeks)
+3. **Waterfall Chart**: Now tracks all conversions in quarter, not just same-quarter conversions
+4. **Salesperson Performance**: Includes all conversions this week, not just from quotes sent this week
+5. **Converted This Week Chart**: Changed from dollar values to quote counts
+
+### UI Updates
+1. **Next Month OTB**: Shows actual month name (e.g., "August OTB")
+2. **Weekly Charts**: Current week labeled with "(current)"
+3. **Mobile Spacing**: Improved hamburger menu spacing
+4. **Chart Footnotes**: Updated to clarify calculations
+
+### Performance Optimizations
+1. **Removed timezone conversions**: parseDate already handles EST conversion
+2. **Error handling**: Added try-catch for time series processing
+3. **Separate data structures**: `currentWeekDaily` for daily view, `week` for weekly CVR
+
+### Data Fixes
+1. **Google Reviews**: Manually set count to 1, added Kathryn Heekin's review to fallback
+2. **Week dates**: Fixed to show current week dates instead of June dates in July
 
 ## Special Considerations
 
-### 1. CVR Calculation Differences
-- **CVR This Week (KPI)**: Overall week performance, may use last week's data as fallback
-- **Weekly CVR % Chart**: Daily breakdown by send date, shows 0% for recent days
-
-### 2. Status Handling
-- Accepts multiple status variations: "Converted", "Won", "Accepted", "Complete"
+### 1. Status Handling
+- Accepts variations: "Converted", "Won", "Accepted", "Complete"
 - Case-insensitive comparison
-- Falls back to checking if `converted_date` exists
+- Checks both status field and presence of converted_date
 
-### 3. Week Boundary Handling
-- All week calculations align to Sunday-Saturday
-- Current week is always Sunday of current week through Saturday
-- Historical data respects these same boundaries
+### 2. Week Boundary Edge Cases
+- Weeks always start Sunday 00:00:00 EST
+- Weeks always end Saturday 23:59:59 EST
+- Calculations respect daylight saving time transitions
 
-### 4. Performance Optimizations
-- Parallel query execution to avoid timeouts
-- Caching of dashboard data (15-minute TTL)
-- Minimal data transformations in frontend
+### 3. Performance Optimizations
+- Parallel query execution (quotesQuery, jobsQuery, speedToLeadQuery)
+- 9-second timeout on queries to prevent Netlify function timeout
+- Direct date comparisons without timezone conversion in loops
 
-### 5. Interactive Calculation Details
-- **Click any KPI card** to view detailed calculation information
+### 4. Interactive Features
+- **Click any KPI card**: Shows detailed calculation modal
 - **Modal displays**:
-  - SQL/logic formula (e.g., `COUNT(quotes WHERE DATE(sent_date) = TODAY_EST)`)
-  - Plain English description of how the calculation works
-  - Important notes about targets, data sources, or special behaviors
-- **Transparency**: Users can understand exactly how each metric is calculated
-- **Accessibility**: Calculation details help users trust and verify the data
+  - SQL-like formula
+  - Plain English description
+  - Important notes and context
+- **Haptic feedback**: On all mobile interactions
+
+### 5. Error Handling
+- Graceful fallbacks for missing data
+- Empty data structures returned on processing errors
+- Console logging for debugging with meaningful prefixes
 
 ### 6. Mobile Responsiveness
-- Haptic feedback on interactions
-- Adjusted layouts for mobile screens
-- Touch-optimized controls
-- Responsive charts that adapt to screen size
-- Weekly OTB chart properly displays all 5 weeks on mobile
-
-### 7. Error Handling
-- Graceful fallbacks for missing data
-- Type-safe calculations with null checks
-- User-friendly error messages
+- Touch-optimized with haptic feedback
+- Responsive font sizes (text-sm on mobile, up to text-7xl on desktop)
+- Charts adapt to screen size
+- Hamburger menu with proper spacing
 
 ## Replication Guide
 
 To replicate this dashboard:
 
-1. **Set up BigQuery** with required tables and views
-2. **Implement date handling** with EST timezone consistency
-3. **Calculate KPIs** following exact formulas above
-4. **Create visualizations** with specified groupings and calculations
-5. **Apply business logic** including CVR fallbacks and status variations
-6. **Test edge cases** like week boundaries and null values
-7. **Optimize performance** with parallel queries and caching
+1. **Set up BigQuery**
+   - Create project and enable BigQuery API
+   - Create service account with BigQuery Data Viewer and Job User roles
+   - Create `jobber_data` dataset
+   - Create views: v_quotes, v_jobs, v_requests
 
-Each calculation has been designed to provide meaningful insights for the window cleaning business, with special attention to conversion tracking and revenue forecasting.
+2. **Configure Environment**
+   ```env
+   BIGQUERY_PROJECT_ID=your-project-id
+   BIGQUERY_DATASET=jobber_data
+   GOOGLE_APPLICATION_CREDENTIALS_JSON={"type":"service_account",...}
+   VITE_DASHBOARD_PASSWORD=your-password
+   ```
+
+3. **Deploy to Netlify**
+   - Connect GitHub repository
+   - Set environment variables
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+
+4. **Test Calculations**
+   - Verify timezone handling (EST/EDT)
+   - Test week boundaries
+   - Check quarter transitions
+   - Validate CVR calculations
+
+5. **Monitor Performance**
+   - Check Netlify function logs for timeouts
+   - Monitor BigQuery query performance
+   - Verify data freshness
+
+Each calculation has been carefully designed and tested to provide accurate insights for the window cleaning business operations.
