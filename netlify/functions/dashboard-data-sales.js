@@ -1666,6 +1666,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   let quarterValuePending = 0;
   
   // Calculate status of quotes sent this quarter
+  let quarterCountSentAndConverted = 0;
+  let quarterCountSentAndLost = 0;
+  let quarterCountSentAndPending = 0;
+  
   quotesData.forEach(quote => {
     const sentDate = parseDate(quote.sent_date);
     const convertedDate = parseDate(quote.converted_date);
@@ -1676,13 +1680,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       if (convertedDate || statusLower === 'converted' || statusLower === 'won' || 
           statusLower === 'accepted' || statusLower === 'complete') {
         quarterValueSentAndConverted += value;
+        quarterCountSentAndConverted++;
       } else if (statusLower === 'archived' || statusLower === 'lost' || 
                  statusLower === 'rejected' || statusLower === 'declined' || 
                  statusLower === 'dead' || statusLower === 'cancelled') {
         quarterValueLostOrArchived += value;
+        quarterCountSentAndLost++;
       } else {
         // Status is likely 'sent', 'pending', 'draft', or similar
         quarterValuePending += value;
+        quarterCountSentAndPending++;
       }
     }
   });
@@ -1698,38 +1705,59 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     total: quarterValueSentAndConverted + quarterValueLostOrArchived + actualPending
   });
   
-  // Build waterfall showing quote pipeline for this quarter
-  let waterfallData = [];
+  // Clear waterfall showing quote flow
+  const waterfallData = [];
   
   if (quarterValueSent > 0) {
-    // Normal waterfall when we have sent quotes this quarter
-    waterfallData = [
+    const activeQuotes = quarterValueSent - quarterValueLostOrArchived;
+    
+    waterfallData.push(
       { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
-      { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent },
-      { label: 'Converted', value: -quarterValueSentAndConverted, cumulative: quarterValueSent - quarterValueSentAndConverted },
-      { label: 'Lost/Archived', value: -quarterValueLostOrArchived, cumulative: actualPending },
-      { label: 'Still Pending', value: 0, cumulative: actualPending }
-    ];
+      { label: 'Quotes Sent', value: quarterValueSent, cumulative: quarterValueSent }
+    );
+    
+    // Show losses as negative (red)
+    if (quarterValueLostOrArchived > 0) {
+      waterfallData.push({
+        label: 'Lost/Archived',
+        value: -quarterValueLostOrArchived,
+        cumulative: activeQuotes
+      });
+    }
+    
+    // Show active quotes (converted + pending)
+    waterfallData.push({
+      label: `Active (${quarterCountSentAndConverted} converted, ${quarterQuotesSent - quarterCountSentAndConverted - quarterCountSentAndLost} pending)`,
+      value: 0,
+      cumulative: activeQuotes
+    });
   } else {
-    // Show conversions from previous quarters if no new quotes sent this quarter
-    waterfallData = [
-      { label: `${quarterLabel} Start`, value: 0, cumulative: 0 },
-      { label: 'No Quotes Sent Yet', value: 0.01, cumulative: 0.01 }, // Small value to show bar
-      { label: 'Conversions from Prior Quarters', value: quarterValueConverted, cumulative: quarterValueConverted }
-    ];
+    // No quotes sent yet
+    waterfallData.push(
+      { label: 'No Quotes Sent This Quarter', value: 0.01, cumulative: 0.01 }
+    );
   }
+  
+  // Final validation
+  const checkSum = quarterValueSentAndConverted + quarterValueLostOrArchived + actualPending;
+  const difference = Math.abs(checkSum - quarterValueSent);
   
   console.log('[Quote Value Flow Waterfall]:', {
     quarter: quarterLabel,
-    quotesSent: quarterQuotesSent,
-    quotesConverted: quarterQuotesConverted,
-    valueSent: quarterValueSent,
-    valueConverted: quarterValueConverted,
-    valueeSentAndConverted: quarterValueSentAndConverted,
-    valueLostOrArchived: quarterValueLostOrArchived,
-    valuePending: actualPending,
+    breakdown: {
+      sent: quarterValueSent,
+      converted: quarterValueSentAndConverted,
+      lost: quarterValueLostOrArchived,
+      pending: actualPending,
+      checkSum: checkSum,
+      difference: difference
+    },
+    counts: {
+      sent: quarterQuotesSent,
+      converted: quarterQuotesConverted
+    },
     waterfallData: waterfallData,
-    conversionRate: quarterQuotesSent > 0 ? ((quarterQuotesConverted / quarterQuotesSent) * 100).toFixed(1) + '%' : '0%'
+    isValid: difference < 1 // Allow for rounding errors
   });
   
   // Collect debug info for browser console
