@@ -1469,7 +1469,7 @@ const SalesKPIDashboard: React.FC = () => {
           {/* Top bar */}
           <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
             <div className="flex items-center gap-4">
-              <div className="lg:hidden w-8"></div>
+              <div className="lg:hidden w-12"></div>
               <div>
                 <h1 
                   onClick={() => {
@@ -1490,7 +1490,7 @@ const SalesKPIDashboard: React.FC = () => {
                     lineHeight: "1",
                     cursor: "pointer"
                   } as React.CSSProperties}
-                  className="md:text-4xl lg:text-6xl xl:text-7xl hover:opacity-90 transition-opacity"
+                  className="ml-2 sm:ml-0 md:text-4xl lg:text-6xl xl:text-7xl hover:opacity-90 transition-opacity"
                 >
                   PINK'S PULSE - HUDSON VALLEY KPI REPORT
                 </h1>
