@@ -1748,12 +1748,12 @@ function processCurrentWeekDaily(quotesData, referenceDate, parseDate, estToday)
       const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
       if (!sentDate) return false;
       
-      // Convert the sent date to EST for comparison
-      const sentDateEST = new Date(sentDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      sentDateEST.setHours(0, 0, 0, 0);
+      // Reset hours for comparison
+      const sentDateCompare = new Date(sentDate);
+      sentDateCompare.setHours(0, 0, 0, 0);
       
       // Check if the sent date falls on this specific day
-      return sentDateEST.getTime() === date.getTime();
+      return sentDateCompare.getTime() === date.getTime();
     });
     
     // Count quotes converted on this day
@@ -1767,12 +1767,12 @@ function processCurrentWeekDaily(quotesData, referenceDate, parseDate, estToday)
       const convertedDate = parseDate(q.converted_date);
       if (!convertedDate) return false;
       
-      // Convert the converted date to EST for comparison
-      const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      convertedDateEST.setHours(0, 0, 0, 0);
+      // Reset hours for comparison
+      const convertedDateCompare = new Date(convertedDate);
+      convertedDateCompare.setHours(0, 0, 0, 0);
       
       // Check if the converted date falls on this specific day
-      return convertedDateEST.getTime() === date.getTime();
+      return convertedDateCompare.getTime() === date.getTime();
     });
     
     const sent = dayQuotes.length;
@@ -1835,11 +1835,8 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
       if (!sentDate) return false;
       
-      // Convert the sent date to EST for comparison
-      const sentDateEST = new Date(sentDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      
-      // Check if the sent date falls within this week
-      return sentDateEST >= weekStart && sentDateEST <= weekEnd;
+      // Direct comparison without timezone conversion (dates are already in EST from parseDate)
+      return sentDate >= weekStart && sentDate <= weekEnd;
     });
     
     // Get quotes converted during this week
@@ -1853,11 +1850,8 @@ function processWeekData(quotesData, referenceDate, parseDate, estToday) {
       const convertedDate = parseDate(q.converted_date);
       if (!convertedDate) return false;
       
-      // Convert the converted date to EST for comparison
-      const convertedDateEST = new Date(convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      
-      // Check if the converted date falls within this week
-      return convertedDateEST >= weekStart && convertedDateEST <= weekEnd;
+      // Direct comparison without timezone conversion (dates are already in EST from parseDate)
+      return convertedDate >= weekStart && convertedDate <= weekEnd;
     });
     
     // Calculate weekly metrics
