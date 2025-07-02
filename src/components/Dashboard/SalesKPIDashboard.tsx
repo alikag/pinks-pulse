@@ -492,9 +492,9 @@ const SalesKPIDashboard: React.FC = () => {
         }
       case 'cvr-week':
         return {
-          formula: 'IF no conversions: (COUNT(converted) FROM v_quotes WHERE sent_date = LAST_WEEK) ÷ (COUNT(*) FROM v_quotes WHERE sent_date = LAST_WEEK) × 100, ELSE: Normal calculation',
-          description: 'Smart conversion rate using jobber_data.v_quotes. Falls back to last week\'s rate when current week has no conversions yet.',
-          notes: 'Prevents showing 0% early in the week. Tracks quotes by SEND date, not conversion date.'
+          formula: '(COUNT(*) FROM v_quotes WHERE converted_date >= SUNDAY_START AND converted_date < NEXT_SUNDAY) ÷ (COUNT(*) FROM v_quotes WHERE sent_date >= SUNDAY_START AND sent_date < NEXT_SUNDAY) × 100',
+          description: 'Conversion rate calculated as quotes converted this week divided by quotes sent this week.',
+          notes: 'Compares conversions happening this week (regardless of when sent) against quotes sent this week. This shows current week performance.'
         }
       case 'recurring-2026':
         return {
