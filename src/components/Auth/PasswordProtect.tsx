@@ -127,6 +127,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full pl-12 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-white placeholder-gray-400 transition-all"
+                  autoComplete="new-password"
                   autoFocus
                   disabled={isLoading}
                 />

@@ -1673,7 +1673,6 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesConverted: quarterQuotesConverted,
     valueSent: quarterValueSent,
     valueConverted: quarterValueConverted,
-    valueNotConverted: quarterValueNotConverted,
     conversionRate: quarterQuotesSent > 0 ? ((quarterQuotesConverted / quarterQuotesSent) * 100).toFixed(1) + '%' : '0%'
   });
   
