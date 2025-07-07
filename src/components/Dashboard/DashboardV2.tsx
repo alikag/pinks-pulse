@@ -1461,7 +1461,8 @@ const DashboardV2: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 flex justify-center">
+            {/* Right side actions */}
+            <div className="flex items-center gap-3">
               {/* Salesperson Filter */}
               <div className="relative filter-dropdown">
                 <button
@@ -1485,7 +1486,7 @@ const DashboardV2: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full mt-2 right-0 w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-50"
+                      className="absolute top-full mt-2 right-0 w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-[100]"
                     >
                       <div className="p-2 border-b border-white/10">
                         <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
@@ -1536,10 +1537,9 @@ const DashboardV2: React.FC = () => {
                   )}
                 </AnimatePresence>
               </div>
-            </div>
-            
-            {/* Refresh Button */}
-            <button
+
+              {/* Refresh Button */}
+              <button
               onClick={() => {
                 haptics.medium();
                 refetch();
@@ -1559,6 +1559,7 @@ const DashboardV2: React.FC = () => {
                 {loading ? 'Refreshing...' : 'Refresh'}
               </span>
             </button>
+            </div>
           </header>
 
           {/* Main Content */}
