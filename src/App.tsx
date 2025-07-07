@@ -1,5 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import Layout from './components/Layout'
 import SalesKPIDashboard from './components/Dashboard/SalesKPIDashboard'
+import DashboardV2 from './components/Dashboard/DashboardV2'
 import PasswordProtect from './components/Auth/PasswordProtect'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -16,9 +19,17 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <PasswordProtect>
-          <SalesKPIDashboard />
-        </PasswordProtect>
+        <BrowserRouter>
+          <PasswordProtect>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<SalesKPIDashboard />} />
+                <Route path="v2" element={<DashboardV2 />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </PasswordProtect>
+        </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   )

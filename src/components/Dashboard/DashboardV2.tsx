@@ -52,7 +52,7 @@ interface GoogleReview {
   time: string    // Relative time (e.g., "2 days ago")
 }
 
-const SalesKPIDashboard: React.FC = () => {
+const DashboardV2: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
   const { data, loading, error, refetch } = useDashboardData()
@@ -132,9 +132,9 @@ const SalesKPIDashboard: React.FC = () => {
 
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
-    console.log('SalesKPIDashboard - Full data object:', data);
-    console.log('SalesKPIDashboard - Data keys:', data ? Object.keys(data) : 'No data');
-    console.log('SalesKPIDashboard - Has kpiMetrics?', data?.kpiMetrics);
+    console.log('DashboardV2 - Full data object:', data);
+    console.log('DashboardV2 - Data keys:', data ? Object.keys(data) : 'No data');
+    console.log('DashboardV2 - Has kpiMetrics?', data?.kpiMetrics);
     
     if (loading || !data || !data.kpiMetrics) {
       console.log('Data not ready yet');
@@ -2157,4 +2157,4 @@ const SalesKPIDashboard: React.FC = () => {
   )
 }
 
-export default SalesKPIDashboard
+export default DashboardV2
