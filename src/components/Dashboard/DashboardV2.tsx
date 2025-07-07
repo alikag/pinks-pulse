@@ -15,6 +15,7 @@
  */
 
 import React, { useEffect, useRef, useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { Trophy, Clock, AlertCircle, CheckCircle, RefreshCw, TrendingUp, XCircle, Filter, ChevronDown, User } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
@@ -1508,16 +1509,17 @@ const DashboardV2: React.FC = () => {
                 </button>
 
                 {/* Dropdown */}
-                <AnimatePresence>
-                  {isFilterOpen && (
+                {isFilterOpen && createPortal(
+                  <AnimatePresence>
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="fixed w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-[9999]"
+                      className="fixed w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
                       style={{
                         top: `${dropdownPosition.top}px`,
-                        right: `${dropdownPosition.right}px`
+                        right: `${dropdownPosition.right}px`,
+                        zIndex: 999999
                       }}
                     >
                       <div className="p-2 border-b border-white/10">
@@ -1566,8 +1568,9 @@ const DashboardV2: React.FC = () => {
                         ))}
                       </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  </AnimatePresence>,
+                  document.body
+                )}
               </div>
 
               {/* Refresh Button */}
