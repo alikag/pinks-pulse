@@ -1390,7 +1390,7 @@ const SalesKPIDashboard: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white font-inter flex flex-col overflow-hidden">
+    <div className="h-full w-full bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white font-inter flex flex-col overflow-hidden">
 
           {/* Top bar */}
           <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
@@ -1448,7 +1448,7 @@ const SalesKPIDashboard: React.FC = () => {
           </header>
 
           {/* Main Content */}
-          <section ref={mainContentRef} className="flex-1 overflow-y-auto p-4 pt-6 pb-20 lg:p-6 lg:pb-6 space-y-6">
+          <section ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-6 pb-20 lg:p-6 lg:pb-6 space-y-6">
             {/* First Row KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {kpis.map((kpi) => (

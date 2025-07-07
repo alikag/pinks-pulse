@@ -10,8 +10,8 @@ export default function Layout() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="flex h-full">
+    <div className="h-screen bg-gray-950 overflow-hidden">
+      <div className="flex h-screen">
         {/* Mobile Menu Button */}
         <button 
           onClick={() => {
@@ -24,7 +24,7 @@ export default function Layout() {
         </button>
 
         {/* Sidebar */}
-        <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6`}>
+        <aside className={`fixed lg:relative inset-y-0 left-0 z-40 w-64 h-full transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col border-r border-white/10 bg-gray-900/50 backdrop-blur-lg p-6 flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/logo.png" alt="Pink's Logo" className="h-12 w-12 rounded-lg object-cover" />
@@ -59,8 +59,8 @@ export default function Layout() {
           <nav className="flex flex-col gap-1 text-sm flex-1 mt-6">
             <Link 
               to="/" 
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg relative overflow-hidden group ${
-                isActive('/') ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg relative overflow-hidden group text-gray-300 hover:text-white ${
+                isActive('/') ? 'bg-white/10 text-white' : 'hover:bg-white/5'
               }`}
             >
               <TrendingUp className="h-4 w-4" />
@@ -70,8 +70,8 @@ export default function Layout() {
             
             <Link 
               to="/v2" 
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg relative overflow-hidden group ${
-                isActive('/v2') ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg relative overflow-hidden group text-gray-300 hover:text-white ${
+                isActive('/v2') ? 'bg-white/10 text-white' : 'hover:bg-white/5'
               }`}
             >
               <BarChart2 className="h-4 w-4" />
@@ -121,7 +121,7 @@ export default function Layout() {
         )}
 
         {/* Main content */}
-        <main className="flex-1 lg:ml-0">
+        <main className="flex-1 lg:ml-0 min-w-0 overflow-hidden">
           <Outlet />
         </main>
       </div>
