@@ -57,8 +57,10 @@ const DashboardV2: React.FC = () => {
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
   const { data, loading, error, refetch } = useDashboardData()
   const mainContentRef = useRef<HTMLElement>(null)
+  const filterButtonRef = useRef<HTMLButtonElement>(null)
   
   // Debug converted quotes and haptic feedback for conversions
   useEffect(() => {
@@ -484,9 +486,24 @@ const DashboardV2: React.FC = () => {
       }
     }
 
+    const handleResize = () => {
+      // Update position on resize
+      if (filterButtonRef.current && isFilterOpen) {
+        const rect = filterButtonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 8,
+          right: window.innerWidth - rect.right
+        });
+      }
+    }
+
     if (isFilterOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      window.addEventListener('resize', handleResize)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        window.removeEventListener('resize', handleResize)
+      }
     }
   }, [isFilterOpen])
 
@@ -1432,7 +1449,7 @@ const DashboardV2: React.FC = () => {
     <div className="h-full w-full bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white font-inter flex flex-col overflow-hidden">
 
           {/* Top bar */}
-          <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg relative z-50">
+          <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
             <div className="flex items-center gap-4">
               <div>
                 <h1 
@@ -1464,10 +1481,21 @@ const DashboardV2: React.FC = () => {
             {/* Right side actions */}
             <div className="flex items-center gap-3">
               {/* Salesperson Filter */}
-              <div className="relative filter-dropdown z-[9999]">
+              <div className="relative filter-dropdown">
                 <button
+                  ref={filterButtonRef}
                   onClick={() => {
                     haptics.light();
+                    
+                    // Calculate dropdown position
+                    if (filterButtonRef.current && !isFilterOpen) {
+                      const rect = filterButtonRef.current.getBoundingClientRect();
+                      setDropdownPosition({
+                        top: rect.bottom + 8,
+                        right: window.innerWidth - rect.right
+                      });
+                    }
+                    
                     setIsFilterOpen(!isFilterOpen);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-900/50 backdrop-blur-lg border border-white/10 rounded-lg hover:bg-gray-800/50 transition-all group"
@@ -1486,7 +1514,11 @@ const DashboardV2: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full mt-2 right-0 w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-[9999]"
+                      className="fixed w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-[9999]"
+                      style={{
+                        top: `${dropdownPosition.top}px`,
+                        right: `${dropdownPosition.right}px`
+                      }}
                     >
                       <div className="p-2 border-b border-white/10">
                         <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
