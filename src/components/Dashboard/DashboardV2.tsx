@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { Trophy, Clock, AlertCircle, CheckCircle, RefreshCw, TrendingUp, XCircle } from 'lucide-react'
+import { Trophy, Clock, AlertCircle, CheckCircle, RefreshCw, TrendingUp, XCircle, Filter, ChevronDown, User } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -55,6 +55,8 @@ interface GoogleReview {
 const DashboardV2: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
+  const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const { data, loading, error, refetch } = useDashboardData()
   const mainContentRef = useRef<HTMLElement>(null)
   
@@ -268,6 +270,28 @@ const DashboardV2: React.FC = () => {
     ]
   }, [data, loading])
 
+  // Get unique salespeople list
+  const salespeople = useMemo(() => {
+    if (!data?.salespersons) return []
+    const uniqueNames = [...new Set(data.salespersons.map(sp => sp.name))].sort()
+    return uniqueNames
+  }, [data])
+
+  // Filter data based on selected salesperson
+  const filteredData = useMemo(() => {
+    if (!data || selectedSalesperson === 'all') return data
+    
+    // Create filtered data object
+    return {
+      ...data,
+      salespersons: data.salespersons.filter(sp => sp.name === selectedSalesperson),
+      salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => sp.name === selectedSalesperson),
+      recentConvertedQuotes: data.recentConvertedQuotes?.filter(quote => 
+        quote.salesPerson === selectedSalesperson
+      )
+    }
+  }, [data, selectedSalesperson])
+
   // Fetch Google Reviews function
   const fetchReviews = async () => {
       try {
@@ -450,6 +474,21 @@ const DashboardV2: React.FC = () => {
   useEffect(() => {
     fetchReviews()
   }, [])
+
+  // Click outside handler to close filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.filter-dropdown') && !target.closest('button')) {
+        setIsFilterOpen(false)
+      }
+    }
+
+    if (isFilterOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isFilterOpen])
 
   // Helper functions
   const formatValue = (value: number, format: KPI['format']) => {
@@ -663,7 +702,7 @@ const DashboardV2: React.FC = () => {
     })
 
     // Revenue Trend Chart
-    if (trendChartRef.current && !loading && data?.timeSeries) {
+    if (trendChartRef.current && !loading && filteredData?.timeSeries) {
       const ctx = trendChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 200)
@@ -671,7 +710,7 @@ const DashboardV2: React.FC = () => {
         gradient.addColorStop(1, 'rgba(14, 165, 233, 0)')
         
         // Use currentWeekDaily for the "Converted This Week" chart
-        const chartData = data.timeSeries.currentWeekDaily || data.timeSeries.week
+        const chartData = filteredData.timeSeries.currentWeekDaily || filteredData.timeSeries.week
         console.log('[Converted This Week Chart] Chart data:', chartData)
         
         // Get current day index (0 = Sunday, 6 = Saturday)
@@ -766,10 +805,10 @@ const DashboardV2: React.FC = () => {
     }
 
     // Weekly CVR Chart
-    if (conversionChartRef.current && !loading && data?.timeSeries) {
+    if (conversionChartRef.current && !loading && filteredData?.timeSeries) {
       const ctx = conversionChartRef.current.getContext('2d')
       if (ctx) {
-        const chartData = data.timeSeries.week
+        const chartData = filteredData.timeSeries.week
         
         // Debug logging for missing bars
         console.log('[Weekly CVR Chart Debug]', {
@@ -1132,16 +1171,16 @@ const DashboardV2: React.FC = () => {
     }
     
     // Cohort Analysis Chart
-    if (cohortRef.current && !loading && data && data?.salespersonsThisWeek && data.salespersonsThisWeek.length > 0) {
+    if (cohortRef.current && !loading && filteredData && filteredData?.salespersonsThisWeek && filteredData.salespersonsThisWeek.length > 0) {
       const ctx = cohortRef.current.getContext('2d')
       if (ctx) {
         // Use this week's salesperson data
-        const salespersonData = data.salespersonsThisWeek
+        const salespersonData = filteredData.salespersonsThisWeek
         
         console.log('Salesperson Performance Data:', {
-          hasData: !!data,
-          salespersonsThisWeek: data?.salespersonsThisWeek,
-          salespersons: data?.salespersons,
+          hasData: !!filteredData,
+          salespersonsThisWeek: filteredData?.salespersonsThisWeek,
+          salespersons: filteredData?.salespersons,
           salespersonDataLength: salespersonData.length
         })
         
@@ -1370,7 +1409,7 @@ const DashboardV2: React.FC = () => {
       cohortInstance.current?.destroy()
       Object.values(kpiSparklineInstances.current).forEach(chart => chart?.destroy())
     }
-  }, [data, loading, kpis])
+  }, [filteredData, loading, kpis, selectedSalesperson])
 
   if (loading) {
     return <RainbowLoadingWave />
@@ -1422,7 +1461,82 @@ const DashboardV2: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1"></div>
+            <div className="flex-1 flex justify-center">
+              {/* Salesperson Filter */}
+              <div className="relative filter-dropdown">
+                <button
+                  onClick={() => {
+                    haptics.light();
+                    setIsFilterOpen(!isFilterOpen);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900/50 backdrop-blur-lg border border-white/10 rounded-lg hover:bg-gray-800/50 transition-all group"
+                >
+                  <User className="h-4 w-4 text-pink-400" />
+                  <span className="text-sm font-medium">
+                    {selectedSalesperson === 'all' ? 'All Salespeople' : selectedSalesperson}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown */}
+                <AnimatePresence>
+                  {isFilterOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full mt-2 right-0 w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-50"
+                    >
+                      <div className="p-2 border-b border-white/10">
+                        <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
+                          <Filter className="h-3 w-3" />
+                          <span>Filter by Salesperson</span>
+                        </div>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        <button
+                          onClick={() => {
+                            haptics.light();
+                            setSelectedSalesperson('all');
+                            setIsFilterOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                            selectedSalesperson === 'all' 
+                              ? 'bg-pink-500/20 text-pink-400' 
+                              : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full ${
+                            selectedSalesperson === 'all' ? 'bg-pink-400' : 'bg-transparent'
+                          }`} />
+                          All Salespeople
+                        </button>
+                        {salespeople.map((person) => (
+                          <button
+                            key={person}
+                            onClick={() => {
+                              haptics.light();
+                              setSelectedSalesperson(person);
+                              setIsFilterOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                              selectedSalesperson === person 
+                                ? 'bg-pink-500/20 text-pink-400' 
+                                : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                            }`}
+                          >
+                            <div className={`w-1.5 h-1.5 rounded-full ${
+                              selectedSalesperson === person ? 'bg-pink-400' : 'bg-transparent'
+                            }`} />
+                            {person}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
             
             {/* Refresh Button */}
             <button
@@ -1644,7 +1758,7 @@ const DashboardV2: React.FC = () => {
               {/* Salesperson Performance */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <h2 className="font-medium mb-4">Salesperson Performance (This Week)</h2>
-                {data?.salespersonsThisWeek && data.salespersonsThisWeek.length > 0 ? (
+                {filteredData?.salespersonsThisWeek && filteredData.salespersonsThisWeek.length > 0 ? (
                   <div className="h-48">
                     <canvas ref={cohortRef}></canvas>
                   </div>
@@ -1984,7 +2098,7 @@ const DashboardV2: React.FC = () => {
                 <div className="text-center py-12">
                   <p className="text-gray-400">Loading...</p>
                 </div>
-              ) : (!data || !data.recentConvertedQuotes || data.recentConvertedQuotes.length === 0) ? (
+              ) : (!filteredData || !filteredData.recentConvertedQuotes || filteredData.recentConvertedQuotes.length === 0) ? (
                 <div className="text-center py-12">
                   <p className="text-gray-400">No quotes converted this week</p>
                   <p className="text-xs text-gray-500 mt-2">
@@ -2011,7 +2125,7 @@ const DashboardV2: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {data.recentConvertedQuotes.map((quote: any, index) => (
+                      {filteredData.recentConvertedQuotes.map((quote: any, index) => (
                         <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
                           <td className="py-3 pr-4">{quote.dateConverted}</td>
                           <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
