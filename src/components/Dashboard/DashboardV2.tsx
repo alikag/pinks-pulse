@@ -1432,7 +1432,7 @@ const DashboardV2: React.FC = () => {
     <div className="h-full w-full bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white font-inter flex flex-col overflow-hidden">
 
           {/* Top bar */}
-          <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
+          <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg relative z-50">
             <div className="flex items-center gap-4">
               <div>
                 <h1 
@@ -1464,7 +1464,7 @@ const DashboardV2: React.FC = () => {
             {/* Right side actions */}
             <div className="flex items-center gap-3">
               {/* Salesperson Filter */}
-              <div className="relative filter-dropdown">
+              <div className="relative filter-dropdown z-[9999]">
                 <button
                   onClick={() => {
                     haptics.light();
@@ -1486,7 +1486,7 @@ const DashboardV2: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full mt-2 right-0 w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-[100]"
+                      className="absolute top-full mt-2 right-0 w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden z-[9999]"
                     >
                       <div className="p-2 border-b border-white/10">
                         <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
