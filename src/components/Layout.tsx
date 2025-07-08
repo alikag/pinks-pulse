@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
-import { Menu, TrendingUp, XCircle, LogOut, BarChart2 } from 'lucide-react'
+import { Menu, TrendingUp, XCircle, LogOut, BarChart2, Users } from 'lucide-react'
 import { haptics } from '../utils/haptics'
 
 export default function Layout() {
@@ -76,6 +76,17 @@ export default function Layout() {
             >
               <BarChart2 className="h-4 w-4" />
               Dashboard V2
+              <div className="absolute inset-0 bg-gradient-to-r from-[#F9ABAC]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </Link>
+            
+            <Link 
+              to="/sales-team" 
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg relative overflow-hidden group text-gray-300 hover:text-white ${
+                isActive('/sales-team') ? 'bg-white/10 text-white' : 'hover:bg-white/5'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Sales Team Performance
               <div className="absolute inset-0 bg-gradient-to-r from-[#F9ABAC]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </Link>
           </nav>

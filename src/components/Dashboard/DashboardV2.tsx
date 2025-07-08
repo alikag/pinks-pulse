@@ -114,7 +114,6 @@ const DashboardV2: React.FC = () => {
   const weeklyOTBChartRef = useRef<HTMLCanvasElement>(null)
   const sparklineRef = useRef<HTMLCanvasElement>(null)
   const heatmapRef = useRef<HTMLCanvasElement>(null)
-  const waterfallRef = useRef<HTMLCanvasElement>(null)
   
   // Sparkline refs for KPI cards
   const kpiSparklineRefs = useRef<{ [key: string]: HTMLCanvasElement | null }>({})
@@ -126,7 +125,6 @@ const DashboardV2: React.FC = () => {
   const weeklyOTBChartInstance = useRef<Chart | null>(null)
   const sparklineInstance = useRef<Chart | null>(null)
   const heatmapInstance = useRef<Chart | null>(null)
-  const waterfallInstance = useRef<Chart | null>(null)
   const kpiSparklineInstances = useRef<{ [key: string]: Chart | null }>({})
 
   // Sparkline data removed - real data needed from backend
@@ -1257,7 +1255,6 @@ const DashboardV2: React.FC = () => {
       if (weeklyOTBChartInstance.current) weeklyOTBChartInstance.current.destroy()
       if (sparklineInstance.current) sparklineInstance.current.destroy()
       if (heatmapInstance.current) heatmapInstance.current.destroy()
-      if (waterfallInstance.current) waterfallInstance.current.destroy()
       
       // Destroy KPI sparklines
       Object.values(kpiSparklineInstances.current).forEach(chart => {
@@ -2037,71 +2034,6 @@ const DashboardV2: React.FC = () => {
     }
     
     
-    
-    // Quote Value Flow Waterfall Chart
-    if (waterfallRef.current && !loading && data && data.waterfallData) {
-      const ctx = waterfallRef.current.getContext('2d')
-      if (ctx) {
-        // Use actual waterfall data from backend
-        // Expected format: 
-        // [
-        //   { label: 'Q1 Start', value: 0, cumulative: 0 },
-        //   { label: 'Quotes Sent', value: 250000, cumulative: 250000 },
-        //   { label: 'Not Converted', value: -150000, cumulative: 100000 },
-        //   { label: 'Converted', value: 100000, cumulative: 100000 },
-        //   { label: 'Adjustments', value: -5000, cumulative: 95000 },
-        //   { label: 'Q1 Final', value: 95000, cumulative: 95000 }
-        // ]
-        const waterfallData = data.waterfallData
-        
-        waterfallInstance.current = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: waterfallData.map((d: any) => d.label),
-            datasets: [{
-              label: 'Quote Value Flow',
-              data: waterfallData.map((d: any) => Math.abs(d.value)),
-              backgroundColor: waterfallData.map((d: any) => 
-                d.value > 0 ? CHART_COLORS.revenue.gradient : 'rgba(239, 68, 68, 0.8)'
-              ),
-              borderWidth: 0,
-              borderRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 1,
-                callbacks: {
-                  label: (context) => {
-                    const value = waterfallData[context.dataIndex].value
-                    return `${value > 0 ? '+' : ''}$${value.toLocaleString()}`
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                ticks: {
-                  callback: (value) => `$${Number(value) / 1000}k`
-                }
-              },
-              x: {
-                grid: { display: false }
-              }
-            }
-          }
-        })
-      }
-    }
-    
     // Time of Day Heatmap
     if (heatmapRef.current && !loading && data) {
       const ctx = heatmapRef.current.getContext('2d')
@@ -2192,7 +2124,6 @@ const DashboardV2: React.FC = () => {
       weeklyOTBChartInstance.current?.destroy()
       sparklineInstance.current?.destroy()
       heatmapInstance.current?.destroy()
-      waterfallInstance.current?.destroy()
       Object.values(kpiSparklineInstances.current).forEach(chart => chart?.destroy())
     }
   }, [filteredData, loading, kpis, selectedSalesperson])
@@ -2890,22 +2821,6 @@ const DashboardV2: React.FC = () => {
               )}
             </div>
 
-            {/* Quote Value Flow Waterfall Chart */}
-            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
-              <h2 className="font-medium mb-4">Quote Value Flow Waterfall - This Quarter</h2>
-              <div className="h-64">
-                {!data?.waterfallData ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <p className="text-gray-400">No quote flow data available</p>
-                      <p className="text-xs text-gray-500 mt-2">Data will be available when quarterly quote values are processed</p>
-                    </div>
-                  </div>
-                ) : (
-                  <canvas ref={waterfallRef}></canvas>
-                )}
-              </div>
-            </div>
 
             {/* Salesperson Leaderboard Enhanced */}
             {data?.salespersons && data.salespersons.length > 0 && (
