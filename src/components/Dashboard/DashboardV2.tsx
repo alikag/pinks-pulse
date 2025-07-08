@@ -189,6 +189,143 @@ const DashboardV2: React.FC = () => {
     }
   }
 
+  // Helper function to calculate filtered time series data for charts
+  const calculateFilteredTimeSeries = (quotes: any[], salesperson: string) => {
+    if (salesperson === 'all' || !quotes) return null;
+    
+    const filteredQuotes = quotes.filter(q => q.salesperson === salesperson);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    
+    // Parse date helper
+    const parseDate = (dateStr: string) => {
+      if (!dateStr) return null;
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? null : date;
+    };
+    
+    // Current week daily data
+    const currentWeekDaily = {
+      labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      quotesConverted: [0, 0, 0, 0, 0, 0, 0],
+      conversionRevenue: [0, 0, 0, 0, 0, 0, 0]
+    };
+    
+    // Process quotes for current week
+    filteredQuotes.forEach(quote => {
+      const convertedDate = parseDate(quote.converted_date);
+      if (convertedDate && convertedDate >= weekStart) {
+        const dayIndex = convertedDate.getDay();
+        if (dayIndex >= 0 && dayIndex < 7) {
+          currentWeekDaily.quotesConverted[dayIndex]++;
+          currentWeekDaily.conversionRevenue[dayIndex] += quote.total_dollars || 0;
+        }
+      }
+    });
+    
+    // Weekly conversion rate trend (last 8 weeks)
+    const weeklyTrend = {
+      labels: [] as string[],
+      revenue: [] as number[],
+      conversionRate: [] as number[]
+    };
+    
+    for (let i = 7; i >= 0; i--) {
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() - (i * 7));
+      const weekStartDate = new Date(weekEnd);
+      weekStartDate.setDate(weekEnd.getDate() - 7);
+      
+      let weekQuotesSent = 0;
+      let weekQuotesConverted = 0;
+      let weekRevenue = 0;
+      
+      filteredQuotes.forEach(quote => {
+        const sentDate = parseDate(quote.sent_date);
+        const convertedDate = parseDate(quote.converted_date);
+        
+        if (sentDate && sentDate >= weekStartDate && sentDate < weekEnd) {
+          weekQuotesSent++;
+          if (convertedDate) {
+            weekQuotesConverted++;
+            weekRevenue += quote.total_dollars || 0;
+          }
+        }
+      });
+      
+      const weekLabel = `Week ${8 - i}`;
+      weeklyTrend.labels.push(weekLabel);
+      weeklyTrend.revenue.push(weekRevenue);
+      weeklyTrend.conversionRate.push(weekQuotesSent > 0 ? (weekQuotesConverted / weekQuotesSent) * 100 : 0);
+    }
+    
+    return {
+      currentWeekDaily,
+      weeklyTrend
+    };
+  };
+
+  // Helper function to calculate filtered OTB data
+  const calculateFilteredOTBData = (jobs: any[], salesperson: string) => {
+    if (salesperson === 'all' || !jobs) return null;
+    
+    const filteredJobs = jobs.filter(j => j.salesperson === salesperson);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Parse date helper
+    const parseDate = (dateStr: string) => {
+      if (!dateStr) return null;
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? null : date;
+    };
+    
+    // Monthly OTB
+    const monthlyOTB = {} as Record<number, number>;
+    for (let i = 1; i <= 12; i++) {
+      monthlyOTB[i] = 0;
+    }
+    
+    // Weekly OTB (5 weeks)
+    const weeklyOTB = {
+      labels: [] as string[],
+      values: [] as number[]
+    };
+    
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    for (let i = 0; i < 5; i++) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay() + (i * 7));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+      
+      let weekTotal = 0;
+      filteredJobs.forEach(job => {
+        const jobDate = parseDate(job.date);
+        if (jobDate && jobDate >= weekStart && jobDate < weekEnd) {
+          weekTotal += job.calculated_value || 0;
+        }
+        
+        // Also accumulate monthly data
+        if (jobDate && jobDate.getFullYear() === currentYear) {
+          const month = jobDate.getMonth() + 1;
+          monthlyOTB[month] += job.calculated_value || 0;
+        }
+      });
+      
+      const weekLabel = i === 0 ? 'This Week' : i === 1 ? 'Next Week' : `Week ${i + 1}`;
+      weeklyOTB.labels.push(weekLabel);
+      weeklyOTB.values.push(weekTotal);
+    }
+    
+    return {
+      monthlyOTB,
+      weeklyOTB
+    };
+  };
+
   // Helper function to calculate KPIs from raw data
   const calculateKPIsFromRawData = (quotes: any[], jobs: any[], salesperson?: string) => {
     // Filter by salesperson if specified
@@ -939,16 +1076,23 @@ const DashboardV2: React.FC = () => {
       }
     })
 
-    // Revenue Trend Chart
-    if (trendChartRef.current && !loading && filteredData?.timeSeries) {
+    // Revenue Trend Chart (Converted This Week)
+    if (trendChartRef.current && !loading && data) {
       const ctx = trendChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 200)
         gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)')
         gradient.addColorStop(1, 'rgba(14, 165, 233, 0)')
         
-        // Use currentWeekDaily for the "Converted This Week" chart
-        const chartData = filteredData.timeSeries.currentWeekDaily || filteredData.timeSeries.week
+        // Use filtered data if a salesperson is selected
+        const filteredTimeSeries = data.rawQuotes ? calculateFilteredTimeSeries(data.rawQuotes, selectedSalesperson) : null;
+        const chartData = (selectedSalesperson !== 'all' && filteredTimeSeries) 
+          ? {
+              labels: filteredTimeSeries.currentWeekDaily.labels,
+              quotesSent: new Array(7).fill(0), // We don't track sent quotes in filtered data
+              quotesConverted: filteredTimeSeries.currentWeekDaily.quotesConverted
+            }
+          : filteredData?.timeSeries?.currentWeekDaily || filteredData?.timeSeries?.week
         console.log('[Converted This Week Chart] Chart data:', chartData)
         
         // Get current day index (0 = Sunday, 6 = Saturday)
@@ -1043,10 +1187,14 @@ const DashboardV2: React.FC = () => {
     }
 
     // Weekly CVR Chart
-    if (conversionChartRef.current && !loading && filteredData?.timeSeries) {
+    if (conversionChartRef.current && !loading && data) {
       const ctx = conversionChartRef.current.getContext('2d')
       if (ctx) {
-        const chartData = filteredData.timeSeries.week
+        // Use filtered data if a salesperson is selected
+        const filteredTimeSeries = data.rawQuotes ? calculateFilteredTimeSeries(data.rawQuotes, selectedSalesperson) : null;
+        const chartData = (selectedSalesperson !== 'all' && filteredTimeSeries) 
+          ? filteredTimeSeries.weeklyTrend
+          : filteredData?.timeSeries?.week
         
         // Debug logging for missing bars
         console.log('[Weekly CVR Chart Debug]', {
@@ -1063,15 +1211,18 @@ const DashboardV2: React.FC = () => {
           }
         })
         
-        // Calculate weekly revenue from converted quotes
-        // Use average deal value from current week if available
-        const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
-          ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
-          : 2000; // fallback average
-          
-        const weeklyRevenue = chartData.quotesConverted.map((converted) => {
-          return converted * avgDealValue;
-        });
+        // Handle different data structures
+        let weeklyRevenue;
+        if (selectedSalesperson !== 'all' && filteredTimeSeries) {
+          // Use revenue directly from filtered data
+          weeklyRevenue = chartData.revenue;
+        } else {
+          // Calculate from converted quotes
+          const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
+            ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
+            : 2000;
+          weeklyRevenue = chartData.quotesConverted.map((converted) => converted * avgDealValue);
+        }
         
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
@@ -1211,10 +1362,15 @@ const DashboardV2: React.FC = () => {
         // Show all 12 months of 2025
         const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         
-        // Use real data from backend
+        // Use filtered data if a salesperson is selected
+        const filteredOTBData = data.rawJobs ? calculateFilteredOTBData(data.rawJobs, selectedSalesperson) : null;
+        
         let monthLabels = allMonths
         let monthlyOTB = allMonths.map((_, index) => {
-          const monthNumber = index + 1 // JavaScript months are 0-indexed
+          const monthNumber = index + 1
+          if (selectedSalesperson !== 'all' && filteredOTBData) {
+            return filteredOTBData.monthlyOTB[monthNumber] || 0
+          }
           return data.kpiMetrics?.monthlyOTBData?.[monthNumber] || 0
         })
         
@@ -1286,6 +1442,9 @@ const DashboardV2: React.FC = () => {
         gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
         gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
         
+        // Use filtered data if a salesperson is selected
+        const filteredOTBData = data.rawJobs ? calculateFilteredOTBData(data.rawJobs, selectedSalesperson) : null;
+        
         // Calculate weeks with current week in the middle
         const now = new Date()
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -1334,8 +1493,10 @@ const DashboardV2: React.FC = () => {
           
           weekRanges.push(label)
           
-          // For OTB data, use the week index (0-4) matching backend's week0-week4 keys
-          if (data?.kpiMetrics?.weeklyOTBBreakdown) {
+          // For OTB data, use filtered data if salesperson is selected
+          if (selectedSalesperson !== 'all' && filteredOTBData) {
+            weeklyOTBData.push(filteredOTBData.weeklyOTB.values[i] || 0)
+          } else if (data?.kpiMetrics?.weeklyOTBBreakdown) {
             const weekKey = `week${i}`
             weeklyOTBData.push(data.kpiMetrics.weeklyOTBBreakdown[weekKey] || 0)
           } else {
@@ -2113,7 +2274,24 @@ const DashboardV2: React.FC = () => {
               {/* Converted This Week Chart */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium">Converted This Week</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-medium">Converted This Week</h2>
+                    {selectedSalesperson !== 'all' && (
+                      getSalespersonThumbnail(selectedSalesperson) ? (
+                        <img 
+                          src={getSalespersonThumbnail(selectedSalesperson)!} 
+                          alt={selectedSalesperson}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-pink-500/20 flex items-center justify-center">
+                          <span className="text-xs font-bold text-pink-400">
+                            {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
                   <div className="flex items-center gap-4 text-xs">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-orange-400 rounded"></div>
@@ -2132,9 +2310,24 @@ const DashboardV2: React.FC = () => {
 
               {/* Weekly CVR % */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">
-                  <span>Weekly Revenue & Conversion Rate</span>
-                </h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="font-medium">Weekly Revenue & Conversion Rate</h2>
+                  {selectedSalesperson !== 'all' && (
+                    getSalespersonThumbnail(selectedSalesperson) ? (
+                      <img 
+                        src={getSalespersonThumbnail(selectedSalesperson)!} 
+                        alt={selectedSalesperson}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-pink-500/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-pink-400">
+                          {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
                 </div>
@@ -2186,7 +2379,24 @@ const DashboardV2: React.FC = () => {
               {/* On The Books by Month */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium">On The Books by Month - 2025 YTD (Excluding Sales Tax)</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-medium">On The Books by Month - 2025 YTD (Excluding Sales Tax)</h2>
+                    {selectedSalesperson !== 'all' && (
+                      getSalespersonThumbnail(selectedSalesperson) ? (
+                        <img 
+                          src={getSalespersonThumbnail(selectedSalesperson)!} 
+                          alt={selectedSalesperson}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-pink-500/20 flex items-center justify-center">
+                          <span className="text-xs font-bold text-pink-400">
+                            {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
                 <div className="h-48 w-full min-w-0">
                   <canvas ref={monthlyOTBChartRef}></canvas>
@@ -2196,7 +2406,24 @@ const DashboardV2: React.FC = () => {
               {/* On the Books by Week */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="mb-4">
-                  <h2 className="font-medium">On the Books by Week - 5 Week View</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-medium">On the Books by Week - 5 Week View</h2>
+                    {selectedSalesperson !== 'all' && (
+                      getSalespersonThumbnail(selectedSalesperson) ? (
+                        <img 
+                          src={getSalespersonThumbnail(selectedSalesperson)!} 
+                          alt={selectedSalesperson}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-pink-500/20 flex items-center justify-center">
+                          <span className="text-xs font-bold text-pink-400">
+                            {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">Current week centered • Sunday-Saturday weeks</p>
                 </div>
                 <div className="h-48">
