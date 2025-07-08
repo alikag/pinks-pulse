@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
-import { Calendar, ChevronDown, Download, TrendingUp, Clock, Target, Award, CheckCircle, Info, Star } from 'lucide-react'
+import { Calendar, ChevronDown, Download, TrendingUp, Clock, Target, Award, CheckCircle, Info, Star, XCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
@@ -27,6 +28,15 @@ interface SalespersonScore {
   conversionsCount: number
 }
 
+interface SummaryMetric {
+  id: string
+  label: string
+  value: number
+  icon: React.ReactNode
+  format: 'number' | 'currency' | 'percentage'
+  color: string
+}
+
 const SalesTeamPerformance: React.FC = () => {
   const { data, loading, error, refetch } = useDashboardData()
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
@@ -37,6 +47,7 @@ const SalesTeamPerformance: React.FC = () => {
   const [sortBy, setSortBy] = useState<keyof QuoteDetails>('sentDate')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [showScoreDetails, setShowScoreDetails] = useState(false)
+  const [selectedMetric, setSelectedMetric] = useState<SummaryMetric | null>(null)
 
   // Helper function to get display name for salesperson (proper case)
   const getDisplayName = (name: string): string => {
@@ -301,6 +312,66 @@ const SalesTeamPerformance: React.FC = () => {
     return `$${value.toLocaleString()}`
   }
 
+  // Format value based on type
+  const formatValue = (value: number, format: 'number' | 'currency' | 'percentage'): string => {
+    switch (format) {
+      case 'currency':
+        return formatCurrency(value)
+      case 'percentage':
+        return `${value.toFixed(1)}%`
+      case 'number':
+      default:
+        return value.toLocaleString()
+    }
+  }
+
+  // Get metric calculation details
+  const getMetricCalculationDetails = (metricId: string): { formula: string; description: string; notes?: string } => {
+    switch (metricId) {
+      case 'total-quotes':
+        return {
+          formula: 'COUNT(*) FROM quotes WHERE sent_date BETWEEN date_range_start AND date_range_end',
+          description: 'Total number of quotes sent during the selected time period.',
+          notes: 'Includes all quotes regardless of status (pending, converted, or lost).'
+        }
+      case 'converted-quotes':
+        return {
+          formula: 'COUNT(*) FROM quotes WHERE status = "Converted" AND sent_date BETWEEN date_range_start AND date_range_end',
+          description: 'Number of quotes that were successfully converted to jobs.',
+          notes: 'Only counts quotes with "Converted" status. Conversion may happen outside the selected date range.'
+        }
+      case 'conversion-rate':
+        return {
+          formula: '(converted_quotes ÷ total_quotes) × 100',
+          description: 'Percentage of sent quotes that converted to jobs.',
+          notes: 'Industry average is 30-40%. Above 45% is excellent performance.'
+        }
+      case 'total-value':
+        return {
+          formula: 'SUM(total_dollars) FROM quotes WHERE sent_date BETWEEN date_range_start AND date_range_end',
+          description: 'Total dollar value of all quotes sent, regardless of conversion status.',
+          notes: 'Represents potential revenue if all quotes were converted.'
+        }
+      case 'converted-value':
+        return {
+          formula: 'SUM(total_dollars) FROM quotes WHERE status = "Converted" AND sent_date BETWEEN date_range_start AND date_range_end',
+          description: 'Total dollar value of quotes that converted to jobs.',
+          notes: 'This is actual revenue generated from the quotes sent in this period.'
+        }
+      case 'composite-score':
+        return {
+          formula: '(Quotes/Day ÷ 12) × 30 + (CVR ÷ 45) × 40 + (Avg Deal ÷ $3,000) × 30',
+          description: 'Weighted performance score based on three key metrics.',
+          notes: 'Weights: Quotes per Day (30%), Conversion Rate (40%), Average Deal Size (30%). Score is capped at 100.'
+        }
+      default:
+        return {
+          formula: 'N/A',
+          description: 'Metric calculation details not available.',
+        }
+    }
+  }
+
   // Export to CSV
   const exportToCSV = () => {
     haptics.medium()
@@ -450,7 +521,20 @@ const SalesTeamPerformance: React.FC = () => {
       {/* Summary Cards */}
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+          <div 
+            className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer"
+            onClick={() => {
+              haptics.light()
+              setSelectedMetric({
+                id: 'total-quotes',
+                label: 'Total Quotes',
+                value: summaryStats.totalQuotes,
+                icon: <Target className="h-5 w-5 text-blue-400" />,
+                format: 'number',
+                color: 'blue'
+              })
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Total Quotes</span>
               <Target className="h-4 w-4 text-blue-400" />
@@ -458,7 +542,20 @@ const SalesTeamPerformance: React.FC = () => {
             <p className="text-2xl font-bold">{summaryStats.totalQuotes}</p>
           </div>
 
-          <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+          <div 
+            className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all cursor-pointer"
+            onClick={() => {
+              haptics.light()
+              setSelectedMetric({
+                id: 'converted-quotes',
+                label: 'Converted Quotes',
+                value: summaryStats.convertedQuotes,
+                icon: <CheckCircle className="h-5 w-5 text-green-400" />,
+                format: 'number',
+                color: 'green'
+              })
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Converted</span>
               <CheckCircle className="h-4 w-4 text-green-400" />
@@ -466,7 +563,20 @@ const SalesTeamPerformance: React.FC = () => {
             <p className="text-2xl font-bold">{summaryStats.convertedQuotes}</p>
           </div>
 
-          <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+          <div 
+            className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all cursor-pointer"
+            onClick={() => {
+              haptics.light()
+              setSelectedMetric({
+                id: 'conversion-rate',
+                label: 'Conversion Rate',
+                value: summaryStats.conversionRate,
+                icon: <Award className="h-5 w-5 text-yellow-400" />,
+                format: 'percentage',
+                color: 'yellow'
+              })
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Conversion Rate</span>
               <Award className="h-4 w-4 text-yellow-400" />
@@ -474,7 +584,20 @@ const SalesTeamPerformance: React.FC = () => {
             <p className="text-2xl font-bold">{summaryStats.conversionRate.toFixed(1)}%</p>
           </div>
 
-          <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+          <div 
+            className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer"
+            onClick={() => {
+              haptics.light()
+              setSelectedMetric({
+                id: 'total-value',
+                label: 'Total Value',
+                value: summaryStats.totalValue,
+                icon: <TrendingUp className="h-5 w-5 text-purple-400" />,
+                format: 'currency',
+                color: 'purple'
+              })
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Total Value</span>
               <TrendingUp className="h-4 w-4 text-purple-400" />
@@ -482,7 +605,20 @@ const SalesTeamPerformance: React.FC = () => {
             <p className="text-2xl font-bold">{formatCurrency(summaryStats.totalValue)}</p>
           </div>
 
-          <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+          <div 
+            className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all cursor-pointer"
+            onClick={() => {
+              haptics.light()
+              setSelectedMetric({
+                id: 'converted-value',
+                label: 'Converted Value',
+                value: summaryStats.convertedValue,
+                icon: <TrendingUp className="h-5 w-5 text-green-400" />,
+                format: 'currency',
+                color: 'green'
+              })
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Converted Value</span>
               <TrendingUp className="h-4 w-4 text-green-400" />
@@ -534,7 +670,20 @@ const SalesTeamPerformance: React.FC = () => {
             {/* Scores Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {salespersonScores.map((person, index) => (
-                <div key={person.name} className="bg-gray-800/50 rounded-lg p-4 relative overflow-hidden">
+                <div 
+                  key={person.name} 
+                  className="bg-gray-800/50 rounded-lg p-4 relative overflow-hidden hover:bg-gray-700/50 transition-all cursor-pointer"
+                  onClick={() => {
+                    haptics.light()
+                    setSelectedMetric({
+                      id: 'composite-score',
+                      label: `${person.name} - Performance Score`,
+                      value: person.compositeScore,
+                      icon: <Star className="h-5 w-5 text-yellow-400" />,
+                      format: 'number',
+                      color: 'yellow'
+                    })
+                  }}>
                   {/* Rank Badge */}
                   {index < 3 && (
                     <div className="absolute top-2 right-2">
@@ -773,6 +922,98 @@ const SalesTeamPerformance: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Metric Details Modal */}
+      <AnimatePresence>
+        {selectedMetric && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            onClick={() => {
+              haptics.light()
+              setSelectedMetric(null)
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="max-w-2xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  {selectedMetric.icon}
+                  <h2 className="text-2xl font-bold">{selectedMetric.label}</h2>
+                </div>
+                <button 
+                  onClick={() => {
+                    haptics.light()
+                    setSelectedMetric(null)
+                  }}
+                  className="p-2 hover:bg-white/10 rounded-lg transition"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Current Value */}
+                <div className="text-center py-4">
+                  <p className="text-5xl font-bold mb-2">{formatValue(selectedMetric.value, selectedMetric.format)}</p>
+                  <p className="text-gray-400">For {dateRange === 'custom' ? 'selected period' : `last ${dateRange === '7days' ? '7' : dateRange === '30days' ? '30' : '90'} days`}</p>
+                </div>
+
+                {/* Calculation Details */}
+                <div className="space-y-4">
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Calculation Formula</h3>
+                    <code className="text-xs text-blue-400 font-mono block p-2 bg-gray-900/50 rounded overflow-x-auto">
+                      {getMetricCalculationDetails(selectedMetric.id).formula}
+                    </code>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-2">How it works</h3>
+                    <p className="text-sm text-gray-400">
+                      {getMetricCalculationDetails(selectedMetric.id).description}
+                    </p>
+                  </div>
+                  
+                  {getMetricCalculationDetails(selectedMetric.id).notes && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                      <p className="text-sm text-blue-200">
+                        <span className="font-semibold">Note:</span> {getMetricCalculationDetails(selectedMetric.id).notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Filters Applied */}
+                {(selectedSalesperson !== 'all' || statusFilter !== 'all') && (
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Active Filters</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSalesperson !== 'all' && (
+                        <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-xs">
+                          Salesperson: {selectedSalesperson}
+                        </span>
+                      )}
+                      {statusFilter !== 'all' && (
+                        <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
+                          Status: {statusFilter === 'converted' ? 'Converted Only' : 'Pending Only'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
