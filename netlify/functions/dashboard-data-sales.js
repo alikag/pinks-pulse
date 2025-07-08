@@ -1845,6 +1845,24 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     recentConvertedQuotes,
     speedDistribution, // Add speed distribution data
     waterfallData, // Add waterfall data
+    // Add raw data for frontend filtering
+    rawQuotes: quotesData.map(q => ({
+      quote_number: q.quote_number,
+      salesperson: q.salesperson,
+      sent_date: q.sent_date,
+      converted_date: q.converted_date,
+      total_dollars: parseFloat(q.total_dollars) || 0,
+      status: q.status,
+      client_name: q.client_name
+    })),
+    rawJobs: jobsData.map(j => ({
+      job_number: j.Job_Number,
+      salesperson: j.SalesPerson,
+      date: j.Date,
+      date_converted: j.Date_Converted,
+      job_type: j.Job_type,
+      calculated_value: parseFloat(j.Calculated_Value) || 0
+    })),
     lastUpdated: new Date(),
     dataSource: 'bigquery',
     // DEBUG INFO - will show in browser console

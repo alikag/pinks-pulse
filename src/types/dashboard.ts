@@ -72,6 +72,23 @@ export interface DashboardData {
     totalDollars: number;
     status: string;
   }>;
+  rawQuotes?: Array<{
+    quote_number: string;
+    salesperson: string;
+    sent_date: string;
+    converted_date: string;
+    total_dollars: number;
+    status: string;
+    client_name: string;
+  }>;
+  rawJobs?: Array<{
+    job_number: string;
+    salesperson: string;
+    date: string;
+    date_converted: string;
+    job_type: string;
+    calculated_value: number;
+  }>;
   lastUpdated: Date;
   dataSource?: string;
   debug?: {

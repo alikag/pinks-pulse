@@ -177,6 +177,139 @@ const DashboardV2: React.FC = () => {
     }
   }
 
+  // Helper function to calculate KPIs from raw data
+  const calculateKPIsFromRawData = (quotes: any[], jobs: any[], salesperson?: string) => {
+    // Filter by salesperson if specified
+    const filteredQuotes = salesperson && salesperson !== 'all' 
+      ? quotes.filter(q => q.salesperson === salesperson) 
+      : quotes;
+    const filteredJobs = salesperson && salesperson !== 'all'
+      ? jobs.filter(j => j.salesperson === salesperson)
+      : jobs;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    
+    // Parse date helper
+    const parseDate = (dateStr: string) => {
+      if (!dateStr) return null;
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? null : date;
+    };
+    
+    // Check if date is today
+    const isToday = (date: Date) => {
+      return date.toDateString() === today.toDateString();
+    };
+    
+    // Check if date is this week
+    const isThisWeek = (date: Date) => {
+      return date >= weekStart && date < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    };
+    
+    // Check if date is in last 30 days
+    const isLast30Days = (date: Date) => {
+      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return date >= thirtyDaysAgo && date <= today;
+    };
+
+    // Calculate metrics
+    let metrics = {
+      quotesToday: 0,
+      convertedToday: 0,
+      convertedTodayDollars: 0,
+      quotesThisWeek: 0,
+      convertedThisWeek: 0,
+      convertedThisWeekDollars: 0,
+      quotes30Days: 0,
+      converted30Days: 0,
+      recurringRevenue2026: 0,
+      nextMonthOTB: 0,
+      monthlyOTBData: {} as Record<number, number>
+    };
+
+    // Process quotes
+    filteredQuotes.forEach(quote => {
+      const sentDate = parseDate(quote.sent_date);
+      const convertedDate = parseDate(quote.converted_date);
+      const isConverted = quote.status?.toLowerCase() === 'converted' || 
+                         quote.status?.toLowerCase() === 'won' ||
+                         !!convertedDate;
+      
+      if (sentDate) {
+        if (isToday(sentDate)) metrics.quotesToday++;
+        if (isThisWeek(sentDate)) metrics.quotesThisWeek++;
+        if (isLast30Days(sentDate)) metrics.quotes30Days++;
+      }
+      
+      if (isConverted && convertedDate) {
+        if (isToday(convertedDate)) {
+          metrics.convertedToday++;
+          metrics.convertedTodayDollars += quote.total_dollars;
+        }
+        if (isThisWeek(convertedDate)) {
+          metrics.convertedThisWeek++;
+          metrics.convertedThisWeekDollars += quote.total_dollars;
+        }
+        if (isLast30Days(sentDate || convertedDate)) {
+          metrics.converted30Days++;
+        }
+      }
+    });
+
+    // Process jobs
+    const currentYear = now.getFullYear();
+    const nextYear = currentYear + 1;
+    const nextMonth = now.getMonth() + 2; // +1 for 0-index, +1 for next month
+    
+    filteredJobs.forEach(job => {
+      const jobDate = parseDate(job.date);
+      if (!jobDate) return;
+      
+      const jobYear = jobDate.getFullYear();
+      const jobMonth = jobDate.getMonth() + 1;
+      
+      // Next month OTB
+      if (jobMonth === nextMonth && (jobYear === currentYear || jobYear === nextYear)) {
+        metrics.nextMonthOTB += job.calculated_value;
+      }
+      
+      // Recurring revenue for next year
+      if (jobYear === nextYear && job.job_type === 'RECURRING') {
+        metrics.recurringRevenue2026 += job.calculated_value;
+      }
+      
+      // Monthly OTB data
+      if (jobYear === currentYear || (jobYear === nextYear && jobMonth <= 2)) {
+        if (!metrics.monthlyOTBData[jobMonth]) {
+          metrics.monthlyOTBData[jobMonth] = 0;
+        }
+        metrics.monthlyOTBData[jobMonth] += job.calculated_value;
+      }
+    });
+
+    // Calculate derived metrics
+    const cvrThisWeek = metrics.quotesThisWeek > 0 
+      ? (metrics.convertedThisWeek / metrics.quotesThisWeek) * 100 
+      : 0;
+    const cvr30Days = metrics.quotes30Days > 0
+      ? (metrics.converted30Days / metrics.quotes30Days) * 100
+      : 0;
+    const avgQPD = metrics.quotes30Days / 30;
+
+    return {
+      ...metrics,
+      cvrThisWeek,
+      cvr30Days,
+      avgQPD,
+      // TODO: Add speed to lead calculation when we have request data
+      speedToLead30Days: 0,
+      reviewsThisWeek: 0 // Reviews are not filtered by salesperson
+    };
+  };
+
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
     console.log('DashboardV2 - Full data object:', data);
@@ -188,7 +321,10 @@ const DashboardV2: React.FC = () => {
       return []
     }
     
-    const metrics = data.kpiMetrics;
+    // Use filtered metrics if we have raw data, otherwise fall back to pre-calculated
+    const metrics = (data.rawQuotes && data.rawJobs) 
+      ? calculateKPIsFromRawData(data.rawQuotes, data.rawJobs, selectedSalesperson)
+      : data.kpiMetrics;
     
     // Get next month name
     const currentDate = new Date();
@@ -268,7 +404,7 @@ const DashboardV2: React.FC = () => {
                 calculateWinterOTB(metrics.monthlyOTBData) >= 75000 ? 'warning' : 'danger'
       }
     ]
-  }, [data, loading])
+  }, [data, loading, selectedSalesperson])
 
   // Calculate second row KPIs
   const secondRowKpis = useMemo<KPI[]>(() => {
@@ -276,7 +412,10 @@ const DashboardV2: React.FC = () => {
       return [] // No mock data - return empty array
     }
     
-    const metrics = data.kpiMetrics;
+    // Use filtered metrics if we have raw data, otherwise fall back to pre-calculated
+    const metrics = (data.rawQuotes && data.rawJobs) 
+      ? calculateKPIsFromRawData(data.rawQuotes, data.rawJobs, selectedSalesperson)
+      : data.kpiMetrics;
     console.log('Speed to Lead Debug:', {
       speedToLead30Days: metrics.speedToLead30Days,
       hasValue: metrics.speedToLead30Days > 0,
@@ -324,7 +463,7 @@ const DashboardV2: React.FC = () => {
         trend: 0
       }
     ]
-  }, [data, loading])
+  }, [data, loading, selectedSalesperson])
 
   // Get unique salespeople list
   const salespeople = useMemo(() => {
