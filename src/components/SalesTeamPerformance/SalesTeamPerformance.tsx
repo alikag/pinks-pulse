@@ -112,7 +112,7 @@ const SalesTeamPerformance: React.FC = () => {
   }
 
   // Format value based on type
-  const formatValue = (value: number | null, type: string): string => {
+  const formatValue = (value: number | null | undefined, type: string): string => {
     if (value === null || value === undefined) return '-'
     
     switch (type) {
