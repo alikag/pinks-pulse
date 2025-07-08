@@ -333,10 +333,18 @@ const DashboardV2: React.FC = () => {
       return []
     }
     
-    // Use filtered metrics if we have raw data, otherwise fall back to pre-calculated
-    const metrics = (data.rawQuotes && data.rawJobs) 
+    // Use filtered metrics if we have raw data AND a specific salesperson is selected
+    // For "all", use the pre-calculated backend metrics which are more accurate
+    const metrics = (data.rawQuotes && data.rawJobs && selectedSalesperson !== 'all') 
       ? calculateKPIsFromRawData(data.rawQuotes, data.rawJobs, selectedSalesperson)
       : data.kpiMetrics;
+    
+    console.log('[KPI Debug]', {
+      selectedSalesperson,
+      usingFiltered: data.rawQuotes && data.rawJobs && selectedSalesperson !== 'all',
+      backendMetrics: data.kpiMetrics,
+      calculatedMetrics: metrics
+    });
     
     // Get next month name
     const currentDate = new Date();
@@ -424,8 +432,9 @@ const DashboardV2: React.FC = () => {
       return [] // No mock data - return empty array
     }
     
-    // Use filtered metrics if we have raw data, otherwise fall back to pre-calculated
-    const metrics = (data.rawQuotes && data.rawJobs) 
+    // Use filtered metrics if we have raw data AND a specific salesperson is selected
+    // For "all", use the pre-calculated backend metrics which are more accurate
+    const metrics = (data.rawQuotes && data.rawJobs && selectedSalesperson !== 'all') 
       ? calculateKPIsFromRawData(data.rawQuotes, data.rawJobs, selectedSalesperson)
       : data.kpiMetrics;
     console.log('Speed to Lead Debug:', {
