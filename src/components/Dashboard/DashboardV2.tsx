@@ -253,7 +253,27 @@ const DashboardV2: React.FC = () => {
           return dateStr;
         }
         
-        // For date strings, parse them
+        // For date-only strings (YYYY-MM-DD), parse as Eastern Time midnight
+        // This ensures consistency with how the backend treats dates
+        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          // Parse the date components
+          const [year, month, day] = dateStr.split('-').map(Number);
+          // Create a date in Eastern Time by using the local date constructor
+          // and then adjusting for the timezone difference
+          const tempDate = new Date(year, month - 1, day, 0, 0, 0);
+          // Get the Eastern Time representation
+          const etOptions: Intl.DateTimeFormatOptions = { 
+            timeZone: 'America/New_York', 
+            year: 'numeric' as const, 
+            month: '2-digit' as const, 
+            day: '2-digit' as const 
+          };
+          const etDateStr = tempDate.toLocaleDateString('en-US', etOptions);
+          const [etMonth, etDay, etYear] = etDateStr.split('/').map(Number);
+          return new Date(etYear, etMonth - 1, etDay);
+        }
+        
+        // For other date strings, parse normally
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) {
           console.warn('[parseDate] Invalid date:', dateStr);
@@ -352,7 +372,27 @@ const DashboardV2: React.FC = () => {
           return dateStr;
         }
         
-        // For date strings, parse them
+        // For date-only strings (YYYY-MM-DD), parse as Eastern Time midnight
+        // This ensures consistency with how the backend treats dates
+        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          // Parse the date components
+          const [year, month, day] = dateStr.split('-').map(Number);
+          // Create a date in Eastern Time by using the local date constructor
+          // and then adjusting for the timezone difference
+          const tempDate = new Date(year, month - 1, day, 0, 0, 0);
+          // Get the Eastern Time representation
+          const etOptions: Intl.DateTimeFormatOptions = { 
+            timeZone: 'America/New_York', 
+            year: 'numeric' as const, 
+            month: '2-digit' as const, 
+            day: '2-digit' as const 
+          };
+          const etDateStr = tempDate.toLocaleDateString('en-US', etOptions);
+          const [etMonth, etDay, etYear] = etDateStr.split('/').map(Number);
+          return new Date(etYear, etMonth - 1, etDay);
+        }
+        
+        // For other date strings, parse normally
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) {
           console.warn('[parseDate] Invalid date:', dateStr);
@@ -462,6 +502,15 @@ const DashboardV2: React.FC = () => {
     
     // Debug filtered results
     if (salesperson && salesperson !== 'all') {
+      // Find today's quotes specifically
+      const todayQuotes = quotes.filter(q => {
+        const sentDate = parseDate(q.sent_date);
+        if (!sentDate) return false;
+        const dateET = getEasternTimeComponents(sentDate);
+        const nowET = getEasternTimeComponents(new Date());
+        return dateET.year === nowET.year && dateET.month === nowET.month && dateET.day === nowET.day;
+      });
+      
       console.log('[Filter Results]', {
         filteringFor: salesperson,
         normalizedFilterName: normalizedFilterName,
@@ -469,6 +518,12 @@ const DashboardV2: React.FC = () => {
         filteredQuotes: filteredQuotes.length,
         totalJobs: jobs.length,
         filteredJobs: filteredJobs.length,
+        todayQuotesTotal: todayQuotes.length,
+        todayQuotesBySalesperson: todayQuotes.map(q => ({
+          quote_number: q.quote_number,
+          salesperson: q.salesperson,
+          sent_date: q.sent_date
+        })),
         sampleMatches: filteredQuotes.slice(0, 3).map(q => ({
           quote_number: q.quote_number,
           salesperson: q.salesperson,
@@ -525,7 +580,27 @@ const DashboardV2: React.FC = () => {
           return dateStr;
         }
         
-        // For date strings, parse them
+        // For date-only strings (YYYY-MM-DD), parse as Eastern Time midnight
+        // This ensures consistency with how the backend treats dates
+        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          // Parse the date components
+          const [year, month, day] = dateStr.split('-').map(Number);
+          // Create a date in Eastern Time by using the local date constructor
+          // and then adjusting for the timezone difference
+          const tempDate = new Date(year, month - 1, day, 0, 0, 0);
+          // Get the Eastern Time representation
+          const etOptions: Intl.DateTimeFormatOptions = { 
+            timeZone: 'America/New_York', 
+            year: 'numeric' as const, 
+            month: '2-digit' as const, 
+            day: '2-digit' as const 
+          };
+          const etDateStr = tempDate.toLocaleDateString('en-US', etOptions);
+          const [etMonth, etDay, etYear] = etDateStr.split('/').map(Number);
+          return new Date(etYear, etMonth - 1, etDay);
+        }
+        
+        // For other date strings, parse normally
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) {
           console.warn('[parseDate] Invalid date:', dateStr);
