@@ -113,10 +113,8 @@ const DashboardV2: React.FC = () => {
   const monthlyOTBChartRef = useRef<HTMLCanvasElement>(null)
   const weeklyOTBChartRef = useRef<HTMLCanvasElement>(null)
   const sparklineRef = useRef<HTMLCanvasElement>(null)
-  const speedDistributionRef = useRef<HTMLCanvasElement>(null)
   const heatmapRef = useRef<HTMLCanvasElement>(null)
   const waterfallRef = useRef<HTMLCanvasElement>(null)
-  const cohortRef = useRef<HTMLCanvasElement>(null)
   
   // Sparkline refs for KPI cards
   const kpiSparklineRefs = useRef<{ [key: string]: HTMLCanvasElement | null }>({})
@@ -127,14 +125,28 @@ const DashboardV2: React.FC = () => {
   const monthlyOTBChartInstance = useRef<Chart | null>(null)
   const weeklyOTBChartInstance = useRef<Chart | null>(null)
   const sparklineInstance = useRef<Chart | null>(null)
-  const speedDistributionInstance = useRef<Chart | null>(null)
   const heatmapInstance = useRef<Chart | null>(null)
   const waterfallInstance = useRef<Chart | null>(null)
-  const cohortInstance = useRef<Chart | null>(null)
   const kpiSparklineInstances = useRef<{ [key: string]: Chart | null }>({})
 
   // Sparkline data removed - real data needed from backend
 
+  // Helper function to normalize salesperson names for consistent matching
+  const normalizeSalespersonName = (name: string | undefined | null): string => {
+    if (!name) return '';
+    // Normalize: trim whitespace, convert to lowercase for comparison
+    return name.trim().toLowerCase();
+  };
+  
+  // Helper function to get display name for salesperson (proper case)
+  const getDisplayName = (name: string): string => {
+    if (!name) return 'Unknown';
+    // Convert to proper case: "christian ruddy" -> "Christian Ruddy"
+    return name.split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+  };
+  
   // Helper function to get salesperson thumbnail
   const getSalespersonThumbnail = (name: string): string | null => {
     const thumbnailMap: Record<string, string> = {
@@ -144,7 +156,8 @@ const DashboardV2: React.FC = () => {
       // Add more mappings as images become available
     };
     
-    return thumbnailMap[name] || null;
+    // Try exact match first, then try display name format
+    return thumbnailMap[name] || thumbnailMap[getDisplayName(name)] || null;
   };
 
   // Helper function to calculate combined Dec/Jan/Feb OTB
@@ -193,17 +206,40 @@ const DashboardV2: React.FC = () => {
   const calculateFilteredTimeSeries = (quotes: any[], salesperson: string) => {
     if (salesperson === 'all' || !quotes) return null;
     
-    const filteredQuotes = quotes.filter(q => q.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase());
+    const normalizedFilterName = normalizeSalespersonName(salesperson);
+    const filteredQuotes = quotes.filter(q => normalizeSalespersonName(q.salesperson) === normalizedFilterName);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
     
-    // Parse date helper
-    const parseDate = (dateStr: string) => {
+    // Parse date helper - match backend's EST timezone handling
+    const parseDate = (dateStr: string | Date | any) => {
       if (!dateStr) return null;
-      const date = new Date(dateStr);
-      return isNaN(date.getTime()) ? null : date;
+      
+      try {
+        // Handle BigQuery date objects that come as { value: "2025-06-27" }
+        if (typeof dateStr === 'object' && (dateStr as any).value) {
+          dateStr = (dateStr as any).value;
+        }
+        
+        // If it's already a Date object, return it
+        if (dateStr instanceof Date) {
+          return dateStr;
+        }
+        
+        // For date strings, parse them
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+          console.warn('[parseDate] Invalid date:', dateStr);
+          return null;
+        }
+        
+        return date;
+      } catch (e) {
+        console.error('[parseDate] Error parsing date:', dateStr, e);
+        return null;
+      }
     };
     
     // Current week daily data
@@ -271,15 +307,38 @@ const DashboardV2: React.FC = () => {
   const calculateFilteredOTBData = (jobs: any[], salesperson: string) => {
     if (salesperson === 'all' || !jobs) return null;
     
-    const filteredJobs = jobs.filter(j => j.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase());
+    const normalizedFilterName = normalizeSalespersonName(salesperson);
+    const filteredJobs = jobs.filter(j => normalizeSalespersonName(j.salesperson) === normalizedFilterName);
     const now = new Date();
     const currentYear = now.getFullYear();
     
-    // Parse date helper
-    const parseDate = (dateStr: string) => {
+    // Parse date helper - match backend's EST timezone handling
+    const parseDate = (dateStr: string | Date | any) => {
       if (!dateStr) return null;
-      const date = new Date(dateStr);
-      return isNaN(date.getTime()) ? null : date;
+      
+      try {
+        // Handle BigQuery date objects that come as { value: "2025-06-27" }
+        if (typeof dateStr === 'object' && (dateStr as any).value) {
+          dateStr = (dateStr as any).value;
+        }
+        
+        // If it's already a Date object, return it
+        if (dateStr instanceof Date) {
+          return dateStr;
+        }
+        
+        // For date strings, parse them
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+          console.warn('[parseDate] Invalid date:', dateStr);
+          return null;
+        }
+        
+        return date;
+      } catch (e) {
+        console.error('[parseDate] Error parsing date:', dateStr, e);
+        return null;
+      }
     };
     
     // Monthly OTB
@@ -330,24 +389,38 @@ const DashboardV2: React.FC = () => {
   const calculateKPIsFromRawData = (quotes: any[], jobs: any[], salesperson?: string) => {
     // Debug: Log unique salesperson names in raw data
     if (salesperson && salesperson !== 'all') {
-      const uniqueSalespeopleInQuotes = [...new Set(quotes.map(q => q.salesperson))];
+      const uniqueSalespeopleInQuotes = [...new Set(quotes.map(q => q.salesperson))].filter(Boolean);
+      const exactMatches = quotes.filter(q => q.salesperson === salesperson);
+      const caseInsensitiveMatches = quotes.filter(q => q.salesperson?.toLowerCase() === salesperson.toLowerCase());
+      const trimmedMatches = quotes.filter(q => q.salesperson?.trim() === salesperson.trim());
+      const fullMatches = quotes.filter(q => q.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase());
+      
       console.log('[Salesperson Filter Debug]', {
         filteringBy: salesperson,
+        filteringByLength: salesperson.length,
+        filteringByChars: salesperson.split('').map((c: string) => c.charCodeAt(0)),
         uniqueSalespeopleInQuotes,
+        exactMatches: exactMatches.length,
+        caseInsensitiveMatches: caseInsensitiveMatches.length,
+        trimmedMatches: trimmedMatches.length,
+        fullMatches: fullMatches.length,
         sampleQuotes: quotes.slice(0, 5).map(q => ({ 
-          salesperson: q.salesperson, 
+          salesperson: q.salesperson,
+          salespersonLength: q.salesperson?.length,
+          salespersonChars: q.salesperson?.split('').map((c: string) => c.charCodeAt(0)),
           sent_date: q.sent_date,
           converted_date: q.converted_date 
         }))
       });
     }
     
-    // Filter by salesperson if specified (case-insensitive and trim whitespace)
+    // Filter by salesperson if specified (normalized comparison)
+    const normalizedFilterName = normalizeSalespersonName(salesperson);
     const filteredQuotes = salesperson && salesperson !== 'all' 
-      ? quotes.filter(q => q.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase()) 
+      ? quotes.filter(q => normalizeSalespersonName(q.salesperson) === normalizedFilterName) 
       : quotes;
     const filteredJobs = salesperson && salesperson !== 'all'
-      ? jobs.filter(j => j.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase())
+      ? jobs.filter(j => normalizeSalespersonName(j.salesperson) === normalizedFilterName)
       : jobs;
     
     // Debug filtered results
@@ -365,11 +438,33 @@ const DashboardV2: React.FC = () => {
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
     
-    // Parse date helper
-    const parseDate = (dateStr: string) => {
+    // Parse date helper - match backend's EST timezone handling
+    const parseDate = (dateStr: string | Date | any) => {
       if (!dateStr) return null;
-      const date = new Date(dateStr);
-      return isNaN(date.getTime()) ? null : date;
+      
+      try {
+        // Handle BigQuery date objects that come as { value: "2025-06-27" }
+        if (typeof dateStr === 'object' && (dateStr as any).value) {
+          dateStr = (dateStr as any).value;
+        }
+        
+        // If it's already a Date object, return it
+        if (dateStr instanceof Date) {
+          return dateStr;
+        }
+        
+        // For date strings, parse them
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+          console.warn('[parseDate] Invalid date:', dateStr);
+          return null;
+        }
+        
+        return date;
+      } catch (e) {
+        console.error('[parseDate] Error parsing date:', dateStr, e);
+        return null;
+      }
     };
     
     // Check if date is today
@@ -403,13 +498,48 @@ const DashboardV2: React.FC = () => {
       monthlyOTBData: {} as Record<number, number>
     };
 
+    // Debug date calculations
+    if (salesperson && salesperson !== 'all' && filteredQuotes.length > 0) {
+      console.log('[Date Calculation Debug]', {
+        today: today.toISOString(),
+        todayString: today.toDateString(),
+        weekStart: weekStart.toISOString(),
+        weekStartString: weekStart.toDateString(),
+        filteredQuotesCount: filteredQuotes.length,
+        sampleQuoteDates: filteredQuotes.slice(0, 3).map(q => ({
+          sent_date_raw: q.sent_date,
+          sent_date_parsed: parseDate(q.sent_date)?.toISOString(),
+          sent_date_string: parseDate(q.sent_date)?.toDateString(),
+          isToday: parseDate(q.sent_date) ? isToday(parseDate(q.sent_date)!) : false,
+          isThisWeek: parseDate(q.sent_date) ? isThisWeek(parseDate(q.sent_date)!) : false
+        }))
+      });
+    }
+    
     // Process quotes
-    filteredQuotes.forEach(quote => {
+    filteredQuotes.forEach((quote, index) => {
       const sentDate = parseDate(quote.sent_date);
       const convertedDate = parseDate(quote.converted_date);
       const isConverted = quote.status?.toLowerCase() === 'converted' || 
                          quote.status?.toLowerCase() === 'won' ||
                          !!convertedDate;
+      
+      // Debug first few quotes for the selected salesperson
+      if (salesperson && salesperson !== 'all' && index < 3) {
+        console.log(`[Quote ${index}]`, {
+          quote_number: quote.quote_number,
+          sent_date_raw: quote.sent_date,
+          sent_date_parsed: sentDate?.toISOString(),
+          isToday_sent: sentDate ? isToday(sentDate) : false,
+          isThisWeek_sent: sentDate ? isThisWeek(sentDate) : false,
+          converted_date_raw: quote.converted_date,
+          converted_date_parsed: convertedDate?.toISOString(),
+          isToday_converted: convertedDate ? isToday(convertedDate) : false,
+          isThisWeek_converted: convertedDate ? isThisWeek(convertedDate) : false,
+          status: quote.status,
+          isConverted: isConverted
+        });
+      }
       
       if (sentDate) {
         if (isToday(sentDate)) metrics.quotesToday++;
@@ -472,6 +602,28 @@ const DashboardV2: React.FC = () => {
       : 0;
     const avgQPD = metrics.quotes30Days / 30;
 
+    // Debug final metrics
+    if (salesperson && salesperson !== 'all') {
+      console.log('[Calculated Metrics Summary]', {
+        salesperson,
+        filteredQuotesCount: filteredQuotes.length,
+        filteredJobsCount: filteredJobs.length,
+        metrics: {
+          quotesToday: metrics.quotesToday,
+          convertedToday: metrics.convertedToday,
+          convertedTodayDollars: metrics.convertedTodayDollars,
+          quotesThisWeek: metrics.quotesThisWeek,
+          convertedThisWeek: metrics.convertedThisWeek,
+          convertedThisWeekDollars: metrics.convertedThisWeekDollars,
+          cvrThisWeek,
+          quotes30Days: metrics.quotes30Days,
+          converted30Days: metrics.converted30Days,
+          cvr30Days,
+          avgQPD
+        }
+      });
+    }
+    
     return {
       ...metrics,
       cvrThisWeek,
@@ -650,7 +802,22 @@ const DashboardV2: React.FC = () => {
   // Get unique salespeople list
   const salespeople = useMemo(() => {
     if (!data?.salespersons) return []
-    const uniqueNames = [...new Set(data.salespersons.map(sp => sp.name))].sort()
+    // Use display names for the dropdown
+    const uniqueNames = [...new Set(data.salespersons.map(sp => getDisplayName(sp.name)))].sort()
+    
+    // Debug: Log salespeople names from different sources
+    if (data.rawQuotes) {
+      const rawQuoteSalespeople = [...new Set(data.rawQuotes.map(q => q.salesperson))].filter(Boolean).sort();
+      const normalizedRawNames = [...new Set(data.rawQuotes.map(q => normalizeSalespersonName(q.salesperson)))].filter(Boolean).sort();
+      console.log('[Salesperson Names Debug]', {
+        fromSalespersons: uniqueNames,
+        fromRawQuotes: rawQuoteSalespeople,
+        normalizedRawNames: normalizedRawNames,
+        mismatch: uniqueNames.filter(name => !rawQuoteSalespeople.includes(name)),
+        extraInRaw: rawQuoteSalespeople.filter(name => !uniqueNames.includes(name))
+      });
+    }
+    
     return uniqueNames
   }, [data])
 
@@ -661,10 +828,10 @@ const DashboardV2: React.FC = () => {
     // Create filtered data object
     return {
       ...data,
-      salespersons: data.salespersons.filter(sp => sp.name === selectedSalesperson),
-      salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => sp.name === selectedSalesperson),
+      salespersons: data.salespersons.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)),
+      salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)),
       recentConvertedQuotes: data.recentConvertedQuotes?.filter(quote => 
-        quote.salesPerson === selectedSalesperson
+        normalizeSalespersonName(quote.salesPerson) === normalizeSalespersonName(selectedSalesperson)
       )
     }
   }, [data, selectedSalesperson])
@@ -1012,10 +1179,8 @@ const DashboardV2: React.FC = () => {
       if (monthlyOTBChartInstance.current) monthlyOTBChartInstance.current.destroy()
       if (weeklyOTBChartInstance.current) weeklyOTBChartInstance.current.destroy()
       if (sparklineInstance.current) sparklineInstance.current.destroy()
-      if (speedDistributionInstance.current) speedDistributionInstance.current.destroy()
       if (heatmapInstance.current) heatmapInstance.current.destroy()
       if (waterfallInstance.current) waterfallInstance.current.destroy()
-      if (cohortInstance.current) cohortInstance.current.destroy()
       
       // Destroy KPI sparklines
       Object.values(kpiSparklineInstances.current).forEach(chart => {
@@ -1412,11 +1577,50 @@ const DashboardV2: React.FC = () => {
           return data.kpiMetrics?.monthlyOTBData?.[monthNumber] || 0
         })
         
+        // Calculate revenue targets based on van capacity
+        // $1,500 per van per working day
+        const perVanPerDay = 1500;
+        const workingDaysPerMonth = [21, 19, 21, 20, 22, 21, 21, 22, 21, 22, 20, 20]; // 2025 working days per month
+        
+        // Van capacity timeline:
+        // Jan-Jun: 3 vans
+        // July 1-13: 3 vans
+        // July 14-19: 5 vans
+        // July 20+: 6 vans
+        // Aug-Dec: 6 vans
+        
+        const monthlyTargets = allMonths.map((_, index) => {
+          const month = index + 1;
+          const workingDays = workingDaysPerMonth[index];
+          
+          let vans;
+          if (month < 7) {
+            // Jan-Jun: 3 vans
+            vans = 3;
+          } else if (month === 7) {
+            // July: Mixed capacity
+            // 13 days with 3 vans, 6 days with 5 vans, rest with 6 vans
+            const daysWithThreeVans = 13;
+            const daysWithFiveVans = 6;
+            const daysWithSixVans = workingDays - daysWithThreeVans - daysWithFiveVans;
+            
+            return (daysWithThreeVans * 3 * perVanPerDay) + 
+                   (daysWithFiveVans * 5 * perVanPerDay) + 
+                   (daysWithSixVans * 6 * perVanPerDay);
+          } else {
+            // Aug-Dec: 6 vans
+            vans = 6;
+          }
+          
+          return vans * workingDays * perVanPerDay;
+        });
+        
         // Debug monthly OTB data
         console.log('[Monthly OTB Chart Debug]', {
           monthlyOTBData: data.kpiMetrics?.monthlyOTBData,
           monthLabels,
           monthlyOTB,
+          monthlyTargets,
           hasData: monthlyOTB.some(val => val > 0)
         })
         
@@ -1425,25 +1629,56 @@ const DashboardV2: React.FC = () => {
           data: {
             labels: monthLabels,
             datasets: [{
-              label: 'Total Dollars',
+              label: 'Actual OTB',
               data: monthlyOTB,
               backgroundColor: gradient,
               borderColor: '#6366f1',
               borderWidth: 2,
-              borderRadius: 4
+              borderRadius: 4,
+              order: 2
+            }, {
+              label: 'Target',
+              data: monthlyTargets,
+              type: 'line',
+              borderColor: '#ef4444',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointBackgroundColor: '#ef4444',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              fill: false,
+              order: 1
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { display: false },
+              legend: { 
+                display: true,
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  padding: 10,
+                  font: {
+                    size: 11
+                  }
+                }
+              },
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 callbacks: {
-                  label: (context) => `OTB: $${context.parsed.y.toLocaleString()}`
+                  label: (context) => {
+                    const label = context.dataset.label || '';
+                    const value = context.parsed.y;
+                    if (label === 'Target') {
+                      return `Target: $${value.toLocaleString()}`;
+                    }
+                    return `OTB: $${value.toLocaleString()}`;
+                  }
                 }
               }
             },
@@ -1611,165 +1846,7 @@ const DashboardV2: React.FC = () => {
       }
     }
     
-    // Speed to Lead Distribution Chart
-    if (speedDistributionRef.current && !loading && data) {
-      const ctx = speedDistributionRef.current.getContext('2d')
-      if (ctx) {
-        // Use real distribution data from BigQuery with 0-24 hours combined
-        const speedDist = data.speedDistribution || {};
-        const distribution = [
-          { range: '0-24 hrs', count: speedDist['0-1440'] || 0 },
-          { range: '1-2 days', count: speedDist['1440-2880'] || 0 },
-          { range: '2-3 days', count: speedDist['2880-4320'] || 0 },
-          { range: '3-4 days', count: speedDist['4320-5760'] || 0 },
-          { range: '4-5 days', count: speedDist['5760-7200'] || 0 },
-          { range: '5-7 days', count: speedDist['7200-10080'] || 0 },
-          { range: '7-14 days', count: speedDist['10080-20160'] || 0 },
-          { range: '14+ days', count: speedDist['20160+'] || 0 }
-        ]
-        
-        speedDistributionInstance.current = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: distribution.map(d => d.range),
-            datasets: [{
-              label: 'Number of Quotes',
-              data: distribution.map(d => d.count),
-              backgroundColor: [
-                'rgba(16, 185, 129, 0.8)',   // Green - Excellent (0-24 hrs)
-                'rgba(34, 197, 94, 0.8)',    // Light Green - Good (1-2 days)
-                'rgba(251, 191, 36, 0.8)',   // Yellow - Fair (2-3 days)
-                'rgba(245, 158, 11, 0.8)',   // Orange - Warning (3-4 days)
-                'rgba(239, 68, 68, 0.8)',    // Red - Poor (4-5 days)
-                'rgba(220, 38, 38, 0.8)',    // Dark Red - Critical (5-7 days)
-                'rgba(159, 18, 57, 0.8)',    // Darker Red - Severe (7-14 days)
-                'rgba(67, 20, 7, 0.8)'       // Brown - Extreme (14+ days)
-              ],
-              borderWidth: 0,
-              borderRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 1,
-                callbacks: {
-                  label: (context) => {
-                    const value = context.parsed.y;
-                    const label = context.label;
-                    const performanceMap: Record<string, string> = {
-                      '0-24 hrs': 'Excellent',
-                      '1-2 days': 'Good',
-                      '2-3 days': 'Fair',
-                      '3-4 days': 'Warning',
-                      '4-5 days': 'Poor',
-                      '5-7 days': 'Critical',
-                      '7-14 days': 'Severe',
-                      '14+ days': 'Extreme'
-                    };
-                    return [`Count: ${value}`, `Performance: ${performanceMap[label] || 'N/A'}`];
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.05)' }
-              },
-              x: {
-                grid: { display: false }
-              }
-            }
-          }
-        })
-      }
-    }
     
-    // Cohort Analysis Chart
-    if (cohortRef.current && !loading && filteredData && filteredData?.salespersonsThisWeek && filteredData.salespersonsThisWeek.length > 0) {
-      const ctx = cohortRef.current.getContext('2d')
-      if (ctx) {
-        // Use this week's salesperson data
-        const salespersonData = filteredData.salespersonsThisWeek
-        
-        console.log('Salesperson Performance Data:', {
-          hasData: !!filteredData,
-          salespersonsThisWeek: filteredData?.salespersonsThisWeek,
-          salespersons: filteredData?.salespersons,
-          salespersonDataLength: salespersonData.length
-        })
-        
-        cohortInstance.current = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: salespersonData.map(sp => sp.name),
-            datasets: [{
-              label: 'Quotes Sent',
-              data: salespersonData.map(sp => sp.quotesSent),
-              backgroundColor: '#fb923c',
-              borderRadius: 6,
-              barPercentage: 0.8
-            }, {
-              label: 'Quotes Converted',
-              data: salespersonData.map(sp => sp.quotesConverted),
-              backgroundColor: '#3b82f6',
-              borderRadius: 6,
-              barPercentage: 0.8
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { 
-                display: true,
-                position: 'top',
-                labels: {
-                  boxWidth: 12,
-                  padding: 10,
-                  font: {
-                    size: 11
-                  }
-                }
-              },
-              tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                borderWidth: 1,
-                callbacks: {
-                  afterLabel: (context) => {
-                    const index = context.dataIndex
-                    const sp = salespersonData[index]
-                    if (sp) {
-                      return `CVR: ${sp.conversionRate.toFixed(1)}%`
-                    }
-                    return ''
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                ticks: {
-                  stepSize: 5
-                }
-              },
-              x: {
-                grid: { display: false }
-              }
-            }
-          }
-        })
-      }
-    }
     
     // Quote Value Flow Waterfall Chart
     if (waterfallRef.current && !loading && data && data.waterfallData) {
@@ -1924,10 +2001,8 @@ const DashboardV2: React.FC = () => {
       monthlyOTBChartInstance.current?.destroy()
       weeklyOTBChartInstance.current?.destroy()
       sparklineInstance.current?.destroy()
-      speedDistributionInstance.current?.destroy()
       heatmapInstance.current?.destroy()
       waterfallInstance.current?.destroy()
-      cohortInstance.current?.destroy()
       Object.values(kpiSparklineInstances.current).forEach(chart => chart?.destroy())
     }
   }, [filteredData, loading, kpis, selectedSalesperson])
@@ -2171,9 +2246,9 @@ const DashboardV2: React.FC = () => {
                     }`}>
                       {(() => {
                         if (kpi.value === 0) {
-                          if (kpi.id === 'quotes-sent-today') return 'No quotes sent today';
-                          if (kpi.id === 'converted-today') return 'No quotes converted today';
-                          if (kpi.id === 'converted-week') return 'No quotes converted this week';
+                          if (kpi.id === 'quotes-sent-today') return selectedSalesperson !== 'all' ? `No quotes (checking ${data?.rawQuotes?.length || 0} records)` : 'No quotes sent today';
+                          if (kpi.id === 'converted-today') return selectedSalesperson !== 'all' ? `No conversions (checking ${data?.rawQuotes?.length || 0} records)` : 'No quotes converted today';
+                          if (kpi.id === 'converted-week') return selectedSalesperson !== 'all' ? `No conversions (checking ${data?.rawQuotes?.length || 0} records)` : 'No quotes converted this week';
                           if (kpi.id === 'cvr-week') return 'No quotes converted this week';
                         }
                         return formatValue(kpi.value, kpi.format);
@@ -2376,41 +2451,6 @@ const DashboardV2: React.FC = () => {
             </div>
 
             {/* Charts Row 2 */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Speed to Lead Distribution */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-pink-400" />
-                  Speed to Lead Distribution (Last 30 Days)
-                </h2>
-                <div className="h-48">
-                  <canvas ref={speedDistributionRef}></canvas>
-                </div>
-              </div>
-              
-              {/* Salesperson Performance */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4">Salesperson Performance (This Week)</h2>
-                {filteredData?.salespersonsThisWeek && filteredData.salespersonsThisWeek.length > 0 ? (
-                  <div className="h-48">
-                    <canvas ref={cohortRef}></canvas>
-                  </div>
-                ) : (
-                  <div className="h-48 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-gray-400 mb-2">No quotes sent this week yet</p>
-                      <p className="text-xs text-gray-500">
-                        Week started {new Date().getDay() === 0 ? 'today' : 
-                          new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        (Weeks run Sunday through Saturday)
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Charts Row 3 */}
             <div className="grid lg:grid-cols-2 gap-6">
