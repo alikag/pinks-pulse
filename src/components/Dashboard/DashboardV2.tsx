@@ -253,24 +253,11 @@ const DashboardV2: React.FC = () => {
           return dateStr;
         }
         
-        // For date-only strings (YYYY-MM-DD), parse as Eastern Time midnight
-        // This ensures consistency with how the backend treats dates
+        // For date-only strings (YYYY-MM-DD), parse directly
+        // BigQuery dates are already in Eastern Time
         if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-          // Parse the date components
           const [year, month, day] = dateStr.split('-').map(Number);
-          // Create a date in Eastern Time by using the local date constructor
-          // and then adjusting for the timezone difference
-          const tempDate = new Date(year, month - 1, day, 0, 0, 0);
-          // Get the Eastern Time representation
-          const etOptions: Intl.DateTimeFormatOptions = { 
-            timeZone: 'America/New_York', 
-            year: 'numeric' as const, 
-            month: '2-digit' as const, 
-            day: '2-digit' as const 
-          };
-          const etDateStr = tempDate.toLocaleDateString('en-US', etOptions);
-          const [etMonth, etDay, etYear] = etDateStr.split('/').map(Number);
-          return new Date(etYear, etMonth - 1, etDay);
+          return new Date(year, month - 1, day);
         }
         
         // For other date strings, parse normally
@@ -372,24 +359,11 @@ const DashboardV2: React.FC = () => {
           return dateStr;
         }
         
-        // For date-only strings (YYYY-MM-DD), parse as Eastern Time midnight
-        // This ensures consistency with how the backend treats dates
+        // For date-only strings (YYYY-MM-DD), parse directly
+        // BigQuery dates are already in Eastern Time
         if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-          // Parse the date components
           const [year, month, day] = dateStr.split('-').map(Number);
-          // Create a date in Eastern Time by using the local date constructor
-          // and then adjusting for the timezone difference
-          const tempDate = new Date(year, month - 1, day, 0, 0, 0);
-          // Get the Eastern Time representation
-          const etOptions: Intl.DateTimeFormatOptions = { 
-            timeZone: 'America/New_York', 
-            year: 'numeric' as const, 
-            month: '2-digit' as const, 
-            day: '2-digit' as const 
-          };
-          const etDateStr = tempDate.toLocaleDateString('en-US', etOptions);
-          const [etMonth, etDay, etYear] = etDateStr.split('/').map(Number);
-          return new Date(etYear, etMonth - 1, etDay);
+          return new Date(year, month - 1, day);
         }
         
         // For other date strings, parse normally
@@ -580,24 +554,11 @@ const DashboardV2: React.FC = () => {
           return dateStr;
         }
         
-        // For date-only strings (YYYY-MM-DD), parse as Eastern Time midnight
-        // This ensures consistency with how the backend treats dates
+        // For date-only strings (YYYY-MM-DD), parse directly
+        // BigQuery dates are already in Eastern Time
         if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-          // Parse the date components
           const [year, month, day] = dateStr.split('-').map(Number);
-          // Create a date in Eastern Time by using the local date constructor
-          // and then adjusting for the timezone difference
-          const tempDate = new Date(year, month - 1, day, 0, 0, 0);
-          // Get the Eastern Time representation
-          const etOptions: Intl.DateTimeFormatOptions = { 
-            timeZone: 'America/New_York', 
-            year: 'numeric' as const, 
-            month: '2-digit' as const, 
-            day: '2-digit' as const 
-          };
-          const etDateStr = tempDate.toLocaleDateString('en-US', etOptions);
-          const [etMonth, etDay, etYear] = etDateStr.split('/').map(Number);
-          return new Date(etYear, etMonth - 1, etDay);
+          return new Date(year, month - 1, day);
         }
         
         // For other date strings, parse normally
@@ -616,25 +577,22 @@ const DashboardV2: React.FC = () => {
     
     // Check if date is today (EST/EDT timezone aware)
     const isToday = (date: Date) => {
-      // Get Eastern Time components for the date
-      const dateET = getEasternTimeComponents(date);
-      
-      // Compare with today (which is already in Eastern Time)
-      return dateET.year === nowET.year &&
-             dateET.month === nowET.month &&
-             dateET.day === nowET.day;
+      // For dates parsed from YYYY-MM-DD strings, they're already in the right day
+      // Just compare the date parts directly
+      return date.getFullYear() === nowET.year &&
+             date.getMonth() + 1 === nowET.month &&
+             date.getDate() === nowET.day;
     };
     
     // Check if date is this week (EST/EDT timezone aware)
     const isThisWeek = (date: Date) => {
-      // Get Eastern Time components for the date
-      const dateET = getEasternTimeComponents(date);
-      const dateValue = new Date(dateET.year, dateET.month - 1, dateET.day);
-      
       // weekStart is already in EST from above
       const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
       
-      return dateValue >= weekStart && dateValue < weekEnd;
+      // Create a date with just the date parts for comparison
+      const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      return dateOnly >= weekStart && dateOnly < weekEnd;
     };
     
     // Check if date is in last 30 days
@@ -697,11 +655,14 @@ const DashboardV2: React.FC = () => {
                          !!convertedDate;
       
       // Debug first few quotes for the selected salesperson
-      if (salesperson && salesperson !== 'all' && index < 3) {
+      if (salesperson && salesperson !== 'all' && index < 5) {
         console.log(`[Quote ${index}]`, {
           quote_number: quote.quote_number,
           sent_date_raw: quote.sent_date,
           sent_date_parsed: sentDate?.toISOString(),
+          sent_date_local: sentDate?.toLocaleDateString(),
+          today_local: today.toLocaleDateString(),
+          nowET: nowET,
           isToday_sent: sentDate ? isToday(sentDate) : false,
           isThisWeek_sent: sentDate ? isThisWeek(sentDate) : false,
           converted_date_raw: quote.converted_date,
@@ -1012,19 +973,24 @@ const DashboardV2: React.FC = () => {
 
   // Filter data based on selected salesperson
   const filteredData = useMemo(() => {
-    if (!data || selectedSalesperson === 'all') return data
+    if (!data) return data
+    if (selectedSalesperson === 'all') return data
     
-    // Create filtered data object, preserving all properties including timeSeries
-    const filtered = {
+    // When filtering, just filter the display arrays, keep everything else
+    const normalizedFilter = normalizeSalespersonName(selectedSalesperson)
+    
+    return {
       ...data,
-      salespersons: data.salespersons?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)) || [],
-      salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)) || [],
-      recentConvertedQuotes: data.recentConvertedQuotes?.filter(quote => 
-        normalizeSalespersonName(quote.salesPerson) === normalizeSalespersonName(selectedSalesperson)
-      ) || []
+      salespersons: data.salespersons ? data.salespersons.filter(sp => 
+        normalizeSalespersonName(sp.name) === normalizedFilter
+      ) : [],
+      salespersonsThisWeek: data.salespersonsThisWeek ? data.salespersonsThisWeek.filter(sp => 
+        normalizeSalespersonName(sp.name) === normalizedFilter
+      ) : [],
+      recentConvertedQuotes: data.recentConvertedQuotes ? data.recentConvertedQuotes.filter(quote => 
+        normalizeSalespersonName(quote.salesPerson) === normalizedFilter
+      ) : []
     }
-    
-    return filtered
   }, [data, selectedSalesperson])
 
   // Handle sorting for converted quotes table
