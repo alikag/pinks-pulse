@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Calendar, ChevronDown, Download, TrendingUp, TrendingDown, Clock, Target, Award, CheckCircle, XCircle } from 'lucide-react'
+import { Calendar, ChevronDown, Download, TrendingUp, TrendingDown, Clock, Target, Award, CheckCircle, XCircle, Info, Star } from 'lucide-react'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
@@ -16,6 +16,17 @@ interface QuoteDetails {
   jobNumbers?: string
 }
 
+interface SalespersonScore {
+  name: string
+  compositeScore: number
+  quotesPerDay: number
+  conversionRate: number
+  avgDealSize: number
+  totalRevenue: number
+  quotesCount: number
+  conversionsCount: number
+}
+
 const SalesTeamPerformance: React.FC = () => {
   const { data, loading, error, refetch } = useDashboardData()
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
@@ -25,6 +36,7 @@ const SalesTeamPerformance: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'converted' | 'pending'>('all')
   const [sortBy, setSortBy] = useState<keyof QuoteDetails>('sentDate')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [showScoreDetails, setShowScoreDetails] = useState(false)
 
   // Helper function to get display name for salesperson (proper case)
   const getDisplayName = (name: string): string => {
@@ -211,6 +223,65 @@ const SalesTeamPerformance: React.FC = () => {
       conversionRate
     }
   }, [sortedQuotes])
+
+  // Calculate composite performance scores by salesperson
+  const salespersonScores = useMemo<SalespersonScore[]>(() => {
+    // Group quotes by salesperson
+    const salespersonData: Record<string, any> = {}
+    
+    sortedQuotes.forEach(quote => {
+      if (!salespersonData[quote.salesperson]) {
+        salespersonData[quote.salesperson] = {
+          quotes: [],
+          conversions: 0,
+          totalRevenue: 0
+        }
+      }
+      
+      salespersonData[quote.salesperson].quotes.push(quote)
+      if (quote.status === 'Converted') {
+        salespersonData[quote.salesperson].conversions++
+        salespersonData[quote.salesperson].totalRevenue += quote.totalDollars
+      }
+    })
+    
+    // Calculate scores for each salesperson
+    const scores: SalespersonScore[] = []
+    const daysInRange = dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : dateRange === '90days' ? 90 : 30
+    
+    Object.entries(salespersonData).forEach(([name, data]) => {
+      const quotesCount = data.quotes.length
+      const conversionsCount = data.conversions
+      const totalRevenue = data.totalRevenue
+      
+      // Calculate KPIs
+      const quotesPerDay = quotesCount / daysInRange
+      const conversionRate = quotesCount > 0 ? (conversionsCount / quotesCount) * 100 : 0
+      const avgDealSize = conversionsCount > 0 ? totalRevenue / conversionsCount : 0
+      
+      // Calculate composite score (0-100)
+      // Weights: Quotes/Day (30%), Conversion Rate (40%), Avg Deal Size (30%)
+      const quotesPerDayScore = Math.min((quotesPerDay / 12) * 100, 100) * 0.3 // Target: 12 quotes/day
+      const conversionRateScore = Math.min((conversionRate / 45) * 100, 100) * 0.4 // Target: 45% CVR
+      const avgDealSizeScore = Math.min((avgDealSize / 3000) * 100, 100) * 0.3 // Target: $3000 avg deal
+      
+      const compositeScore = quotesPerDayScore + conversionRateScore + avgDealSizeScore
+      
+      scores.push({
+        name,
+        compositeScore: Math.round(compositeScore),
+        quotesPerDay,
+        conversionRate,
+        avgDealSize,
+        totalRevenue,
+        quotesCount,
+        conversionsCount
+      })
+    })
+    
+    // Sort by composite score
+    return scores.sort((a, b) => b.compositeScore - a.compositeScore)
+  }, [sortedQuotes, dateRange])
 
   // Handle sorting
   const handleSort = (column: keyof QuoteDetails) => {
@@ -417,6 +488,144 @@ const SalesTeamPerformance: React.FC = () => {
             <p className="text-2xl font-bold">{formatCurrency(summaryStats.convertedValue)}</p>
           </div>
         </div>
+
+        {/* Performance Scores by Salesperson */}
+        {salespersonScores.length > 0 && (
+          <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Star className="h-5 w-5 text-yellow-400" />
+                  Performance Scores by Salesperson
+                </h3>
+                <button
+                  onClick={() => {
+                    haptics.light()
+                    setShowScoreDetails(!showScoreDetails)
+                  }}
+                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <Info className="h-4 w-4 text-gray-400" />
+                </button>
+              </div>
+              <span className="text-sm text-gray-400">{dateRange === 'custom' ? 'Custom period' : `Last ${daysInRange} days`}</span>
+            </div>
+
+            {/* Score Calculation Explanation */}
+            {showScoreDetails && (
+              <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-300 mb-2">Composite Score Calculation</h4>
+                <p className="text-sm text-gray-300 mb-2">
+                  The performance score is calculated using three key metrics with the following weights:
+                </p>
+                <ul className="text-sm text-gray-400 space-y-1 ml-4">
+                  <li>• <span className="text-gray-300">Quotes per Day (30%)</span> - Target: 12 quotes/day</li>
+                  <li>• <span className="text-gray-300">Conversion Rate (40%)</span> - Target: 45% conversion rate</li>
+                  <li>• <span className="text-gray-300">Average Deal Size (30%)</span> - Target: $3,000 per deal</li>
+                </ul>
+                <p className="text-xs text-gray-500 mt-2">
+                  Score = (Quotes/Day ÷ 12) × 30 + (CVR ÷ 45) × 40 + (Avg Deal ÷ $3,000) × 30
+                </p>
+              </div>
+            )}
+
+            {/* Scores Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {salespersonScores.map((person, index) => (
+                <div key={person.name} className="bg-gray-800/50 rounded-lg p-4 relative overflow-hidden">
+                  {/* Rank Badge */}
+                  {index < 3 && (
+                    <div className="absolute top-2 right-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        index === 0 ? 'bg-yellow-500 text-gray-900' : 
+                        index === 1 ? 'bg-gray-400 text-gray-900' : 
+                        'bg-orange-600 text-white'
+                      }`}>
+                        {index + 1}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Salesperson Info */}
+                  <div className="flex items-center gap-3 mb-3">
+                    {getSalespersonThumbnail(person.name) ? (
+                      <img 
+                        src={getSalespersonThumbnail(person.name)!} 
+                        alt={person.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-700"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
+                        <span className="text-sm font-bold">
+                          {person.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-medium">{person.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <div className={`text-2xl font-bold ${
+                          person.compositeScore >= 80 ? 'text-green-400' : 
+                          person.compositeScore >= 60 ? 'text-yellow-400' : 
+                          'text-red-400'
+                        }`}>
+                          {person.compositeScore}
+                        </div>
+                        <span className="text-xs text-gray-500">/ 100</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* KPI Details */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Quotes/Day:</span>
+                      <span className={`font-medium ${
+                        person.quotesPerDay >= 12 ? 'text-green-400' : 
+                        person.quotesPerDay >= 8 ? 'text-yellow-400' : 
+                        'text-red-400'
+                      }`}>
+                        {person.quotesPerDay.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Conversion Rate:</span>
+                      <span className={`font-medium ${
+                        person.conversionRate >= 45 ? 'text-green-400' : 
+                        person.conversionRate >= 30 ? 'text-yellow-400' : 
+                        'text-red-400'
+                      }`}>
+                        {person.conversionRate.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Avg Deal Size:</span>
+                      <span className="font-medium">{formatCurrency(person.avgDealSize)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-white/10 pt-2">
+                      <span className="text-gray-400">Total Revenue:</span>
+                      <span className="font-medium text-green-400">{formatCurrency(person.totalRevenue)}</span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mt-3">
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-500 rounded-full ${
+                          person.compositeScore >= 80 ? 'bg-green-500' : 
+                          person.compositeScore >= 60 ? 'bg-yellow-500' : 
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${person.compositeScore}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quotes Table */}
         <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
