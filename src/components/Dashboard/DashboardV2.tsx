@@ -1014,8 +1014,8 @@ const DashboardV2: React.FC = () => {
   const filteredData = useMemo(() => {
     if (!data || selectedSalesperson === 'all') return data
     
-    // Create filtered data object
-    return {
+    // Create filtered data object, preserving all properties
+    const filtered = {
       ...data,
       salespersons: data.salespersons.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)),
       salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)),
@@ -1023,6 +1023,8 @@ const DashboardV2: React.FC = () => {
         normalizeSalespersonName(quote.salesPerson) === normalizeSalespersonName(selectedSalesperson)
       )
     }
+    
+    return filtered
   }, [data, selectedSalesperson])
 
   // Handle sorting for converted quotes table
@@ -2948,7 +2950,7 @@ const DashboardV2: React.FC = () => {
 
 
             {/* Salesperson Leaderboard Enhanced */}
-            {data?.salespersons && data.salespersons.length > 0 && (
+            {filteredData?.salespersons && filteredData.salespersons.length > 0 && (
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium flex items-center gap-2">
@@ -2958,7 +2960,7 @@ const DashboardV2: React.FC = () => {
                   <span className="text-xs text-gray-400">Last 90 days</span>
                 </div>
                 <div className="space-y-3">
-                  {data.salespersons.slice(0, 5).map((sp, index) => {
+                  {filteredData.salespersons.slice(0, 5).map((sp, index) => {
                     // Map salesperson names to their headshot images
                     const headshots: { [key: string]: string } = {
                       'Christian Ruddy': '/christian-ruddy.jpg',
