@@ -843,49 +843,133 @@ const DashboardV2: React.FC = () => {
           }
         })
         
+        // Calculate weekly revenue from converted quotes
+        // Use average deal value from current week if available
+        const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
+          ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
+          : 2000; // fallback average
+          
+        const weeklyRevenue = chartData.quotesConverted.map((converted) => {
+          return converted * avgDealValue;
+        });
+        
         conversionChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: chartData.labels,
             datasets: [{
-              label: 'Conversion Rate',
-              data: chartData.conversionRate,
-              backgroundColor: chartData.labels.map((_, index) => 
-                index === chartData.labels.length - 1 ? '#F9ABAC' : 'rgba(14, 165, 233, 0.8)'
-              ),
+              label: 'Revenue',
+              type: 'bar',
+              data: weeklyRevenue,
+              backgroundColor: 'rgba(14, 165, 233, 0.6)',
+              borderColor: 'rgba(14, 165, 233, 0.8)',
+              borderWidth: 1,
               borderRadius: 4,
-              borderWidth: 0,
-              minBarLength: 2 // Show minimal bar even for 0 values
+              yAxisID: 'y',
+              order: 2
+            }, {
+              label: 'Conversion Rate',
+              type: 'line',
+              data: chartData.conversionRate,
+              borderColor: '#FDE047',
+              backgroundColor: 'rgba(253, 224, 71, 0.1)',
+              borderWidth: 3,
+              pointBackgroundColor: '#FDE047',
+              pointBorderColor: '#FDE047',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              tension: 0.4,
+              yAxisID: 'y1',
+              order: 1
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             plugins: { 
-              legend: { display: false },
+              legend: { 
+                display: true,
+                position: 'top',
+                labels: {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  padding: 10,
+                  usePointStyle: true,
+                  font: {
+                    size: 12
+                  }
+                }
+              },
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 callbacks: {
                   label: function(context) {
-                    return `Conversion Rate: ${context.parsed.y}%`;
+                    if (context.dataset.label === 'Revenue') {
+                      return `Revenue: $${context.parsed.y.toLocaleString()}`;
+                    } else {
+                      return `Conversion Rate: ${context.parsed.y}%`;
+                    }
                   },
                   afterLabel: function(context) {
-                    const sent = chartData.quotesSent[context.dataIndex];
-                    const converted = chartData.quotesConverted[context.dataIndex];
-                    return [`${converted} converted / ${sent} sent`];
+                    if (context.dataset.label === 'Revenue') {
+                      const sent = chartData.quotesSent[context.dataIndex];
+                      const converted = chartData.quotesConverted[context.dataIndex];
+                      return [`${converted} converted / ${sent} sent`];
+                    }
+                    return [];
                   }
                 }
               }
             },
             scales: {
               y: { 
+                type: 'linear',
+                display: true,
+                position: 'left',
                 beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  callback: function(value) {
+                    return '$' + value.toLocaleString();
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Revenue ($)',
+                  color: 'rgba(255, 255, 255, 0.6)'
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true,
+                grid: {
+                  drawOnChartArea: false,
+                },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  callback: function(value) {
+                    return value + '%';
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Conversion Rate (%)',
+                  color: 'rgba(255, 255, 255, 0.6)'
+                }
               },
               x: {
-                grid: { display: false }
+                grid: { display: false },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.6)'
+                }
               }
             },
             onClick: () => {
@@ -1761,13 +1845,8 @@ const DashboardV2: React.FC = () => {
 
               {/* Weekly CVR % */}
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
-                <h2 className="font-medium mb-4 flex items-center justify-between">
-                  <span>Weekly Conversion Rates</span>
-                  {data?.kpiMetrics?.cvrThisWeek && (
-                    <span className="text-sm text-gray-400">
-                      Week Avg: {data.kpiMetrics.cvrThisWeek}%
-                    </span>
-                  )}
+                <h2 className="font-medium mb-4">
+                  <span>Weekly Revenue & Conversion Rate</span>
                 </h2>
                 <div className="h-48">
                   <canvas ref={conversionChartRef}></canvas>
