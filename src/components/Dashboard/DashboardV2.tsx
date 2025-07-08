@@ -193,7 +193,7 @@ const DashboardV2: React.FC = () => {
   const calculateFilteredTimeSeries = (quotes: any[], salesperson: string) => {
     if (salesperson === 'all' || !quotes) return null;
     
-    const filteredQuotes = quotes.filter(q => q.salesperson === salesperson);
+    const filteredQuotes = quotes.filter(q => q.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase());
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -271,7 +271,7 @@ const DashboardV2: React.FC = () => {
   const calculateFilteredOTBData = (jobs: any[], salesperson: string) => {
     if (salesperson === 'all' || !jobs) return null;
     
-    const filteredJobs = jobs.filter(j => j.salesperson === salesperson);
+    const filteredJobs = jobs.filter(j => j.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase());
     const now = new Date();
     const currentYear = now.getFullYear();
     
@@ -328,13 +328,37 @@ const DashboardV2: React.FC = () => {
 
   // Helper function to calculate KPIs from raw data
   const calculateKPIsFromRawData = (quotes: any[], jobs: any[], salesperson?: string) => {
-    // Filter by salesperson if specified
+    // Debug: Log unique salesperson names in raw data
+    if (salesperson && salesperson !== 'all') {
+      const uniqueSalespeopleInQuotes = [...new Set(quotes.map(q => q.salesperson))];
+      console.log('[Salesperson Filter Debug]', {
+        filteringBy: salesperson,
+        uniqueSalespeopleInQuotes,
+        sampleQuotes: quotes.slice(0, 5).map(q => ({ 
+          salesperson: q.salesperson, 
+          sent_date: q.sent_date,
+          converted_date: q.converted_date 
+        }))
+      });
+    }
+    
+    // Filter by salesperson if specified (case-insensitive and trim whitespace)
     const filteredQuotes = salesperson && salesperson !== 'all' 
-      ? quotes.filter(q => q.salesperson === salesperson) 
+      ? quotes.filter(q => q.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase()) 
       : quotes;
     const filteredJobs = salesperson && salesperson !== 'all'
-      ? jobs.filter(j => j.salesperson === salesperson)
+      ? jobs.filter(j => j.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase())
       : jobs;
+    
+    // Debug filtered results
+    if (salesperson && salesperson !== 'all') {
+      console.log('[Filter Results]', {
+        totalQuotes: quotes.length,
+        filteredQuotes: filteredQuotes.length,
+        totalJobs: jobs.length,
+        filteredJobs: filteredJobs.length
+      });
+    }
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
