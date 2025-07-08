@@ -131,6 +131,31 @@ const DashboardV2: React.FC = () => {
 
   // Sparkline data removed - real data needed from backend
 
+  // Consistent color scheme for metrics across all charts
+  const CHART_COLORS = {
+    revenue: {
+      primary: '#3b82f6',      // Blue for revenue/OTB
+      gradient: 'rgba(59, 130, 246, 0.4)',
+      border: '#3b82f6'
+    },
+    quotes: {
+      sent: '#fb923c',         // Orange for sent quotes
+      converted: '#3b82f6',    // Blue for converted (revenue)
+      gradient: 'rgba(251, 146, 60, 0.4)'
+    },
+    targets: {
+      line: '#ef4444',         // Red for targets
+      dash: [5, 5]
+    },
+    conversion: {
+      rate: '#10b981',         // Green for conversion rate
+      gradient: 'rgba(16, 185, 129, 0.4)'
+    },
+    salesperson: {
+      colors: ['rgb(147, 51, 234)', 'rgb(236, 72, 153)', 'rgb(59, 130, 246)', 'rgb(16, 185, 129)']
+    }
+  };
+
   // Helper function to normalize salesperson names for consistent matching
   const normalizeSalespersonName = (name: string | undefined | null): string => {
     if (!name) return '';
@@ -1270,67 +1295,80 @@ const DashboardV2: React.FC = () => {
       const ctx = trendChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 200)
-        gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)')
-        gradient.addColorStop(1, 'rgba(14, 165, 233, 0)')
+        gradient.addColorStop(0, CHART_COLORS.revenue.gradient)
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)')
         
         // Use filtered data if a salesperson is selected
         const filteredTimeSeries = data.rawQuotes ? calculateFilteredTimeSeries(data.rawQuotes, selectedSalesperson) : null;
-        const chartData = (selectedSalesperson !== 'all' && filteredTimeSeries) 
-          ? {
-              labels: filteredTimeSeries.currentWeekDaily.labels,
-              quotesSent: new Array(7).fill(0), // We don't track sent quotes in filtered data
-              quotesConverted: filteredTimeSeries.currentWeekDaily.quotesConverted
-            }
-          : filteredData?.timeSeries?.currentWeekDaily || filteredData?.timeSeries?.week
         
-        if (!chartData) {
+        // Get revenue data from filtered time series or calculate from main data
+        let chartData;
+        let conversionRevenue;
+        
+        if (selectedSalesperson !== 'all' && filteredTimeSeries) {
+          chartData = {
+            labels: filteredTimeSeries.currentWeekDaily.labels,
+            quotesSent: new Array(7).fill(0), // We don't track sent quotes in filtered data
+            quotesConverted: filteredTimeSeries.currentWeekDaily.quotesConverted
+          };
+          conversionRevenue = filteredTimeSeries.currentWeekDaily.conversionRevenue;
+        } else {
+          chartData = filteredData?.timeSeries?.currentWeekDaily || filteredData?.timeSeries?.week;
+          // Calculate revenue from converted quotes
+          if (chartData && 'quotesConverted' in chartData) {
+            const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
+              ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
+              : 2000;
+            conversionRevenue = chartData.quotesConverted.map((converted: number) => converted * avgDealValue);
+          }
+        }
+        
+        if (!chartData || !conversionRevenue) {
           console.log('[Converted This Week Chart] No chart data available');
           return;
         }
         
-        console.log('[Converted This Week Chart] Chart data:', chartData)
+        console.log('[Converted This Week Chart] Chart data:', chartData, 'Revenue:', conversionRevenue)
         
         // Get current day index (0 = Sunday, 6 = Saturday)
         const currentDayIndex = new Date().getDay()
         
         // Keep all data but we'll handle display in the chart options
         const processedQuotesSent = chartData.quotesSent
-        const processedQuotesConverted = chartData.quotesConverted
         
         trendChartInstance.current = new Chart(ctx, {
-          type: 'line',
+          type: 'bar',
           data: {
             labels: chartData.labels,
             datasets: [{
-              label: 'Sent Quotes',
-              data: processedQuotesSent,
-              borderColor: '#fb923c',
-              backgroundColor: 'rgba(251, 146, 60, 0.1)',
-              fill: false,
-              tension: 0.4,
-              segment: {
-                borderDash: (ctx) => ctx.p0DataIndex >= currentDayIndex ? [5, 5] : undefined
-              },
-              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#fb923c'),
-              pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#ffffff'),
-              pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
-              pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
-              pointHoverRadius: 6
+              label: '$ Converted',
+              type: 'bar',
+              data: conversionRevenue,
+              backgroundColor: gradient,
+              borderColor: CHART_COLORS.revenue.border,
+              borderWidth: 2,
+              borderRadius: 4,
+              yAxisID: 'y',
+              order: 2
             }, {
-              label: 'Converted',
-              data: processedQuotesConverted,
-              borderColor: '#3b82f6',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              label: 'Quotes Sent',
+              type: 'line',
+              data: processedQuotesSent,
+              borderColor: CHART_COLORS.quotes.sent,
+              backgroundColor: 'transparent',
+              borderWidth: 3,
               fill: false,
               tension: 0.4,
               segment: {
                 borderDash: (ctx) => ctx.p0DataIndex >= currentDayIndex ? [5, 5] : undefined
               },
-              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#3b82f6'),
+              pointBackgroundColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : CHART_COLORS.quotes.sent),
               pointBorderColor: chartData.labels.map((_, i) => i === currentDayIndex ? '#F9ABAC' : '#ffffff'),
               pointBorderWidth: chartData.labels.map((_, i) => i === currentDayIndex ? 3 : 2),
               pointRadius: chartData.labels.map((_, i) => i === currentDayIndex ? 6 : (i <= currentDayIndex ? 4 : 0)),
-              pointHoverRadius: 6
+              pointHoverRadius: 6,
+              yAxisID: 'y1',
+              order: 1
             }]
           },
           options: {
@@ -1341,28 +1379,67 @@ const DashboardV2: React.FC = () => {
               intersect: false
             },
             plugins: {
-              legend: { display: false },
+              legend: { 
+                display: true,
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  padding: 10,
+                  font: {
+                    size: 11
+                  }
+                }
+              },
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 callbacks: {
                   label: (context) => {
-                    return `${context.dataset.label}: ${context.parsed.y}`;
+                    if (context.dataset.label === '$ Converted') {
+                      return `Revenue: $${context.parsed.y.toLocaleString()}`;
+                    } else {
+                      return `Quotes Sent: ${context.parsed.y}`;
+                    }
                   }
                 }
               }
             },
             scales: {
               y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
                   callback: (value: any) => {
-                    // Format as number for quote counts
-                    const numValue = Number(value);
-                    return numValue.toString();
+                    return '$' + Number(value).toLocaleString();
                   }
+                },
+                title: {
+                  display: true,
+                  text: 'Revenue ($)',
+                  color: 'rgba(255, 255, 255, 0.6)'
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true,
+                grid: {
+                  drawOnChartArea: false,
+                },
+                ticks: {
+                  callback: (value: any) => {
+                    return Number(value).toString();
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Quotes Sent',
+                  color: 'rgba(255, 255, 255, 0.6)'
                 }
               },
               x: {
@@ -1435,9 +1512,9 @@ const DashboardV2: React.FC = () => {
               label: 'Revenue',
               type: 'bar',
               data: weeklyRevenue,
-              backgroundColor: 'rgba(14, 165, 233, 0.6)',
-              borderColor: 'rgba(14, 165, 233, 0.8)',
-              borderWidth: 1,
+              backgroundColor: CHART_COLORS.revenue.gradient,
+              borderColor: CHART_COLORS.revenue.border,
+              borderWidth: 2,
               borderRadius: 4,
               yAxisID: 'y',
               order: 2
@@ -1445,11 +1522,12 @@ const DashboardV2: React.FC = () => {
               label: 'Conversion Rate',
               type: 'line',
               data: chartData.conversionRate,
-              borderColor: '#FDE047',
-              backgroundColor: 'rgba(253, 224, 71, 0.1)',
+              borderColor: CHART_COLORS.conversion.rate,
+              backgroundColor: CHART_COLORS.conversion.gradient,
               borderWidth: 3,
-              pointBackgroundColor: '#FDE047',
-              pointBorderColor: '#FDE047',
+              pointBackgroundColor: CHART_COLORS.conversion.rate,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
               pointRadius: 4,
               pointHoverRadius: 6,
               tension: 0.4,
@@ -1559,8 +1637,8 @@ const DashboardV2: React.FC = () => {
       const ctx = monthlyOTBChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 300)
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)')
-        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)')
+        gradient.addColorStop(0, CHART_COLORS.revenue.gradient)
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)')
         
         // Show all 12 months of 2025
         const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -1632,7 +1710,7 @@ const DashboardV2: React.FC = () => {
               label: 'Actual OTB',
               data: monthlyOTB,
               backgroundColor: gradient,
-              borderColor: '#6366f1',
+              borderColor: CHART_COLORS.revenue.border,
               borderWidth: 2,
               borderRadius: 4,
               order: 2
@@ -1640,10 +1718,10 @@ const DashboardV2: React.FC = () => {
               label: 'Target',
               data: monthlyTargets,
               type: 'line',
-              borderColor: '#ef4444',
+              borderColor: CHART_COLORS.targets.line,
               borderWidth: 2,
-              borderDash: [5, 5],
-              pointBackgroundColor: '#ef4444',
+              borderDash: CHART_COLORS.targets.dash,
+              pointBackgroundColor: CHART_COLORS.targets.line,
               pointBorderColor: '#fff',
               pointBorderWidth: 2,
               pointRadius: 4,
@@ -1712,8 +1790,8 @@ const DashboardV2: React.FC = () => {
       const ctx = weeklyOTBChartRef.current.getContext('2d')
       if (ctx) {
         const gradient = ctx.createLinearGradient(0, 0, 0, 200)
-        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)')
-        gradient.addColorStop(1, 'rgba(34, 211, 238, 0)')
+        gradient.addColorStop(0, CHART_COLORS.revenue.gradient)
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)')
         
         // Use filtered data if a salesperson is selected
         const filteredOTBData = data.rawJobs ? calculateFilteredOTBData(data.rawJobs, selectedSalesperson) : null;
@@ -1731,12 +1809,16 @@ const DashboardV2: React.FC = () => {
         // Create array of 5 weeks with current week in middle
         const weekRanges: string[] = []
         const weeklyOTBData: number[] = []
+        const weeklyTargets: number[] = []
         const weeksToShow = 5 // Total weeks to display
         const weeksBefore = 2  // Weeks before current week
         
         // Start from 2 weeks before current week
         const startWeek = new Date(currentWeekStart)
         startWeek.setDate(startWeek.getDate() - (weeksBefore * 7))
+        
+        // Calculate revenue targets based on van capacity
+        const perVanPerDay = 1500;
         
         // Build 5 weeks of data
         for (let i = 0; i < weeksToShow; i++) {
@@ -1775,20 +1857,48 @@ const DashboardV2: React.FC = () => {
           } else {
             weeklyOTBData.push(0)
           }
+          
+          // Calculate weekly target based on date
+          let workingDays = 5; // Assume 5 working days per week
+          let vans = 3; // Default to 3 vans
+          
+          const weekMonth = weekStart.getMonth() + 1;
+          const weekYear = weekStart.getFullYear();
+          
+          if (weekYear === 2025) {
+            if (weekMonth < 7) {
+              // Jan-Jun: 3 vans
+              vans = 3;
+            } else if (weekMonth === 7) {
+              // July: Check specific dates
+              const weekDate = weekStart.getDate();
+              if (weekDate < 14) {
+                vans = 3;
+              } else if (weekDate < 20) {
+                vans = 5;
+              } else {
+                vans = 6;
+              }
+            } else {
+              // Aug-Dec: 6 vans
+              vans = 6;
+            }
+          } else if (weekYear > 2025) {
+            // Future years: assume 6 vans
+            vans = 6;
+          }
+          
+          weeklyTargets.push(vans * workingDays * perVanPerDay);
         }
         
         let weekLabels = weekRanges
         let weeklyOTB = weeklyOTBData
         
-        
-        // Check if mobile
-        const isMobile = window.innerWidth < 768;
-        
         // Debug logging
         console.log('[Weekly OTB Debug]', {
           weekLabels,
           weeklyOTB,
-          isMobile,
+          weeklyTargets,
           weekRangesLength: weekRanges.length,
           weeklyOTBDataLength: weeklyOTBData.length
         });
@@ -1798,28 +1908,58 @@ const DashboardV2: React.FC = () => {
           data: {
             labels: weekLabels,
             datasets: [{
-              label: 'Total Dollars',
+              label: 'Actual OTB',
               data: weeklyOTB,
               backgroundColor: gradient,
-              borderColor: '#22d3ee',
+              borderColor: CHART_COLORS.revenue.border,
               borderWidth: 2,
               borderRadius: 4,
-              // Standard bar width
               barPercentage: 0.8,
-              categoryPercentage: 0.9
+              categoryPercentage: 0.9,
+              order: 2
+            }, {
+              label: 'Target',
+              data: weeklyTargets,
+              type: 'line',
+              borderColor: CHART_COLORS.targets.line,
+              borderWidth: 2,
+              borderDash: CHART_COLORS.targets.dash,
+              pointBackgroundColor: CHART_COLORS.targets.line,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              fill: false,
+              order: 1
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { display: false },
+              legend: { 
+                display: true,
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  padding: 10,
+                  font: {
+                    size: 11
+                  }
+                }
+              },
               tooltip: {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 callbacks: {
-                  label: (context) => `OTB: $${context.parsed.y.toLocaleString()}`
+                  label: (context) => {
+                    const label = context.dataset.label || '';
+                    const value = context.parsed.y;
+                    if (label === 'Target') {
+                      return `Target: $${value.toLocaleString()}`;
+                    }
+                    return `OTB: $${value.toLocaleString()}`;
+                  }
                 }
               }
             },
@@ -1829,11 +1969,9 @@ const DashboardV2: React.FC = () => {
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
                   callback: (value) => `$${Number(value).toLocaleString()}`,
-                  // Auto-calculate nice step size based on max value
                   autoSkip: false,
                   maxTicksLimit: 6
                 },
-                // Let Chart.js calculate a nice scale that fits the data
                 grace: '5%', // Add 5% padding to the top
                 suggestedMax: undefined // Remove any fixed max to auto-scale
               },
@@ -1872,7 +2010,7 @@ const DashboardV2: React.FC = () => {
               label: 'Quote Value Flow',
               data: waterfallData.map((d: any) => Math.abs(d.value)),
               backgroundColor: waterfallData.map((d: any) => 
-                d.value > 0 ? 'rgba(168, 85, 247, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+                d.value > 0 ? CHART_COLORS.revenue.gradient : 'rgba(239, 68, 68, 0.8)'
               ),
               borderWidth: 0,
               borderRadius: 4
