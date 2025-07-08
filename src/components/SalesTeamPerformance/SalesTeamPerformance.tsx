@@ -12,7 +12,7 @@ interface SalesPersonMetrics {
   valueSent: number
   valueConverted: number
   avgQuoteValue: number
-  avgSpeedToLead: number | null
+  avgSpeedToLead: number | null | undefined
   quotesPerDay: number
   performanceVsTarget: number // percentage above/below target
 }
@@ -76,8 +76,20 @@ const SalesTeamPerformance: React.FC = () => {
   // Sort data
   const sortedData = useMemo(() => {
     return [...processedData].sort((a, b) => {
-      const aValue = a[sortBy] ?? 0
-      const bValue = b[sortBy] ?? 0
+      let aValue: any = a[sortBy] ?? 0
+      let bValue: any = b[sortBy] ?? 0
+      
+      // Handle string comparison for name field
+      if (sortBy === 'name') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue)
+      }
+      
+      // Convert to numbers for numeric comparison
+      aValue = Number(aValue) || 0
+      bValue = Number(bValue) || 0
+      
       return sortOrder === 'asc' ? aValue - bValue : bValue - aValue
     })
   }, [processedData, sortBy, sortOrder])
