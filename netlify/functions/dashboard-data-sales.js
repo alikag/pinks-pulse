@@ -274,7 +274,6 @@ export const handler = async (event, context) => {
         q.quote_number,
         q.quote_id,
         q.client_name,
-        q.client_address,
         q.salesperson,
         q.status,
         q.total_dollars,
@@ -1182,7 +1181,6 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
             date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString("en-US", {timeZone: "America/New_York"}) : '',
             jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
             clientName: quote.client_name || quote.Client_Name,
-            clientAddress: quote.client_address || '',
             salesPerson: quote.salesperson || quote.Salesperson,
             // Construct Jobber URL - use the internal Jobber ID
             // For now, always use quotes URL since we don't have the job's internal ID
@@ -1855,8 +1853,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       converted_date: q.converted_date,
       total_dollars: parseFloat(q.total_dollars) || 0,
       status: q.status,
-      client_name: q.client_name,
-      client_address: q.client_address || ''
+      client_name: q.client_name
     })),
     rawJobs: jobsData.map(j => ({
       job_number: j.Job_Number,

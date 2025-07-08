@@ -149,7 +149,7 @@ const SalesTeamPerformance: React.FC = () => {
           quoteNumber: quote.quote_number,
           salesperson: getDisplayName(quote.salesperson),
           clientName: quote.client_name || 'Unknown Client',
-          clientAddress: quote.client_address || 'No address provided',
+          clientAddress: quote.client_address || 'Address not available',
           sentDate: sentDate?.toLocaleDateString() || '-',
           convertedDate: convertedDate?.toLocaleDateString() || null,
           status: isConverted ? 'Converted' : 'Pending',

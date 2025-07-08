@@ -3066,8 +3066,8 @@ const DashboardV2: React.FC = () => {
                             </a>
                           </td>
                           <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
-                          <td className="py-3 pr-4 max-w-xs truncate text-gray-300" title={quote.clientAddress}>
-                            {quote.clientAddress || 'No address provided'}
+                          <td className="py-3 pr-4 max-w-xs truncate text-gray-300" title={quote.clientAddress || 'Address not available'}>
+                            {quote.clientAddress || 'Address not available'}
                           </td>
                           <td className="py-3 text-right font-medium">
                             {formatValue(quote.totalDollars, 'currency')}
