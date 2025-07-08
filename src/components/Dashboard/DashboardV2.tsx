@@ -459,9 +459,36 @@ const DashboardV2: React.FC = () => {
     }
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    
+    // Helper to get Eastern Time components
+    const getEasternTimeComponents = (date: Date) => {
+      const options = {
+        timeZone: 'America/New_York',
+        year: 'numeric' as const,
+        month: 'numeric' as const,
+        day: 'numeric' as const,
+        hour: 'numeric' as const,
+        minute: 'numeric' as const,
+        second: 'numeric' as const,
+        hour12: false
+      };
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+      const components: any = {};
+      parts.forEach(part => {
+        if (part.type !== 'literal') {
+          components[part.type] = parseInt(part.value);
+        }
+      });
+      return components;
+    };
+    
+    // Get "today" in Eastern Time
+    const nowET = getEasternTimeComponents(now);
+    const today = new Date(nowET.year, nowET.month - 1, nowET.day);
+    
+    // Calculate week start in Eastern Time
+    const dayOfWeek = new Date(nowET.year, nowET.month - 1, nowET.day).getDay();
+    const weekStart = new Date(nowET.year, nowET.month - 1, nowET.day - dayOfWeek);
     
     // Parse date helper - match backend's EST timezone handling
     const parseDate = (dateStr: string | Date | any) => {
@@ -492,14 +519,27 @@ const DashboardV2: React.FC = () => {
       }
     };
     
-    // Check if date is today
+    // Check if date is today (EST/EDT timezone aware)
     const isToday = (date: Date) => {
-      return date.toDateString() === today.toDateString();
+      // Get Eastern Time components for the date
+      const dateET = getEasternTimeComponents(date);
+      
+      // Compare with today (which is already in Eastern Time)
+      return dateET.year === nowET.year &&
+             dateET.month === nowET.month &&
+             dateET.day === nowET.day;
     };
     
-    // Check if date is this week
+    // Check if date is this week (EST/EDT timezone aware)
     const isThisWeek = (date: Date) => {
-      return date >= weekStart && date < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      // Get Eastern Time components for the date
+      const dateET = getEasternTimeComponents(date);
+      const dateValue = new Date(dateET.year, dateET.month - 1, dateET.day);
+      
+      // weekStart is already in EST from above
+      const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      return dateValue >= weekStart && dateValue < weekEnd;
     };
     
     // Check if date is in last 30 days
@@ -525,19 +565,31 @@ const DashboardV2: React.FC = () => {
 
     // Debug date calculations
     if (salesperson && salesperson !== 'all' && filteredQuotes.length > 0) {
-      console.log('[Date Calculation Debug]', {
+      console.log('[Date Calculation Debug - EST/EDT Aware]', {
+        userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        now: now.toISOString(),
+        nowET: nowET,
         today: today.toISOString(),
         todayString: today.toDateString(),
         weekStart: weekStart.toISOString(),
         weekStartString: weekStart.toDateString(),
         filteredQuotesCount: filteredQuotes.length,
-        sampleQuoteDates: filteredQuotes.slice(0, 3).map(q => ({
-          sent_date_raw: q.sent_date,
-          sent_date_parsed: parseDate(q.sent_date)?.toISOString(),
-          sent_date_string: parseDate(q.sent_date)?.toDateString(),
-          isToday: parseDate(q.sent_date) ? isToday(parseDate(q.sent_date)!) : false,
-          isThisWeek: parseDate(q.sent_date) ? isThisWeek(parseDate(q.sent_date)!) : false
-        }))
+        sampleQuoteDates: filteredQuotes.slice(0, 3).map(q => {
+          const sentDate = parseDate(q.sent_date);
+          const convertedDate = parseDate(q.converted_date);
+          return {
+            sent_date_raw: q.sent_date,
+            sent_date_parsed: sentDate?.toISOString(),
+            sent_date_ET: sentDate ? getEasternTimeComponents(sentDate) : null,
+            isToday_sent: sentDate ? isToday(sentDate) : false,
+            isThisWeek_sent: sentDate ? isThisWeek(sentDate) : false,
+            converted_date_raw: q.converted_date,
+            converted_date_parsed: convertedDate?.toISOString(),
+            converted_date_ET: convertedDate ? getEasternTimeComponents(convertedDate) : null,
+            isToday_converted: convertedDate ? isToday(convertedDate) : false,
+            isThisWeek_converted: convertedDate ? isThisWeek(convertedDate) : false
+          };
+        })
       });
     }
     
