@@ -143,6 +143,29 @@ const DashboardV2: React.FC = () => {
     // TODO: Backend needs to be updated to include Jan/Feb 2026 data
     return (monthlyData[12] || 0) + (monthlyData[1] || 0) + (monthlyData[2] || 0);
   }
+  
+  // Helper function to get the current winter season years
+  const getWinterYears = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+    const currentYear = now.getFullYear();
+    
+    // If we're past February, show next winter (Dec this year + Jan/Feb next year)
+    // Otherwise show current winter (Dec last year + Jan/Feb this year)
+    if (currentMonth > 2) {
+      return {
+        decYear: currentYear,
+        janFebYear: currentYear + 1,
+        label: `Dec '${String(currentYear).slice(-2)} + Jan/Feb '${String(currentYear + 1).slice(-2)}`
+      };
+    } else {
+      return {
+        decYear: currentYear - 1,
+        janFebYear: currentYear,
+        label: `Dec '${String(currentYear - 1).slice(-2)} + Jan/Feb '${String(currentYear).slice(-2)}`
+      };
+    }
+  }
 
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
@@ -161,6 +184,7 @@ const DashboardV2: React.FC = () => {
     const currentDate = new Date();
     const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
     const nextMonthName = nextMonth.toLocaleDateString('en-US', { month: 'long' });
+    const winterYears = getWinterYears();
     
     return [
       {
@@ -226,7 +250,7 @@ const DashboardV2: React.FC = () => {
       {
         id: 'winter-otb',
         label: 'Winter OTB',
-        subtitle: 'Dec \'25 + Jan/Feb \'26: $95k',
+        subtitle: `${winterYears.label}: $95k`,
         value: calculateWinterOTB(metrics.monthlyOTBData),
         target: 95000,
         format: 'currency',
