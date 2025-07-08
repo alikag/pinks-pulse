@@ -68,7 +68,6 @@ export interface DashboardData {
     dateConverted: string;
     quoteNumber: string;
     clientName: string;
-    clientAddress?: string;
     salesPerson: string;
     totalDollars: number;
     status: string;
@@ -82,7 +81,6 @@ export interface DashboardData {
     status: string;
     client_name: string;
     job_numbers?: string;
-    client_address?: string;
   }>;
   rawJobs?: Array<{
     job_number: string;

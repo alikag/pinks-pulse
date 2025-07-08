@@ -2987,17 +2987,6 @@ const DashboardV2: React.FC = () => {
                           </div>
                         </th>
                         <th 
-                          className="pb-3 pr-4 cursor-pointer hover:text-white transition-colors"
-                          onClick={() => handleConvertedQuotesSort('clientAddress')}
-                        >
-                          <div className="flex items-center gap-2">
-                            Address
-                            {convertedQuotesSortBy === 'clientAddress' && (
-                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
-                            )}
-                          </div>
-                        </th>
-                        <th 
                           className="pb-3 pr-4 text-right cursor-pointer hover:text-white transition-colors"
                           onClick={() => handleConvertedQuotesSort('totalDollars')}
                         >
@@ -3066,9 +3055,6 @@ const DashboardV2: React.FC = () => {
                             </a>
                           </td>
                           <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
-                          <td className="py-3 pr-4 max-w-xs truncate text-gray-300" title={quote.clientAddress || 'Address not available'}>
-                            {quote.clientAddress || 'Address not available'}
-                          </td>
                           <td className="py-3 text-right font-medium">
                             {formatValue(quote.totalDollars, 'currency')}
                           </td>

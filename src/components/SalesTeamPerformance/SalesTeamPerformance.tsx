@@ -9,7 +9,6 @@ interface QuoteDetails {
   quoteNumber: string
   salesperson: string
   clientName: string
-  clientAddress: string
   sentDate: string
   convertedDate: string | null
   status: string
@@ -149,7 +148,6 @@ const SalesTeamPerformance: React.FC = () => {
           quoteNumber: quote.quote_number,
           salesperson: getDisplayName(quote.salesperson),
           clientName: quote.client_name || 'Unknown Client',
-          clientAddress: quote.client_address || 'Address not available',
           sentDate: sentDate?.toLocaleDateString() || '-',
           convertedDate: convertedDate?.toLocaleDateString() || null,
           status: isConverted ? 'Converted' : 'Pending',
@@ -379,7 +377,7 @@ const SalesTeamPerformance: React.FC = () => {
     haptics.medium()
     
     const headers = [
-      'Quote Number', 'Salesperson', 'Client Name', 'Client Address', 'Sent Date', 
+      'Quote Number', 'Salesperson', 'Client Name', 'Sent Date', 
       'Converted Date', 'Status', 'Total Value', 'Job Numbers'
     ]
     
@@ -387,7 +385,6 @@ const SalesTeamPerformance: React.FC = () => {
       quote.quoteNumber,
       quote.salesperson,
       quote.clientName,
-      quote.clientAddress,
       quote.sentDate,
       quote.convertedDate || '',
       quote.status,
@@ -822,17 +819,6 @@ const SalesTeamPerformance: React.FC = () => {
                   </th>
                   <th 
                     className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => handleSort('clientAddress')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Address
-                      {sortBy === 'clientAddress' && (
-                        <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort('sentDate')}
                   >
                     <div className="flex items-center gap-2">
@@ -903,9 +889,6 @@ const SalesTeamPerformance: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm">{quote.clientName}</td>
-                    <td className="px-6 py-4 text-sm max-w-xs truncate" title={quote.clientAddress}>
-                      {quote.clientAddress}
-                    </td>
                     <td className="px-6 py-4 text-sm">{quote.sentDate}</td>
                     <td className="px-6 py-4 text-sm">{quote.convertedDate || '-'}</td>
                     <td className="px-6 py-4">
