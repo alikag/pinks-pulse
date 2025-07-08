@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Calendar, ChevronDown, Download, TrendingUp, TrendingDown, Clock, Target, Award, CheckCircle, XCircle, Info, Star } from 'lucide-react'
+import { Calendar, ChevronDown, Download, TrendingUp, Clock, Target, Award, CheckCircle, Info, Star } from 'lucide-react'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
@@ -31,8 +31,8 @@ const SalesTeamPerformance: React.FC = () => {
   const { data, loading, error, refetch } = useDashboardData()
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'custom'>('30days')
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'converted' | 'pending'>('all')
   const [sortBy, setSortBy] = useState<keyof QuoteDetails>('sentDate')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -98,15 +98,17 @@ const SalesTeamPerformance: React.FC = () => {
         startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
         break
       case 'custom':
-        if (startDate && endDate) {
+        if (customStartDate && customEndDate) {
           return {
-            start: new Date(startDate),
-            end: new Date(endDate)
+            start: new Date(customStartDate),
+            end: new Date(customEndDate)
           }
         }
         // Fallback to 30 days
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        break
+        return {
+          start: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+          end: endDate
+        }
       default:
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
     }
@@ -168,7 +170,7 @@ const SalesTeamPerformance: React.FC = () => {
         
         return true
       })
-  }, [data, selectedSalesperson, dateRange, startDate, endDate, statusFilter])
+  }, [data, selectedSalesperson, dateRange, customStartDate, customEndDate, statusFilter])
 
   // Sort data
   const sortedQuotes = useMemo(() => {
@@ -390,15 +392,15 @@ const SalesTeamPerformance: React.FC = () => {
               <div className="flex items-center gap-2">
                 <input
                   type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
                   className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
                 />
                 <span className="text-gray-400">to</span>
                 <input
                   type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
                   className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
                 />
               </div>
@@ -508,7 +510,7 @@ const SalesTeamPerformance: React.FC = () => {
                   <Info className="h-4 w-4 text-gray-400" />
                 </button>
               </div>
-              <span className="text-sm text-gray-400">{dateRange === 'custom' ? 'Custom period' : `Last ${daysInRange} days`}</span>
+              <span className="text-sm text-gray-400">{dateRange === 'custom' ? 'Custom period' : `Last ${dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : 90} days`}</span>
             </div>
 
             {/* Score Calculation Explanation */}

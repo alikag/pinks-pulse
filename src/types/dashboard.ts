@@ -80,6 +80,7 @@ export interface DashboardData {
     total_dollars: number;
     status: string;
     client_name: string;
+    job_numbers?: string;
   }>;
   rawJobs?: Array<{
     job_number: string;
