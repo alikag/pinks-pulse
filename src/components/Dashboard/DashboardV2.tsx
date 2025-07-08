@@ -1014,14 +1014,14 @@ const DashboardV2: React.FC = () => {
   const filteredData = useMemo(() => {
     if (!data || selectedSalesperson === 'all') return data
     
-    // Create filtered data object, preserving all properties
+    // Create filtered data object, preserving all properties including timeSeries
     const filtered = {
       ...data,
-      salespersons: data.salespersons.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)),
-      salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)),
+      salespersons: data.salespersons?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)) || [],
+      salespersonsThisWeek: data.salespersonsThisWeek?.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson)) || [],
       recentConvertedQuotes: data.recentConvertedQuotes?.filter(quote => 
         normalizeSalespersonName(quote.salesPerson) === normalizeSalespersonName(selectedSalesperson)
-      )
+      ) || []
     }
     
     return filtered
