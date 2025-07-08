@@ -139,6 +139,8 @@ const DashboardV2: React.FC = () => {
   const calculateWinterOTB = (monthlyData?: Record<number, number>) => {
     if (!monthlyData) return 0;
     // December (12), January (1), February (2)
+    // Note: Currently only Dec 2025 is included as backend only tracks 2025 data
+    // TODO: Backend needs to be updated to include Jan/Feb 2026 data
     return (monthlyData[12] || 0) + (monthlyData[1] || 0) + (monthlyData[2] || 0);
   }
 
@@ -223,8 +225,8 @@ const DashboardV2: React.FC = () => {
       },
       {
         id: 'winter-otb',
-        label: 'Dec/Jan/Feb OTB',
-        subtitle: 'Target: $95k',
+        label: 'Winter OTB',
+        subtitle: 'Dec \'25 + Jan/Feb \'26: $95k',
         value: calculateWinterOTB(metrics.monthlyOTBData),
         target: 95000,
         format: 'currency',
