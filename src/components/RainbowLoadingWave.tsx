@@ -12,7 +12,9 @@ const loadingMessages = [
   "We're making it look better than we found it",
   "Still better than waiting for a window cleaner to call you back",
   "Almost ready. You could go wipe a counter or something.",
-  "Your dashboard's getting a streak-free shine. Almost there!"
+  "Your dashboard's getting a streak-free shine. Almost there!",
+  "Squeegeeing your view...",
+  "Loading faster than a ResiCon agenda pivot"
 ]
 
 const RainbowLoadingWave: React.FC = () => {
