@@ -2240,7 +2240,14 @@ const DashboardV2: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {filteredData.recentConvertedQuotes.map((quote: any, index) => (
+                      {filteredData.recentConvertedQuotes
+                        .sort((a: any, b: any) => {
+                          // Sort by dateConverted in descending order (most recent first)
+                          const dateA = new Date(a.dateConverted);
+                          const dateB = new Date(b.dateConverted);
+                          return dateB.getTime() - dateA.getTime();
+                        })
+                        .map((quote: any, index) => (
                         <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
                           <td className="py-3 pr-4">{quote.dateConverted}</td>
                           <td className="py-3 pr-4">{quote.quoteNumber || quote.jobNumber || '-'}</td>
