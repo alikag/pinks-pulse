@@ -135,6 +135,18 @@ const DashboardV2: React.FC = () => {
 
   // Sparkline data removed - real data needed from backend
 
+  // Helper function to get salesperson thumbnail
+  const getSalespersonThumbnail = (name: string): string | null => {
+    const thumbnailMap: Record<string, string> = {
+      'Christian Ruddy': '/christian-ruddy.jpg',
+      'Luigi': '/luigi.jpg',
+      'Michael Squires': '/michael-squires.jpg',
+      // Add more mappings as images become available
+    };
+    
+    return thumbnailMap[name] || null;
+  };
+
   // Helper function to calculate combined Dec/Jan/Feb OTB
   const calculateWinterOTB = (monthlyData?: Record<number, number>) => {
     if (!monthlyData) return 0;
@@ -1782,9 +1794,25 @@ const DashboardV2: React.FC = () => {
                     
                     setIsFilterOpen(!isFilterOpen);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-900/50 backdrop-blur-lg border border-white/10 rounded-lg hover:bg-gray-800/50 transition-all group"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-900/50 backdrop-blur-lg border border-white/10 rounded-lg hover:bg-gray-800/50 transition-all group"
                 >
-                  <User className="h-4 w-4 text-pink-400" />
+                  {selectedSalesperson === 'all' ? (
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                      <User className="h-3 w-3 text-white" />
+                    </div>
+                  ) : getSalespersonThumbnail(selectedSalesperson) ? (
+                    <img 
+                      src={getSalespersonThumbnail(selectedSalesperson)!} 
+                      alt={selectedSalesperson}
+                      className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-gray-300">
+                        {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-sm font-medium">
                     {selectedSalesperson === 'all' ? 'All Salespeople' : selectedSalesperson}
                   </span>
@@ -1824,31 +1852,44 @@ const DashboardV2: React.FC = () => {
                               : 'text-gray-300 hover:bg-white/5 hover:text-white'
                           }`}
                         >
-                          <div className={`w-1.5 h-1.5 rounded-full ${
-                            selectedSalesperson === 'all' ? 'bg-pink-400' : 'bg-transparent'
-                          }`} />
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
                           All Salespeople
                         </button>
-                        {salespeople.map((person) => (
-                          <button
-                            key={person}
-                            onClick={() => {
-                              haptics.light();
-                              setSelectedSalesperson(person);
-                              setIsFilterOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
-                              selectedSalesperson === person 
-                                ? 'bg-pink-500/20 text-pink-400' 
-                                : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                            }`}
-                          >
-                            <div className={`w-1.5 h-1.5 rounded-full ${
-                              selectedSalesperson === person ? 'bg-pink-400' : 'bg-transparent'
-                            }`} />
-                            {person}
-                          </button>
-                        ))}
+                        {salespeople.map((person) => {
+                          const thumbnail = getSalespersonThumbnail(person);
+                          return (
+                            <button
+                              key={person}
+                              onClick={() => {
+                                haptics.light();
+                                setSelectedSalesperson(person);
+                                setIsFilterOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                                selectedSalesperson === person 
+                                  ? 'bg-pink-500/20 text-pink-400' 
+                                  : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                              }`}
+                            >
+                              {thumbnail ? (
+                                <img 
+                                  src={thumbnail} 
+                                  alt={person}
+                                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-medium text-gray-300">
+                                    {person.split(' ').map(n => n[0]).join('')}
+                                  </span>
+                                </div>
+                              )}
+                              {person}
+                            </button>
+                          );
+                        })}
                       </div>
                     </motion.div>
                   </AnimatePresence>,
@@ -1887,12 +1928,31 @@ const DashboardV2: React.FC = () => {
               {kpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible relative"
                   onClick={() => {
                     haptics.light();
                     setSelectedMetric(kpi);
                   }}
                 >
+                  {/* Salesperson thumbnail badge */}
+                  {selectedSalesperson !== 'all' && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      {getSalespersonThumbnail(selectedSalesperson) ? (
+                        <img 
+                          src={getSalespersonThumbnail(selectedSalesperson)!} 
+                          alt={selectedSalesperson}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-gray-900 shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-pink-500/20 border-2 border-gray-900 shadow-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-pink-400">
+                            {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <h3 className="text-sm text-gray-400">{kpi.label}</h3>
                     {kpi.subtitle && (
@@ -1954,12 +2014,31 @@ const DashboardV2: React.FC = () => {
               {secondRowKpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer"
+                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible relative"
                   onClick={() => {
                     haptics.light();
                     setSelectedMetric(kpi);
                   }}
                 >
+                  {/* Salesperson thumbnail badge */}
+                  {selectedSalesperson !== 'all' && kpi.id !== 'reviews-week' && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      {getSalespersonThumbnail(selectedSalesperson) ? (
+                        <img 
+                          src={getSalespersonThumbnail(selectedSalesperson)!} 
+                          alt={selectedSalesperson}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-gray-900 shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-pink-500/20 border-2 border-gray-900 shadow-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-pink-400">
+                            {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <h3 className="text-sm text-gray-400">{kpi.label}</h3>
                     {kpi.subtitle && (
