@@ -440,21 +440,35 @@ const DashboardV2: React.FC = () => {
     }
     
     // Filter by salesperson if specified (normalized comparison)
-    const normalizedFilterName = normalizeSalespersonName(salesperson);
+    const normalizedFilterName = salesperson ? salesperson.trim().toLowerCase() : '';
     const filteredQuotes = salesperson && salesperson !== 'all' 
-      ? quotes.filter(q => normalizeSalespersonName(q.salesperson) === normalizedFilterName) 
+      ? quotes.filter(q => {
+          const normalizedQuoteName = (q.salesperson || '').trim().toLowerCase();
+          return normalizedQuoteName === normalizedFilterName;
+        }) 
       : quotes;
     const filteredJobs = salesperson && salesperson !== 'all'
-      ? jobs.filter(j => normalizeSalespersonName(j.salesperson) === normalizedFilterName)
+      ? jobs.filter(j => {
+          const normalizedJobName = (j.salesperson || '').trim().toLowerCase();
+          return normalizedJobName === normalizedFilterName;
+        })
       : jobs;
     
     // Debug filtered results
     if (salesperson && salesperson !== 'all') {
       console.log('[Filter Results]', {
+        filteringFor: salesperson,
+        normalizedFilterName: normalizedFilterName,
         totalQuotes: quotes.length,
         filteredQuotes: filteredQuotes.length,
         totalJobs: jobs.length,
-        filteredJobs: filteredJobs.length
+        filteredJobs: filteredJobs.length,
+        sampleMatches: filteredQuotes.slice(0, 3).map(q => ({
+          quote_number: q.quote_number,
+          salesperson: q.salesperson,
+          normalized: (q.salesperson || '').trim().toLowerCase(),
+          sent_date: q.sent_date
+        }))
       });
     }
 
