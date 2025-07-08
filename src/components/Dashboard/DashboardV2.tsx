@@ -971,26 +971,13 @@ const DashboardV2: React.FC = () => {
     return uniqueNames
   }, [data])
 
-  // Filter data based on selected salesperson
+  // Filter data based on selected salesperson - keep it simple
   const filteredData = useMemo(() => {
-    if (!data) return data
+    if (!data) return null
     if (selectedSalesperson === 'all') return data
     
-    // When filtering, just filter the display arrays, keep everything else
-    const normalizedFilter = normalizeSalespersonName(selectedSalesperson)
-    
-    return {
-      ...data,
-      salespersons: data.salespersons ? data.salespersons.filter(sp => 
-        normalizeSalespersonName(sp.name) === normalizedFilter
-      ) : [],
-      salespersonsThisWeek: data.salespersonsThisWeek ? data.salespersonsThisWeek.filter(sp => 
-        normalizeSalespersonName(sp.name) === normalizedFilter
-      ) : [],
-      recentConvertedQuotes: data.recentConvertedQuotes ? data.recentConvertedQuotes.filter(quote => 
-        normalizeSalespersonName(quote.salesPerson) === normalizedFilter
-      ) : []
-    }
+    // Just return the data as is - we'll handle filtering in each component
+    return data
   }, [data, selectedSalesperson])
 
   // Handle sorting for converted quotes table
@@ -1455,11 +1442,11 @@ const DashboardV2: React.FC = () => {
           };
           conversionRevenue = filteredTimeSeries.currentWeekDaily.conversionRevenue;
         } else {
-          chartData = filteredData?.timeSeries?.currentWeekDaily || filteredData?.timeSeries?.week;
+          chartData = data?.timeSeries?.currentWeekDaily || data?.timeSeries?.week;
           // Calculate revenue from converted quotes
           if (chartData && 'quotesConverted' in chartData) {
-            const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
-              ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
+            const avgDealValue = (data?.kpiMetrics?.convertedThisWeek && data.kpiMetrics.convertedThisWeek > 0)
+              ? (data.kpiMetrics.convertedThisWeekDollars / data.kpiMetrics.convertedThisWeek)
               : 2000;
             conversionRevenue = chartData.quotesConverted.map((converted: number) => converted * avgDealValue);
           }
@@ -1608,7 +1595,7 @@ const DashboardV2: React.FC = () => {
         const filteredTimeSeries = data.rawQuotes ? calculateFilteredTimeSeries(data.rawQuotes, selectedSalesperson) : null;
         const chartData = (selectedSalesperson !== 'all' && filteredTimeSeries) 
           ? filteredTimeSeries.weeklyTrend
-          : filteredData?.timeSeries?.week
+          : data?.timeSeries?.week
         
         if (!chartData) {
           console.log('[Weekly CVR Chart Debug] No chart data available');
@@ -2219,7 +2206,7 @@ const DashboardV2: React.FC = () => {
       heatmapInstance.current?.destroy()
       Object.values(kpiSparklineInstances.current).forEach(chart => chart?.destroy())
     }
-  }, [filteredData, loading, kpis, selectedSalesperson])
+  }, [data, loading, kpis, selectedSalesperson])
 
   if (loading) {
     return <RainbowLoadingWave />
@@ -2916,7 +2903,7 @@ const DashboardV2: React.FC = () => {
 
 
             {/* Salesperson Leaderboard Enhanced */}
-            {filteredData?.salespersons && filteredData.salespersons.length > 0 && (
+            {data?.salespersons && data.salespersons.length > 0 && (
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium flex items-center gap-2">
@@ -2926,7 +2913,10 @@ const DashboardV2: React.FC = () => {
                   <span className="text-xs text-gray-400">Last 90 days</span>
                 </div>
                 <div className="space-y-3">
-                  {filteredData.salespersons.slice(0, 5).map((sp, index) => {
+                  {(selectedSalesperson !== 'all' 
+                    ? data.salespersons.filter(sp => normalizeSalespersonName(sp.name) === normalizeSalespersonName(selectedSalesperson))
+                    : data.salespersons
+                  ).slice(0, 5).map((sp, index) => {
                     // Map salesperson names to their headshot images
                     const headshots: { [key: string]: string } = {
                       'Christian Ruddy': '/christian-ruddy.jpg',
@@ -3003,7 +2993,7 @@ const DashboardV2: React.FC = () => {
                 <div className="text-center py-12">
                   <p className="text-gray-400">Loading...</p>
                 </div>
-              ) : (!filteredData || !filteredData.recentConvertedQuotes || filteredData.recentConvertedQuotes.length === 0) ? (
+              ) : (!data || !data.recentConvertedQuotes || (selectedSalesperson !== 'all' ? data.recentConvertedQuotes.filter(quote => normalizeSalespersonName(quote.salesPerson) === normalizeSalespersonName(selectedSalesperson)) : data.recentConvertedQuotes).length === 0) ? (
                 <div className="text-center py-12">
                   <p className="text-gray-400">No quotes converted this week</p>
                   <p className="text-xs text-gray-500 mt-2">
@@ -3080,7 +3070,10 @@ const DashboardV2: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="text-sm">
-                      {filteredData.recentConvertedQuotes
+                      {(selectedSalesperson !== 'all' 
+                        ? data.recentConvertedQuotes.filter(quote => normalizeSalespersonName(quote.salesPerson) === normalizeSalespersonName(selectedSalesperson))
+                        : data.recentConvertedQuotes
+                      )
                         .sort((a: any, b: any) => {
                           let aValue = a[convertedQuotesSortBy]
                           let bValue = b[convertedQuotesSortBy]
