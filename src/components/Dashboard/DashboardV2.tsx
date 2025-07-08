@@ -135,6 +135,13 @@ const DashboardV2: React.FC = () => {
 
   // Sparkline data removed - real data needed from backend
 
+  // Helper function to calculate combined Dec/Jan/Feb OTB
+  const calculateWinterOTB = (monthlyData?: Record<number, number>) => {
+    if (!monthlyData) return 0;
+    // December (12), January (1), February (2)
+    return (monthlyData[12] || 0) + (monthlyData[1] || 0) + (monthlyData[2] || 0);
+  }
+
   // Calculate KPIs from data
   const kpis = useMemo<KPI[]>(() => {
     console.log('DashboardV2 - Full data object:', data);
@@ -226,13 +233,6 @@ const DashboardV2: React.FC = () => {
       }
     ]
   }, [data, loading])
-  
-  // Helper function to calculate combined Dec/Jan/Feb OTB
-  const calculateWinterOTB = (monthlyData?: Record<number, number>) => {
-    if (!monthlyData) return 0;
-    // December (12), January (1), February (2)
-    return (monthlyData[12] || 0) + (monthlyData[1] || 0) + (monthlyData[2] || 0);
-  }
 
   // Calculate second row KPIs
   const secondRowKpis = useMemo<KPI[]>(() => {
