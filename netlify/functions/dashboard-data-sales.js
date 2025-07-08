@@ -297,6 +297,11 @@ export const handler = async (event, context) => {
     // ============================================
     // Purpose: Get scheduled jobs to calculate future revenue (OTB = On The Books)
     // Shows what revenue is already locked in for future dates
+    // Get current year and next 2 years for medium-term outlook
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
+    const yearAfterNext = currentYear + 2;
+    
     const jobsQuery = `
       SELECT 
         Job_Number,          -- Unique job identifier
@@ -307,11 +312,10 @@ export const handler = async (event, context) => {
         Calculated_Value     -- Revenue value of the job (excluding sales tax)
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       WHERE Date IS NOT NULL     -- Must have a scheduled date
-        -- === INCLUDE ALL 2025 AND 2026 JOBS ===
-        -- Changed to include ALL jobs from 2025 (for monthly OTB including May/June)
-        -- AND 2026 jobs (for recurring revenue calculation)
-        -- This ensures we capture all relevant data for the dashboard
-        AND EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) IN (2025, 2026)
+        -- === INCLUDE CURRENT YEAR AND NEXT 2 YEARS FOR MEDIUM-TERM OUTLOOK ===
+        -- Dynamically includes a rolling 2-year window from current date
+        -- This provides visibility into medium-term revenue projections
+        AND EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) IN (${currentYear}, ${nextYear}, ${yearAfterNext})
       ORDER BY Date  -- Chronological order for processing
     `;
 
@@ -1362,19 +1366,22 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.nextMonthOTB += jobValue;
     }
     
-    // Add to monthly OTB data for 2025 and early 2026 (Jan/Feb for winter OTB)
+    // Add to monthly OTB data for current year and next year's winter months
     if (jobDate) {
       const year = jobDate.getFullYear();
       const month = jobDate.getMonth() + 1; // JavaScript months are 0-indexed
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
       
-      if (year === 2025 || (year === 2026 && month <= 2)) {
+      // Include current year and Jan/Feb of next year for winter OTB
+      if (year === currentYear || (year === nextYear && month <= 2)) {
         metrics.monthlyOTBData[month] += jobValue;
       }
     }
     
-    // Check for recurring jobs in 2026
-    if (jobDate && jobDate.getFullYear() === 2026 && job.Job_type === 'RECURRING') {
-      metrics.recurringRevenue2026 += jobValue;
+    // Check for recurring jobs in next year
+    if (jobDate && jobDate.getFullYear() === nextYear && job.Job_type === 'RECURRING') {
+      metrics.recurringRevenue2026 += jobValue; // TODO: Rename this variable to recurringRevenueNextYear
     }
   });
   
@@ -1458,7 +1465,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Weekly OTB Breakdown]:', metrics.weeklyOTBBreakdown);
   console.log('[This Month OTB Total]:', metrics.thisMonthOTB);
   console.log('[Current Month]:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
-  console.log('[Monthly OTB Data for 2025 + Jan/Feb 2026]:', metrics.monthlyOTBData);
+  const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
+  console.log(`[Monthly OTB Data for ${currentYear} + Jan/Feb ${nextYear}]:`, metrics.monthlyOTBData);
   console.log('[Next Month OTB (July 2025)]:', metrics.nextMonthOTB);
   
   // Log 5-week range details

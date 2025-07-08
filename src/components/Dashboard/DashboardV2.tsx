@@ -241,7 +241,7 @@ const DashboardV2: React.FC = () => {
       },
       {
         id: 'recurring-2026',
-        label: '2026 Recurring',
+        label: `${nextMonth.getFullYear() + 1} Recurring`,
         subtitle: 'Target: $1M',
         value: metrics.recurringRevenue2026,
         target: 1000000,
