@@ -412,6 +412,12 @@ const DashboardV2: React.FC = () => {
 
   // Helper function to calculate KPIs from raw data
   const calculateKPIsFromRawData = (quotes: any[], jobs: any[], salesperson?: string) => {
+    console.log('[calculateKPIsFromRawData] Called with:', {
+      quotesLength: quotes?.length,
+      jobsLength: jobs?.length,
+      salesperson: salesperson
+    });
+    
     // Debug: Log unique salesperson names in raw data
     if (salesperson && salesperson !== 'all') {
       const uniqueSalespeopleInQuotes = [...new Set(quotes.map(q => q.salesperson))].filter(Boolean);
@@ -633,7 +639,19 @@ const DashboardV2: React.FC = () => {
       }
       
       if (sentDate) {
-        if (isToday(sentDate)) metrics.quotesToday++;
+        const todayCheck = isToday(sentDate);
+        if (todayCheck) {
+          metrics.quotesToday++;
+          if (salesperson && salesperson !== 'all' && metrics.quotesToday <= 3) {
+            console.log('[Today Quote Found]', {
+              quote_number: quote.quote_number,
+              salesperson: quote.salesperson,
+              sent_date: quote.sent_date,
+              sentDateParsed: sentDate.toISOString(),
+              isToday: todayCheck
+            });
+          }
+        }
         if (isThisWeek(sentDate)) metrics.quotesThisWeek++;
         if (isLast30Days(sentDate)) metrics.quotes30Days++;
       }
@@ -745,9 +763,14 @@ const DashboardV2: React.FC = () => {
     
     console.log('[KPI Debug]', {
       selectedSalesperson,
+      hasRawQuotes: !!data.rawQuotes,
+      hasRawJobs: !!data.rawJobs,
+      rawQuotesLength: data.rawQuotes?.length,
+      rawJobsLength: data.rawJobs?.length,
       usingFiltered: data.rawQuotes && data.rawJobs && selectedSalesperson !== 'all',
       backendMetrics: data.kpiMetrics,
-      calculatedMetrics: metrics
+      calculatedMetrics: metrics,
+      rawQuotesSample: data.rawQuotes?.slice(0, 2)
     });
     
     // Get next month name
