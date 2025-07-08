@@ -213,9 +213,26 @@ const DashboardV2: React.FC = () => {
         target: 125000,
         format: 'currency',
         status: metrics.nextMonthOTB >= 125000 ? 'success' : metrics.nextMonthOTB >= 100000 ? 'warning' : 'danger'
+      },
+      {
+        id: 'winter-otb',
+        label: 'Dec/Jan/Feb OTB',
+        subtitle: 'Target: $95k',
+        value: calculateWinterOTB(metrics.monthlyOTBData),
+        target: 95000,
+        format: 'currency',
+        status: calculateWinterOTB(metrics.monthlyOTBData) >= 95000 ? 'success' : 
+                calculateWinterOTB(metrics.monthlyOTBData) >= 75000 ? 'warning' : 'danger'
       }
     ]
   }, [data, loading])
+  
+  // Helper function to calculate combined Dec/Jan/Feb OTB
+  const calculateWinterOTB = (monthlyData?: Record<number, number>) => {
+    if (!monthlyData) return 0;
+    // December (12), January (1), February (2)
+    return (monthlyData[12] || 0) + (monthlyData[1] || 0) + (monthlyData[2] || 0);
+  }
 
   // Calculate second row KPIs
   const secondRowKpis = useMemo<KPI[]>(() => {
@@ -1684,7 +1701,7 @@ const DashboardV2: React.FC = () => {
           {/* Main Content */}
           <section ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-6 pb-20 lg:p-6 lg:pb-6 space-y-6">
             {/* First Row KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
               {kpis.map((kpi) => (
                 <div
                   key={kpi.id}
