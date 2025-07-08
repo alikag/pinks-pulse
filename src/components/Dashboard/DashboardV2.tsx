@@ -662,6 +662,13 @@ const DashboardV2: React.FC = () => {
           description: 'Count of Google reviews from BigQuery table where review date falls in current week.',
           notes: 'Reviews manually added to BigQuery table. Target: 2 per week for reputation building.'
         }
+      case 'winter-otb':
+        const winterYears = getWinterYears();
+        return {
+          formula: `SUM(Calculated_Value) FROM v_jobs WHERE (MONTH(Date) = 12 AND YEAR(Date) = ${winterYears.decYear}) OR (MONTH(Date) IN (1,2) AND YEAR(Date) = ${winterYears.janFebYear})`,
+          description: `Total value of all jobs scheduled for December ${winterYears.decYear} plus January and February ${winterYears.janFebYear} from BigQuery view: jobber_data.v_jobs`,
+          notes: 'Combines the three slowest months into one metric. Target: $95k. Automatically advances to next winter season after February.'
+        }
       default:
         return {
           formula: 'Custom calculation',
