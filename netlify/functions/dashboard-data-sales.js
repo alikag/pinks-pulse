@@ -1362,10 +1362,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.nextMonthOTB += jobValue;
     }
     
-    // Add to monthly OTB data for 2025
-    if (jobDate && jobDate.getFullYear() === 2025) {
+    // Add to monthly OTB data for 2025 and early 2026 (Jan/Feb for winter OTB)
+    if (jobDate) {
+      const year = jobDate.getFullYear();
       const month = jobDate.getMonth() + 1; // JavaScript months are 0-indexed
-      metrics.monthlyOTBData[month] += jobValue;
+      
+      if (year === 2025 || (year === 2026 && month <= 2)) {
+        metrics.monthlyOTBData[month] += jobValue;
+      }
     }
     
     // Check for recurring jobs in 2026
@@ -1454,7 +1458,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[Weekly OTB Breakdown]:', metrics.weeklyOTBBreakdown);
   console.log('[This Month OTB Total]:', metrics.thisMonthOTB);
   console.log('[Current Month]:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
-  console.log('[Monthly OTB Data for 2025]:', metrics.monthlyOTBData);
+  console.log('[Monthly OTB Data for 2025 + Jan/Feb 2026]:', metrics.monthlyOTBData);
   console.log('[Next Month OTB (July 2025)]:', metrics.nextMonthOTB);
   
   // Log 5-week range details
