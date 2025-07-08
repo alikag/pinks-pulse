@@ -1366,12 +1366,13 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.nextMonthOTB += jobValue;
     }
     
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
+    
     // Add to monthly OTB data for current year and next year's winter months
     if (jobDate) {
       const year = jobDate.getFullYear();
       const month = jobDate.getMonth() + 1; // JavaScript months are 0-indexed
-      const currentYear = new Date().getFullYear();
-      const nextYear = currentYear + 1;
       
       // Include current year and Jan/Feb of next year for winter OTB
       if (year === currentYear || (year === nextYear && month <= 2)) {
