@@ -59,6 +59,8 @@ const DashboardV2: React.FC = () => {
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
+  const [convertedQuotesSortBy, setConvertedQuotesSortBy] = useState<string>('dateConverted')
+  const [convertedQuotesSortOrder, setConvertedQuotesSortOrder] = useState<'asc' | 'desc'>('desc')
   const { data, loading, error, refetch } = useDashboardData()
   const mainContentRef = useRef<HTMLElement>(null)
   const filterButtonRef = useRef<HTMLButtonElement>(null)
@@ -910,6 +912,17 @@ const DashboardV2: React.FC = () => {
       )
     }
   }, [data, selectedSalesperson])
+
+  // Handle sorting for converted quotes table
+  const handleConvertedQuotesSort = (column: string) => {
+    if (convertedQuotesSortBy === column) {
+      setConvertedQuotesSortOrder(convertedQuotesSortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setConvertedQuotesSortBy(column)
+      setConvertedQuotesSortOrder('desc')
+    }
+    haptics.light()
+  }
 
   // Fetch Google Reviews function
   const fetchReviews = async () => {
@@ -2926,23 +2939,106 @@ const DashboardV2: React.FC = () => {
                   <table className="w-full">
                     <thead>
                       <tr className="text-left text-sm text-gray-400 border-b border-white/10">
-                        <th className="pb-3 pr-4">Date Converted</th>
-                        <th className="pb-3 pr-4">Job Number</th>
+                        <th 
+                          className="pb-3 pr-4 cursor-pointer hover:text-white transition-colors"
+                          onClick={() => handleConvertedQuotesSort('dateConverted')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Date Converted
+                            {convertedQuotesSortBy === 'dateConverted' && (
+                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="pb-3 pr-4 cursor-pointer hover:text-white transition-colors"
+                          onClick={() => handleConvertedQuotesSort('quoteNumber')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Job Number
+                            {convertedQuotesSortBy === 'quoteNumber' && (
+                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
+                        </th>
                         <th className="pb-3 pr-4">Job Date</th>
                         <th className="pb-3 pr-4">Job Type</th>
-                        <th className="pb-3 pr-4">Sales Person</th>
+                        <th 
+                          className="pb-3 pr-4 cursor-pointer hover:text-white transition-colors"
+                          onClick={() => handleConvertedQuotesSort('salesPerson')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Sales Person
+                            {convertedQuotesSortBy === 'salesPerson' && (
+                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
+                        </th>
                         <th className="pb-3 pr-4">JobberLink</th>
-                        <th className="pb-3 pr-4">Visit Title</th>
-                        <th className="pb-3 text-right">Total Dollars</th>
+                        <th 
+                          className="pb-3 pr-4 cursor-pointer hover:text-white transition-colors"
+                          onClick={() => handleConvertedQuotesSort('visitTitle')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Visit Title
+                            {convertedQuotesSortBy === 'visitTitle' && (
+                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="pb-3 pr-4 cursor-pointer hover:text-white transition-colors"
+                          onClick={() => handleConvertedQuotesSort('clientAddress')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Address
+                            {convertedQuotesSortBy === 'clientAddress' && (
+                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="pb-3 pr-4 text-right cursor-pointer hover:text-white transition-colors"
+                          onClick={() => handleConvertedQuotesSort('totalDollars')}
+                        >
+                          <div className="flex items-center justify-end gap-2">
+                            Total Dollars
+                            {convertedQuotesSortBy === 'totalDollars' && (
+                              <ChevronDown className={`h-4 w-4 transition-transform ${convertedQuotesSortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                            )}
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
                       {filteredData.recentConvertedQuotes
                         .sort((a: any, b: any) => {
-                          // Sort by dateConverted in descending order (most recent first)
-                          const dateA = new Date(a.dateConverted);
-                          const dateB = new Date(b.dateConverted);
-                          return dateB.getTime() - dateA.getTime();
+                          let aValue = a[convertedQuotesSortBy]
+                          let bValue = b[convertedQuotesSortBy]
+                          
+                          // Handle date sorting
+                          if (convertedQuotesSortBy === 'dateConverted') {
+                            aValue = new Date(a.dateConverted).getTime()
+                            bValue = new Date(b.dateConverted).getTime()
+                          }
+                          
+                          // Handle numeric sorting
+                          if (convertedQuotesSortBy === 'totalDollars') {
+                            aValue = a.totalDollars || 0
+                            bValue = b.totalDollars || 0
+                          }
+                          
+                          // Handle string comparison
+                          if (typeof aValue === 'string' && typeof bValue === 'string') {
+                            return convertedQuotesSortOrder === 'asc' 
+                              ? aValue.localeCompare(bValue)
+                              : bValue.localeCompare(aValue)
+                          }
+                          
+                          // Handle numeric/date comparison
+                          if (aValue < bValue) return convertedQuotesSortOrder === 'asc' ? -1 : 1
+                          if (aValue > bValue) return convertedQuotesSortOrder === 'asc' ? 1 : -1
+                          return 0
                         })
                         .map((quote: any, index) => (
                         <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition">
@@ -2970,6 +3066,9 @@ const DashboardV2: React.FC = () => {
                             </a>
                           </td>
                           <td className="py-3 pr-4 text-gray-300">{quote.visitTitle || quote.clientName || 'null'}</td>
+                          <td className="py-3 pr-4 max-w-xs truncate text-gray-300" title={quote.clientAddress}>
+                            {quote.clientAddress || 'No address provided'}
+                          </td>
                           <td className="py-3 text-right font-medium">
                             {formatValue(quote.totalDollars, 'currency')}
                           </td>
