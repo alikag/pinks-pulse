@@ -1117,6 +1117,12 @@ const DashboardV2: React.FC = () => {
               quotesConverted: filteredTimeSeries.currentWeekDaily.quotesConverted
             }
           : filteredData?.timeSeries?.currentWeekDaily || filteredData?.timeSeries?.week
+        
+        if (!chartData) {
+          console.log('[Converted This Week Chart] No chart data available');
+          return;
+        }
+        
         console.log('[Converted This Week Chart] Chart data:', chartData)
         
         // Get current day index (0 = Sunday, 6 = Saturday)
@@ -1220,6 +1226,11 @@ const DashboardV2: React.FC = () => {
           ? filteredTimeSeries.weeklyTrend
           : filteredData?.timeSeries?.week
         
+        if (!chartData) {
+          console.log('[Weekly CVR Chart Debug] No chart data available');
+          return;
+        }
+        
         // Debug logging for missing bars
         console.log('[Weekly CVR Chart Debug]', {
           labels: chartData.labels,
@@ -1237,15 +1248,18 @@ const DashboardV2: React.FC = () => {
         
         // Handle different data structures
         let weeklyRevenue;
-        if (selectedSalesperson !== 'all' && filteredTimeSeries) {
+        if (selectedSalesperson !== 'all' && filteredTimeSeries && 'revenue' in chartData) {
           // Use revenue directly from filtered data
           weeklyRevenue = chartData.revenue;
-        } else {
+        } else if ('quotesConverted' in chartData) {
           // Calculate from converted quotes
           const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
             ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
             : 2000;
-          weeklyRevenue = chartData.quotesConverted.map((converted) => converted * avgDealValue);
+          weeklyRevenue = chartData.quotesConverted.map((converted: number) => converted * avgDealValue);
+        } else {
+          console.error('[Weekly CVR Chart] Unexpected chart data structure');
+          return;
         }
         
         conversionChartInstance.current = new Chart(ctx, {
@@ -1311,9 +1325,9 @@ const DashboardV2: React.FC = () => {
                     }
                   },
                   afterLabel: function(context) {
-                    if (context.dataset.label === 'Revenue') {
-                      const sent = chartData.quotesSent[context.dataIndex];
-                      const converted = chartData.quotesConverted[context.dataIndex];
+                    if (context.dataset.label === 'Revenue' && 'quotesSent' in chartData && 'quotesConverted' in chartData) {
+                      const sent = (chartData as any).quotesSent[context.dataIndex];
+                      const converted = (chartData as any).quotesConverted[context.dataIndex];
                       return [`${converted} converted / ${sent} sent`];
                     }
                     return [];
