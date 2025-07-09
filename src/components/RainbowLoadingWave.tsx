@@ -29,12 +29,36 @@ const RainbowLoadingWave: React.FC = () => {
       const text = textRef.current.textContent || ''
       textRef.current.innerHTML = ''
       
-      for (let i = 0; i < text.length; i++) {
-        const span = document.createElement('span')
-        span.textContent = text[i] === ' ' ? '\u00A0' : text[i]
-        span.style.animationDelay = `${i * 0.05}s`
-        textRef.current.appendChild(span)
-      }
+      // Split by words to maintain word boundaries
+      const words = text.split(' ')
+      let charIndex = 0
+      
+      words.forEach((word, wordIndex) => {
+        // Create a wrapper span for each word
+        const wordSpan = document.createElement('span')
+        wordSpan.style.display = 'inline-block'
+        wordSpan.style.whiteSpace = 'nowrap'
+        
+        // Add each character of the word
+        for (let i = 0; i < word.length; i++) {
+          const charSpan = document.createElement('span')
+          charSpan.textContent = word[i]
+          charSpan.style.animationDelay = `${charIndex * 0.05}s`
+          wordSpan.appendChild(charSpan)
+          charIndex++
+        }
+        
+        textRef.current?.appendChild(wordSpan)
+        
+        // Add space after word (except for last word)
+        if (wordIndex < words.length - 1) {
+          const spaceSpan = document.createElement('span')
+          spaceSpan.textContent = '\u00A0'
+          spaceSpan.style.animationDelay = `${charIndex * 0.05}s`
+          textRef.current?.appendChild(spaceSpan)
+          charIndex++
+        }
+      })
     }
   }, [])
 

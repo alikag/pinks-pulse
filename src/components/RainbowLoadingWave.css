@@ -5,6 +5,11 @@
   transform-style: preserve-3d;
   text-align: center;
   letter-spacing: -0.02em;
+  max-width: 90vw;
+  margin: 0 auto;
+  padding: 0 20px;
+  word-wrap: break-word;
+  line-height: 1.3;
 }
 
 .rainbow-loading-wave span {
@@ -70,11 +75,15 @@
 @media (max-width: 768px) {
   .rainbow-loading-wave {
     font-size: 2rem;
+    padding: 0 30px;
+    line-height: 1.4;
   }
 }
 
 @media (max-width: 480px) {
   .rainbow-loading-wave {
     font-size: 1.5rem;
+    padding: 0 20px;
+    line-height: 1.5;
   }
 }
