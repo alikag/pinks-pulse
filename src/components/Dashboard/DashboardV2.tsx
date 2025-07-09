@@ -2204,38 +2204,40 @@ const DashboardV2: React.FC = () => {
   return (
     <div className="h-full w-full bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white font-inter flex flex-col overflow-hidden">
 
-          {/* Top bar */}
-          <header className="flex items-center justify-between gap-4 px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 
-                  onClick={() => {
-                    haptics.light();
-                    if (mainContentRef.current) {
-                      mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                  }}
-                  style={{
-                    fontSize: "1.75rem",
-                    fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
-                    fontWeight: "900",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "#F9ABAC",
-                    WebkitTextStroke: "0.5px #1e3a5f",
-                    paintOrder: "stroke fill",
-                    lineHeight: "1",
-                    cursor: "pointer"
-                  } as React.CSSProperties}
-                  className="ml-2 sm:ml-0 md:text-4xl lg:text-6xl xl:text-7xl hover:opacity-90 transition-opacity"
-                >
-                  PINK'S PULSE - HUDSON VALLEY KPI REPORT
-                </h1>
+          {/* Top bar - Responsive */}
+          <header className="px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
+            {/* Desktop Layout */}
+            <div className="hidden md:flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div>
+                  <h1 
+                    onClick={() => {
+                      haptics.light();
+                      if (mainContentRef.current) {
+                        mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    style={{
+                      fontSize: "1.75rem",
+                      fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                      fontWeight: "900",
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "#F9ABAC",
+                      WebkitTextStroke: "0.5px #1e3a5f",
+                      paintOrder: "stroke fill",
+                      lineHeight: "1",
+                      cursor: "pointer"
+                    } as React.CSSProperties}
+                    className="md:text-4xl lg:text-6xl xl:text-7xl hover:opacity-90 transition-opacity"
+                  >
+                    PINK'S PULSE - HUDSON VALLEY KPI REPORT
+                  </h1>
+                </div>
               </div>
-            </div>
-            
-            {/* Right side actions */}
-            <div className="flex items-center gap-3">
+              
+              {/* Desktop Right side actions */}
+              <div className="flex items-center gap-3">
               {/* Salesperson Filter */}
               <div className="relative filter-dropdown">
                 <button
@@ -2378,6 +2380,179 @@ const DashboardV2: React.FC = () => {
                 {loading ? 'Refreshing...' : 'Refresh'}
               </span>
             </button>
+              </div>
+            </div>
+            
+            {/* Mobile Layout */}
+            <div className="md:hidden">
+              {/* Mobile Title */}
+              <h1 
+                onClick={() => {
+                  haptics.light();
+                  if (mainContentRef.current) {
+                    mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                style={{
+                  fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                  fontWeight: "900",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "#F9ABAC",
+                  WebkitTextStroke: "0.3px #1e3a5f",
+                  paintOrder: "stroke fill",
+                  lineHeight: "1.1",
+                  cursor: "pointer"
+                } as React.CSSProperties}
+                className="text-2xl text-center mb-3 hover:opacity-90 transition-opacity"
+              >
+                PINK'S PULSE
+                <br />
+                <span className="text-sm opacity-80">HUDSON VALLEY KPI REPORT</span>
+              </h1>
+              
+              {/* Mobile Controls */}
+              <div className="flex items-center justify-between gap-2">
+                {/* Mobile Salesperson Filter */}
+                <div className="relative filter-dropdown flex-1">
+                  <button
+                    onClick={() => {
+                      haptics.light();
+                      
+                      // Calculate dropdown position for mobile
+                      const rect = document.querySelector('.filter-dropdown')?.getBoundingClientRect();
+                      if (rect && !isFilterOpen) {
+                        setDropdownPosition({
+                          top: rect.bottom + 8,
+                          right: 16 // Fixed margin from edge on mobile
+                        });
+                      }
+                      
+                      setIsFilterOpen(!isFilterOpen);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-900/50 backdrop-blur-lg border border-white/10 rounded-lg hover:bg-gray-800/50 transition-all"
+                  >
+                    {selectedSalesperson === 'all' ? (
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                        <User className="h-3 w-3 text-white" />
+                      </div>
+                    ) : getSalespersonThumbnail(selectedSalesperson) ? (
+                      <img 
+                        src={getSalespersonThumbnail(selectedSalesperson)!} 
+                        alt={selectedSalesperson}
+                        className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-medium text-gray-300">
+                          {selectedSalesperson.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm font-medium truncate">
+                      {selectedSalesperson === 'all' ? 'All Sales' : selectedSalesperson.split(' ')[0]}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isFilterOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+                
+                {/* Mobile Refresh Button */}
+                <button
+                  onClick={() => {
+                    haptics.medium();
+                    refetch();
+                    fetchReviews();
+                  }}
+                  disabled={loading}
+                  className={`
+                    flex items-center justify-center p-2 rounded-lg transition-all
+                    ${loading 
+                      ? 'bg-gray-700/50 text-gray-500' 
+                      : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                    }
+                  `}
+                >
+                  <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              
+              {/* Mobile Dropdown - Reuse the same portal */}
+              {isFilterOpen && createPortal(
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="fixed bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
+                    style={{
+                      top: `${dropdownPosition.top}px`,
+                      left: '16px',
+                      right: '16px',
+                      zIndex: 999999
+                    }}
+                  >
+                    <div className="p-2 border-b border-white/10">
+                      <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
+                        <Filter className="h-3 w-3" />
+                        <span>Filter by Salesperson</span>
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          haptics.light();
+                          setSelectedSalesperson('all');
+                          setIsFilterOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all ${
+                          selectedSalesperson === 'all' 
+                            ? 'bg-pink-500/20 text-pink-400' 
+                            : 'text-gray-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                        All Salespeople
+                      </button>
+                      {salespeople.map((person) => {
+                        const thumbnail = getSalespersonThumbnail(person);
+                        return (
+                          <button
+                            key={person}
+                            onClick={() => {
+                              haptics.light();
+                              setSelectedSalesperson(person);
+                              setIsFilterOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all ${
+                              selectedSalesperson === person 
+                                ? 'bg-pink-500/20 text-pink-400' 
+                                : 'text-gray-300 hover:bg-white/5'
+                            }`}
+                          >
+                            {thumbnail ? (
+                              <img 
+                                src={thumbnail} 
+                                alt={person}
+                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-medium text-gray-300">
+                                  {person.split(' ').map(n => n[0]).join('')}
+                                </span>
+                              </div>
+                            )}
+                            {person}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>,
+                document.body
+              )}
             </div>
           </header>
 
