@@ -43,6 +43,7 @@ const RainbowLoadingWave: React.FC = () => {
         for (let i = 0; i < word.length; i++) {
           const charSpan = document.createElement('span')
           charSpan.textContent = word[i]
+          charSpan.className = 'rainbow-char'
           charSpan.style.animationDelay = `${charIndex * 0.05}s`
           wordSpan.appendChild(charSpan)
           charIndex++
@@ -54,6 +55,7 @@ const RainbowLoadingWave: React.FC = () => {
         if (wordIndex < words.length - 1) {
           const spaceSpan = document.createElement('span')
           spaceSpan.textContent = '\u00A0'
+          spaceSpan.className = 'rainbow-char'
           spaceSpan.style.animationDelay = `${charIndex * 0.05}s`
           textRef.current?.appendChild(spaceSpan)
           charIndex++
