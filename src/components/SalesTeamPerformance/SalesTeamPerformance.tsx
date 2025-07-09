@@ -430,16 +430,17 @@ const SalesTeamPerformance: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-hidden bg-gray-950 text-white">
+    <div className="flex flex-col h-full bg-gray-950 text-white">
       {/* Header */}
-      <header className="bg-gray-900/50 backdrop-blur-lg border-b border-white/10 px-6 py-4">
-        <div className="flex items-center justify-between">
+      <header className="bg-gray-900/50 backdrop-blur-lg border-b border-white/10 px-4 md:px-6 py-4 flex-shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Sales Team Performance</h1>
             <p className="text-sm text-gray-400 mt-1">Individual quote details and performance tracking</p>
           </div>
           
-          <div className="flex items-center gap-4">
+          {/* Desktop Filters */}
+          <div className="hidden md:flex items-center gap-4">
             {/* Date Range Filter */}
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
@@ -515,12 +516,92 @@ const SalesTeamPerformance: React.FC = () => {
               Export CSV
             </button>
           </div>
+          
+          {/* Mobile Filters */}
+          <div className="flex md:hidden flex-col gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Date Range */}
+              <select
+                value={dateRange}
+                onChange={(e) => {
+                  haptics.light()
+                  setDateRange(e.target.value as any)
+                }}
+                className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+              >
+                <option value="7days">7 Days</option>
+                <option value="30days">30 Days</option>
+                <option value="90days">90 Days</option>
+                <option value="custom">Custom</option>
+              </select>
+              
+              {/* Status Filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  haptics.light()
+                  setStatusFilter(e.target.value as any)
+                }}
+                className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+              >
+                <option value="all">All Status</option>
+                <option value="converted">Converted</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {/* Salesperson Filter */}
+              <select
+                value={selectedSalesperson}
+                onChange={(e) => {
+                  haptics.light()
+                  setSelectedSalesperson(e.target.value)
+                }}
+                className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+              >
+                <option value="all">All Sales</option>
+                {salespeople.map(person => (
+                  <option key={person} value={person}>{person.split(' ')[0]}</option>
+                ))}
+              </select>
+              
+              {/* Export Button */}
+              <button
+                onClick={exportToCSV}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-pink-500 hover:bg-pink-600 rounded-lg transition-colors text-sm font-medium"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </button>
+            </div>
+            
+            {/* Custom Date Range for Mobile */}
+            {dateRange === 'custom' && (
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+                />
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Summary Cards */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      {/* Main Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Summary Cards */}
+        <div className="p-4 md:p-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
           <div 
             className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer"
             onClick={() => {
@@ -785,18 +866,19 @@ const SalesTeamPerformance: React.FC = () => {
               <thead>
                 <tr className="border-b border-white/10">
                   <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort('quoteNumber')}
                   >
-                    <div className="flex items-center gap-2">
-                      Quote #
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <span className="hidden md:inline">Quote #</span>
+                      <span className="md:hidden">#</span>
                       {sortBy === 'quoteNumber' && (
-                        <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 md:h-4 md:w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
                       )}
                     </div>
                   </th>
                   <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors hidden md:table-cell"
                     onClick={() => handleSort('salesperson')}
                   >
                     <div className="flex items-center gap-2">
@@ -807,18 +889,18 @@ const SalesTeamPerformance: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort('clientName')}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2">
                       Client
                       {sortBy === 'clientName' && (
-                        <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 md:h-4 md:w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
                       )}
                     </div>
                   </th>
                   <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors hidden md:table-cell"
                     onClick={() => handleSort('sentDate')}
                   >
                     <div className="flex items-center gap-2">
@@ -829,7 +911,7 @@ const SalesTeamPerformance: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors hidden lg:table-cell"
                     onClick={() => handleSort('convertedDate')}
                   >
                     <div className="flex items-center gap-2">
@@ -840,28 +922,28 @@ const SalesTeamPerformance: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="text-left px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort('status')}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2">
                       Status
                       {sortBy === 'status' && (
-                        <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 md:h-4 md:w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
                       )}
                     </div>
                   </th>
                   <th 
-                    className="text-right px-6 py-4 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
+                    className="text-right px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors"
                     onClick={() => handleSort('totalDollars')}
                   >
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1 md:gap-2">
                       Value
                       {sortBy === 'totalDollars' && (
-                        <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 md:h-4 md:w-4 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
                       )}
                     </div>
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
+                  <th className="text-left px-3 md:px-6 py-4 text-xs md:text-sm font-medium text-gray-400 hidden lg:table-cell">
                     Job #
                   </th>
                 </tr>
@@ -869,8 +951,8 @@ const SalesTeamPerformance: React.FC = () => {
               <tbody>
                 {sortedQuotes.map((quote) => (
                   <tr key={quote.quoteNumber} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 text-sm font-mono">{quote.quoteNumber}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-mono">{quote.quoteNumber}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell">
                       <div className="flex items-center gap-2">
                         {getSalespersonThumbnail(quote.salesperson) ? (
                           <img 
@@ -888,10 +970,13 @@ const SalesTeamPerformance: React.FC = () => {
                         <span className="text-sm">{quote.salesperson}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm">{quote.clientName}</td>
-                    <td className="px-6 py-4 text-sm">{quote.sentDate}</td>
-                    <td className="px-6 py-4 text-sm">{quote.convertedDate || '-'}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm">
+                      <div className="md:hidden text-xs text-gray-400 mb-1">{quote.salesperson}</div>
+                      {quote.clientName}
+                    </td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm hidden md:table-cell">{quote.sentDate}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm hidden lg:table-cell">{quote.convertedDate || '-'}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                         quote.status === 'Converted' 
                           ? 'bg-green-500/20 text-green-400' 
@@ -902,13 +987,14 @@ const SalesTeamPerformance: React.FC = () => {
                         ) : (
                           <Clock className="h-3 w-3" />
                         )}
-                        {quote.status}
+                        <span className="hidden md:inline">{quote.status}</span>
+                        <span className="md:hidden">{quote.status === 'Converted' ? '✓' : '⏳'}</span>
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right font-medium">
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm text-right font-medium">
                       {formatCurrency(quote.totalDollars)}
                     </td>
-                    <td className="px-6 py-4 text-sm font-mono">{quote.jobNumbers || '-'}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-mono hidden lg:table-cell">{quote.jobNumbers || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -920,6 +1006,7 @@ const SalesTeamPerformance: React.FC = () => {
               <p className="text-gray-400">No quotes found for the selected filters</p>
             </div>
           )}
+        </div>
         </div>
       </div>
 
