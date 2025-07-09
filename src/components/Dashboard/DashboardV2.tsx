@@ -432,6 +432,28 @@ const DashboardV2: React.FC = () => {
       salesperson: salesperson
     });
     
+    // Helper to get Eastern Time components - defined early to avoid temporal dead zone
+    const getEasternTimeComponents = (date: Date) => {
+      const options = {
+        timeZone: 'America/New_York',
+        year: 'numeric' as const,
+        month: 'numeric' as const,
+        day: 'numeric' as const,
+        hour: 'numeric' as const,
+        minute: 'numeric' as const,
+        second: 'numeric' as const,
+        hour12: false
+      };
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+      const components: any = {};
+      parts.forEach(part => {
+        if (part.type !== 'literal') {
+          components[part.type] = parseInt(part.value);
+        }
+      });
+      return components;
+    };
+    
     // Debug: Log unique salesperson names in raw data
     if (salesperson && salesperson !== 'all') {
       const uniqueSalespeopleInQuotes = [...new Set(quotes.map(q => q.salesperson))].filter(Boolean);
@@ -478,7 +500,20 @@ const DashboardV2: React.FC = () => {
     if (salesperson && salesperson !== 'all') {
       // Find today's quotes specifically
       const todayQuotes = quotes.filter(q => {
-        const sentDate = parseDate(q.sent_date);
+        // Inline date parsing to avoid temporal dead zone
+        let sentDate = null;
+        if (q.sent_date) {
+          try {
+            let dateStr = q.sent_date;
+            if (typeof dateStr === 'object' && (dateStr as any).value) {
+              dateStr = (dateStr as any).value;
+            }
+            sentDate = new Date(dateStr);
+            if (isNaN(sentDate.getTime())) sentDate = null;
+          } catch (e) {
+            sentDate = null;
+          }
+        }
         if (!sentDate) return false;
         const dateET = getEasternTimeComponents(sentDate);
         const nowET = getEasternTimeComponents(new Date());
@@ -508,28 +543,6 @@ const DashboardV2: React.FC = () => {
     }
 
     const now = new Date();
-    
-    // Helper to get Eastern Time components
-    const getEasternTimeComponents = (date: Date) => {
-      const options = {
-        timeZone: 'America/New_York',
-        year: 'numeric' as const,
-        month: 'numeric' as const,
-        day: 'numeric' as const,
-        hour: 'numeric' as const,
-        minute: 'numeric' as const,
-        second: 'numeric' as const,
-        hour12: false
-      };
-      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
-      const components: any = {};
-      parts.forEach(part => {
-        if (part.type !== 'literal') {
-          components[part.type] = parseInt(part.value);
-        }
-      });
-      return components;
-    };
     
     // Get "today" in Eastern Time
     const nowET = getEasternTimeComponents(now);
@@ -971,14 +984,6 @@ const DashboardV2: React.FC = () => {
     return uniqueNames
   }, [data])
 
-  // Filter data based on selected salesperson - keep it simple
-  const filteredData = useMemo(() => {
-    if (!data) return null
-    if (selectedSalesperson === 'all') return data
-    
-    // Just return the data as is - we'll handle filtering in each component
-    return data
-  }, [data, selectedSalesperson])
 
   // Handle sorting for converted quotes table
   const handleConvertedQuotesSort = (column: string) => {
@@ -1385,39 +1390,8 @@ const DashboardV2: React.FC = () => {
       }
     }
     
-    // Create sparklines for KPI cards
-    kpis.forEach((kpi) => {
-      if (kpi.sparklineData && kpiSparklineRefs.current[kpi.id]) {
-        const ctx = kpiSparklineRefs.current[kpi.id]?.getContext('2d')
-        if (ctx) {
-          kpiSparklineInstances.current[kpi.id] = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: Array.from({ length: kpi.sparklineData.length }, (_, i) => i),
-              datasets: [{
-                data: kpi.sparklineData,
-                borderColor: kpi.status === 'success' ? '#10b981' : 
-                           kpi.status === 'warning' ? '#f59e0b' : 
-                           kpi.status === 'danger' ? '#ef4444' : '#3b82f6',
-                borderWidth: 1.5,
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false }, tooltip: { enabled: false } },
-              scales: {
-                x: { display: false },
-                y: { display: false }
-              }
-            }
-          })
-        }
-      }
-    })
+    // Note: KPI sparklines are created separately when KPI cards are rendered
+    // This avoids circular dependency issues with the kpis array
 
     // Revenue Trend Chart (Converted This Week)
     if (trendChartRef.current && !loading && data) {
@@ -1444,16 +1418,18 @@ const DashboardV2: React.FC = () => {
         } else {
           chartData = data?.timeSeries?.currentWeekDaily || data?.timeSeries?.week;
           // Calculate revenue from converted quotes
-          if (chartData && 'quotesConverted' in chartData) {
+          if (chartData && 'quotesConverted' in chartData && Array.isArray(chartData.quotesConverted)) {
             const avgDealValue = (data?.kpiMetrics?.convertedThisWeek && data.kpiMetrics.convertedThisWeek > 0)
               ? (data.kpiMetrics.convertedThisWeekDollars / data.kpiMetrics.convertedThisWeek)
               : 2000;
             conversionRevenue = chartData.quotesConverted.map((converted: number) => converted * avgDealValue);
+          } else {
+            conversionRevenue = new Array(7).fill(0);
           }
         }
         
-        if (!chartData || !conversionRevenue) {
-          console.log('[Converted This Week Chart] No chart data available');
+        if (!chartData || !chartData.labels || !Array.isArray(conversionRevenue)) {
+          console.log('[Converted This Week Chart] No chart data available', { chartData, conversionRevenue });
           return;
         }
         
@@ -1463,7 +1439,7 @@ const DashboardV2: React.FC = () => {
         const currentDayIndex = new Date().getDay()
         
         // Keep all data but we'll handle display in the chart options
-        const processedQuotesSent = chartData.quotesSent
+        const processedQuotesSent = chartData?.quotesSent || new Array(7).fill(0)
         
         trendChartInstance.current = new Chart(ctx, {
           type: 'bar',
@@ -1597,8 +1573,8 @@ const DashboardV2: React.FC = () => {
           ? filteredTimeSeries.weeklyTrend
           : data?.timeSeries?.week
         
-        if (!chartData) {
-          console.log('[Weekly CVR Chart Debug] No chart data available');
+        if (!chartData || !chartData.labels || !Array.isArray(chartData.conversionRate)) {
+          console.log('[Weekly CVR Chart Debug] No chart data available', { chartData });
           return;
         }
         
@@ -1622,15 +1598,15 @@ const DashboardV2: React.FC = () => {
         if (selectedSalesperson !== 'all' && filteredTimeSeries && 'revenue' in chartData) {
           // Use revenue directly from filtered data
           weeklyRevenue = chartData.revenue;
-        } else if ('quotesConverted' in chartData) {
+        } else if ('quotesConverted' in chartData && Array.isArray(chartData.quotesConverted)) {
           // Calculate from converted quotes
-          const avgDealValue = (filteredData?.kpiMetrics?.convertedThisWeek && filteredData.kpiMetrics.convertedThisWeek > 0)
-            ? (filteredData.kpiMetrics.convertedThisWeekDollars / filteredData.kpiMetrics.convertedThisWeek)
+          const avgDealValue = (data?.kpiMetrics?.convertedThisWeek && data.kpiMetrics.convertedThisWeek > 0)
+            ? (data.kpiMetrics.convertedThisWeekDollars / data.kpiMetrics.convertedThisWeek)
             : 2000;
           weeklyRevenue = chartData.quotesConverted.map((converted: number) => converted * avgDealValue);
         } else {
-          console.error('[Weekly CVR Chart] Unexpected chart data structure');
-          return;
+          console.warn('[Weekly CVR Chart] No revenue data available, using empty array');
+          weeklyRevenue = new Array(chartData?.labels?.length || 8).fill(0);
         }
         
         conversionChartInstance.current = new Chart(ctx, {
@@ -1697,9 +1673,9 @@ const DashboardV2: React.FC = () => {
                     }
                   },
                   afterLabel: function(context) {
-                    if (context.dataset.label === 'Revenue' && 'quotesSent' in chartData && 'quotesConverted' in chartData) {
-                      const sent = (chartData as any).quotesSent[context.dataIndex];
-                      const converted = (chartData as any).quotesConverted[context.dataIndex];
+                    if (context.dataset.label === 'Revenue' && chartData && 'quotesSent' in chartData && 'quotesConverted' in chartData) {
+                      const sent = (chartData as any).quotesSent?.[context.dataIndex] || 0;
+                      const converted = (chartData as any).quotesConverted?.[context.dataIndex] || 0;
                       return [`${converted} converted / ${sent} sent`];
                     }
                     return [];
@@ -2206,7 +2182,7 @@ const DashboardV2: React.FC = () => {
       heatmapInstance.current?.destroy()
       Object.values(kpiSparklineInstances.current).forEach(chart => chart?.destroy())
     }
-  }, [data, loading, kpis, selectedSalesperson])
+  }, [data, loading, selectedSalesperson])
 
   if (loading) {
     return <RainbowLoadingWave />
@@ -3080,14 +3056,14 @@ const DashboardV2: React.FC = () => {
                           
                           // Handle date sorting
                           if (convertedQuotesSortBy === 'dateConverted') {
-                            aValue = new Date(a.dateConverted).getTime()
-                            bValue = new Date(b.dateConverted).getTime()
+                            aValue = new Date(aValue).getTime()
+                            bValue = new Date(bValue).getTime()
                           }
                           
                           // Handle numeric sorting
                           if (convertedQuotesSortBy === 'totalDollars') {
-                            aValue = a.totalDollars || 0
-                            bValue = b.totalDollars || 0
+                            aValue = aValue || 0
+                            bValue = bValue || 0
                           }
                           
                           // Handle string comparison
