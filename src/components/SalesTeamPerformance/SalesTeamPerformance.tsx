@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
+import { getMobilePadding } from '../../utils/mobileOptimizations'
 
 interface QuoteDetails {
   quoteNumber: string
@@ -433,10 +434,10 @@ const SalesTeamPerformance: React.FC = () => {
     <div className="flex flex-col h-full bg-gray-950 text-white">
       {/* Header */}
       <header className="bg-gray-900/50 backdrop-blur-lg border-b border-white/10 px-4 md:px-6 py-4 flex-shrink-0">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4" style={getMobilePadding()}>
           <div>
-            <h1 className="text-2xl font-bold">Sales Team Performance</h1>
-            <p className="text-sm text-gray-400 mt-1">Individual quote details and performance tracking</p>
+            <h1 className="text-xl md:text-2xl font-bold">Sales Team Performance</h1>
+            <p className="text-xs md:text-sm text-gray-400 mt-1">Individual quote details and performance tracking</p>
           </div>
           
           {/* Desktop Filters */}
