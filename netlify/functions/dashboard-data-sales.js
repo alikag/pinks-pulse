@@ -897,11 +897,15 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesToday: 0,              // KPI: "Quotes Sent Today" - Count of quotes sent today
     convertedToday: 0,           // Count of quotes that converted today (not displayed)
     convertedTodayDollars: 0,    // KPI: "Converted Today ($)" - Dollar value of today's conversions
+    jobsToday: 0,                // KPI: "Jobs Today" - Count of jobs scheduled for today
+    jobsTodayValue: 0,           // Total value of jobs today
     
     // === THIS WEEK METRICS (Sunday-Saturday) ===
     quotesThisWeek: 0,           // Total quotes sent this week (for CVR calculation)
     convertedThisWeek: 0,        // Count of quotes converted this week
     convertedThisWeekDollars: 0, // KPI: "Converted This Week ($)" - Revenue from this week's conversions
+    jobsThisWeek: 0,             // KPI: "Jobs This Week" - Count of jobs scheduled this week
+    jobsThisWeekValue: 0,        // Total value of jobs this week
     
     // === 30-DAY ROLLING METRICS ===
     quotes30Days: 0,             // Total quotes sent in last 30 days
@@ -917,6 +921,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     nextMonthOTB: 0,             // KPI: "Next Month OTB" - Jobs scheduled for next month
     thisMonthOTB: 0,             // Jobs scheduled for current month (not displayed)
     thisWeekOTB: 0,              // Jobs scheduled for current week (not displayed)
+    otb2025: 0,                  // KPI: "2025 OTB" - Total jobs scheduled for 2025
+    otb2026: 0,                  // KPI: "2026 OTB" - Total jobs scheduled for 2026
+    totalOTB: 0,                 // Total OTB across all years
     
     // === CONVERSION RATE CALCULATIONS ===
     // IMPORTANT: These track quotes BY SEND DATE that eventually converted
@@ -1341,11 +1348,34 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const jobDate = parseDate(job.date || job.Date);
     const jobValue = parseFloat(job.calculated_value || job.Calculated_Value) || 0;
     
+    // Count jobs for today
+    if (isToday(jobDate)) {
+      metrics.jobsToday++;
+      metrics.jobsTodayValue += jobValue;
+    }
+    
+    // Count jobs for this week
     if (isThisWeek(jobDate)) {
+      metrics.jobsThisWeek++;
+      metrics.jobsThisWeekValue += jobValue;
       metrics.thisWeekOTB += jobValue;
     }
+    
     if (isThisMonth(jobDate)) {
       metrics.thisMonthOTB += jobValue;
+    }
+    
+    // Add OTB by year
+    const jobYear = jobDate ? jobDate.getFullYear() : null;
+    if (jobYear === 2025) {
+      metrics.otb2025 += jobValue;
+    } else if (jobYear === 2026) {
+      metrics.otb2026 += jobValue;
+    }
+    
+    // Add to total OTB
+    if (jobDate) {
+      metrics.totalOTB += jobValue;
     }
     
     // Calculate weekly OTB for 5-week display
@@ -1487,6 +1517,13 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
     monthlyOTBData: metrics.monthlyOTBData,
     reviewsThisWeek: reviewsThisWeek,
+    // Add jobs metrics
+    jobsToday: metrics.jobsToday || 0,
+    jobsThisWeek: metrics.jobsThisWeek || 0,
+    // Add OTB by year
+    otb2025: metrics.otb2025 || 0,
+    otb2026: metrics.otb2026 || 0,
+    onTheBooks: metrics.totalOTB || 0,
     // Add debug info
     debugInfo: {
       usingLastWeekCVR: metrics.quotesThisWeekConverted === 0 && metrics.quotesLastWeek > 0,
