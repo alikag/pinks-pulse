@@ -1,5 +1,5 @@
 // Mobile-specific chart configurations for DashboardV2
-import type { ChartConfiguration } from 'chart.js'
+// import type { ChartConfiguration } from 'chart.js'
 
 // Mobile-optimized chart options
 export const getMobileChartConfig = (): {
