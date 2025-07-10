@@ -1330,16 +1330,16 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Log first 5 jobs for debugging
   jobsData.slice(0, 5).forEach(job => {
     console.log('[OTB Debug] Sample job:', {
-      date: job.Date,
-      value: job.Calculated_Value,
-      type: job.Job_type,
-      salesperson: job.SalesPerson
+      date: job.date || job.Date,
+      value: job.calculated_value || job.Calculated_Value,
+      type: job.job_type || job.Job_type,
+      salesperson: job.salesperson || job.SalesPerson
     });
   });
   
   jobsData.forEach(job => {
-    const jobDate = parseDate(job.Date);
-    const jobValue = parseFloat(job.Calculated_Value) || 0;
+    const jobDate = parseDate(job.date || job.Date);
+    const jobValue = parseFloat(job.calculated_value || job.Calculated_Value) || 0;
     
     if (isThisWeek(jobDate)) {
       metrics.thisWeekOTB += jobValue;
@@ -1414,7 +1414,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
     
     // Check for recurring jobs in next year
-    if (jobDate && jobDate.getFullYear() === nextYear && job.Job_type === 'RECURRING') {
+    if (jobDate && jobDate.getFullYear() === nextYear && (job.job_type || job.Job_type) === 'RECURRING') {
       metrics.recurringRevenue2026 += jobValue; // TODO: Rename this variable to recurringRevenueNextYear
     }
   });
@@ -1560,7 +1560,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Log job counts by week
   const jobCountsByWeek = {};
   jobsData.forEach(job => {
-    const jobDate = parseDate(job.Date);
+    const jobDate = parseDate(job.date || job.Date);
     if (isThisMonth(jobDate)) {
       const dayOfMonth = jobDate.getDate();
       const weekNumber = Math.ceil(dayOfMonth / 7);
@@ -1889,12 +1889,12 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       client_name: q.client_name
     })),
     rawJobs: jobsData.map(j => ({
-      job_number: j.Job_Number,
-      salesperson: j.SalesPerson,
-      date: j.Date,
-      date_converted: j.Date_Converted,
-      job_type: j.Job_type,
-      calculated_value: parseFloat(j.Calculated_Value) || 0
+      job_number: j.job_number || j.Job_Number,
+      salesperson: j.salesperson || j.SalesPerson,
+      date: j.date || j.Date,
+      date_converted: j.date_converted || j.Date_Converted,
+      job_type: j.job_type || j.Job_type,
+      calculated_value: parseFloat(j.calculated_value || j.Calculated_Value) || 0
     })),
     lastUpdated: new Date(),
     dataSource: 'bigquery',
