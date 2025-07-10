@@ -1442,10 +1442,13 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       }
     }
     
-    // Check for recurring jobs in next year (only count Visit_based_dollars for recurring revenue)
-    if (jobDate && jobDate.getFullYear() === nextYear && (job.job_type || job.Job_type) === 'RECURRING') {
+    // Calculate 2026 revenue (ALL jobs, not just recurring)
+    // This metric is mislabeled as "recurringRevenue2026" but should include all 2026 revenue
+    if (jobDate && jobDate.getFullYear() === nextYear) {
+      // Sum BOTH one-off and visit-based dollars for complete revenue picture
+      const oneOffValue = parseFloat(job.One_off_job_dollars) || 0;
       const visitBasedValue = parseFloat(job.Visit_based_dollars) || 0;
-      metrics.recurringRevenue2026 += visitBasedValue; // Only count visit-based revenue for recurring
+      metrics.recurringRevenue2026 += (oneOffValue + visitBasedValue);
     }
   });
   
