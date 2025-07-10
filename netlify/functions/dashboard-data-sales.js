@@ -310,21 +310,20 @@ export const handler = async (event, context) => {
     
     const jobsQuery = `
       SELECT 
-        Job_Number,          -- Unique job identifier
-        Date,                -- When the job is scheduled to happen
-        Date_Converted,      -- When the quote became a job
-        SalesPerson,         -- Who closed the deal
-        Job_type,            -- 'RECURRING' or 'ONE_OFF' (important for 2026 recurring metric)
-        Calculated_Value     -- Revenue value of the job (excluding sales tax)
+        Job_Number,                    -- Unique job identifier
+        Date,                          -- When the job is scheduled to happen
+        Date_Converted,                -- When the quote became a job
+        SalesPerson,                   -- Who closed the deal
+        Job_type,                      -- 'RECURRING' or 'ONE_OFF' (important for 2026 recurring metric)
+        -- Calculate total revenue from both job types
+        (COALESCE(One_off_job_dollars, 0) + COALESCE(Visit_based_dollars, 0)) AS Calculated_Value,
+        One_off_job_dollars,           -- Revenue from one-time jobs
+        Visit_based_dollars            -- Revenue from recurring/visit-based jobs
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       WHERE Date IS NOT NULL     -- Must have a scheduled date
         -- === INCLUDE CURRENT YEAR AND NEXT 2 YEARS FOR MEDIUM-TERM OUTLOOK ===
-        -- Use string comparison for year filtering to avoid type issues
-        AND (
-          Date LIKE '${currentYear}-%' 
-          OR Date LIKE '${nextYear}-%' 
-          OR Date LIKE '${yearAfterNext}-%'
-        )
+        -- Extract year properly using DATE function
+        AND EXTRACT(YEAR FROM DATE(Date)) IN (${currentYear}, ${nextYear}, ${yearAfterNext})
       ORDER BY Date  -- Chronological order for processing
     `;
 
@@ -1443,9 +1442,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       }
     }
     
-    // Check for recurring jobs in next year
+    // Check for recurring jobs in next year (only count Visit_based_dollars for recurring revenue)
     if (jobDate && jobDate.getFullYear() === nextYear && (job.job_type || job.Job_type) === 'RECURRING') {
-      metrics.recurringRevenue2026 += jobValue; // TODO: Rename this variable to recurringRevenueNextYear
+      const visitBasedValue = parseFloat(job.Visit_based_dollars) || 0;
+      metrics.recurringRevenue2026 += visitBasedValue; // Only count visit-based revenue for recurring
     }
   });
   
@@ -1931,7 +1931,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       date: j.date || j.Date,
       date_converted: j.date_converted || j.Date_Converted,
       job_type: j.job_type || j.Job_type,
-      calculated_value: parseFloat(j.calculated_value || j.Calculated_Value) || 0
+      calculated_value: parseFloat(j.calculated_value || j.Calculated_Value) || 0,
+      one_off_dollars: parseFloat(j.One_off_job_dollars) || 0,
+      visit_based_dollars: parseFloat(j.Visit_based_dollars) || 0
     })),
     lastUpdated: new Date(),
     dataSource: 'bigquery',
