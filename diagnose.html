@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Diagnostics - Pink's Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ff1493;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .diagnostic-step {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .status {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status.passed { background: rgba(0, 255, 0, 0.2); color: #0f0; }
+        .status.failed { background: rgba(255, 0, 0, 0.2); color: #f00; }
+        .status.warning { background: rgba(255, 255, 0, 0.2); color: #ff0; }
+        .status.checking { background: rgba(0, 128, 255, 0.2); color: #08f; }
+        .details {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        .recommendations {
+            background: rgba(255, 20, 147, 0.1);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .recommendations h2 {
+            color: #ff1493;
+            margin-top: 0;
+        }
+        .recommendations ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .recommendations li {
+            margin: 8px 0;
+        }
+        button {
+            background: #ff1493;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 20px 0;
+        }
+        button:hover { background: #ff69b4; }
+        button:disabled { 
+            background: #666; 
+            cursor: not-allowed; 
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-box {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success-box {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BigQuery Connection Diagnostics</h1>
+        <p class="subtitle">This tool will help identify why your dashboard isn't loading data</p>
+        
+        <button onclick="runDiagnostics()" id="runBtn">Run Full Diagnostics</button>
+        
+        <div id="results"></div>
+        
+        <div id="recommendations" class="recommendations" style="display: none;">
+            <h2>Recommendations</h2>
+            <ul id="recommendationsList"></ul>
+        </div>
+    </div>
+
+    <script>
+        async function runDiagnostics() {
+            const btn = document.getElementById('runBtn');
+            const results = document.getElementById('results');
+            const recommendations = document.getElementById('recommendations');
+            const recommendationsList = document.getElementById('recommendationsList');
+            
+            btn.disabled = true;
+            btn.innerHTML = 'Running Diagnostics<span class="spinner"></span>';
+            results.innerHTML = '';
+            recommendations.style.display = 'none';
+            
+            try {
+                const response = await fetch('/.netlify/functions/diagnose-bigquery');
+                const data = await response.json();
+                
+                // Display each step
+                const steps = [
+                    { key: 'step1_environment', title: 'Step 1: Environment Variables' },
+                    { key: 'step2_credentials', title: 'Step 2: Credentials Validation' },
+                    { key: 'step3_connection', title: 'Step 3: BigQuery Client' },
+                    { key: 'step4_dataset', title: 'Step 4: Basic Query Test' },
+                    { key: 'step5_tables', title: 'Step 5: Dataset & Tables' },
+                    { key: 'step6_testQuery', title: 'Step 6: Dashboard Query Test' }
+                ];
+                
+                steps.forEach(step => {
+                    const stepData = data[step.key];
+                    if (!stepData) return;
+                    
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'diagnostic-step';
+                    
+                    const status = stepData.status || 'unknown';
+                    const statusClass = status === 'passed' ? 'passed' : 
+                                       status === 'failed' ? 'failed' : 
+                                       status === 'warning' ? 'warning' : 'checking';
+                    
+                    stepDiv.innerHTML = `
+                        <div class="step-header">
+                            <div class="step-title">${step.title}</div>
+                            <div class="status ${statusClass}">${status.toUpperCase()}</div>
+                        </div>
+                        <div class="details">
+                            <pre>${JSON.stringify(stepData, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                    results.appendChild(stepDiv);
+                });
+                
+                // Display recommendations
+                if (data.recommendations && data.recommendations.length > 0) {
+                    recommendations.style.display = 'block';
+                    recommendationsList.innerHTML = data.recommendations
+                        .map(rec => `<li>${rec}</li>`)
+                        .join('');
+                }
+                
+                // Display summary
+                if (data.summary) {
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.className = data.summary.allTestsPassed ? 'success-box' : 'error-box';
+                    summaryDiv.innerHTML = `
+                        <h3>${data.summary.allTestsPassed ? '✅ All Tests Passed!' : '❌ Issues Found'}</h3>
+                        <p>${data.summary.recommendation}</p>
+                    `;
+                    results.appendChild(summaryDiv);
+                }
+                
+                // Display fatal error if any
+                if (data.fatalError) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-box';
+                    errorDiv.innerHTML = `
+                        <h3>Fatal Error</h3>
+                        <p>${data.fatalError.message}</p>
+                    `;
+                    results.appendChild(errorDiv);
+                }
+                
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="error-box">
+                        <h3>Failed to run diagnostics</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = 'Run Full Diagnostics';
+        }
+        
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            setTimeout(runDiagnostics, 500);
+        });
+    </script>
+</body>
+</html>

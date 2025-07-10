@@ -103,14 +103,15 @@ export class DiagnosticRunner {
           }
         }
         
-        if (errorData.message?.includes('not found')) {
+        if (errorData.message?.includes('not found') || errorData.message?.includes('Not found')) {
           return {
             test: 'API Endpoint',
             status: 'fail',
             message: 'BigQuery tables/views not found',
             details: {
-              solution: 'Verify jobber_data.v_quotes and v_jobs exist',
-              error: errorData
+              solution: 'Verify jobber_data.v_quotes and v_jobs exist in your BigQuery project',
+              error: errorData,
+              projectId: errorData.message?.match(/Table ([^ ]+) was not found/)?.[1] || 'Check error details'
             }
           }
         }

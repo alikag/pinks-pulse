@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment Variable Test - Pink's Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ff1493;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success { background: rgba(0, 255, 0, 0.1); border: 1px solid #0f0; }
+        .error { background: rgba(255, 0, 0, 0.1); border: 1px solid #f00; }
+        .warning { background: rgba(255, 255, 0, 0.1); border: 1px solid #ff0; }
+        .info { background: rgba(0, 128, 255, 0.1); border: 1px solid #08f; }
+        button {
+            background: #ff1493;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover { background: #ff69b4; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Environment Variable Test</h1>
+        
+        <div class="test-section">
+            <h2>Step 1: Check Environment Variables</h2>
+            <p>This test checks if your Netlify environment variables are set correctly.</p>
+            <button onclick="testEnvironment()" id="envTestBtn">Run Environment Test</button>
+            <div id="envResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 2: Test API Connection</h2>
+            <p>This test attempts to connect to your dashboard API.</p>
+            <button onclick="testAPI()" id="apiTestBtn">Test API Connection</button>
+            <div id="apiResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 3: Full Dashboard Load</h2>
+            <p>This test attempts to load actual dashboard data.</p>
+            <button onclick="testDashboard()" id="dashTestBtn">Test Dashboard Data</button>
+            <div id="dashResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Instructions if Tests Fail</h2>
+            <div class="info status">
+                <p><strong>If Step 1 fails:</strong> Your environment variables are not set in Netlify.</p>
+                <ol>
+                    <li>Go to <a href="https://app.netlify.com" target="_blank" style="color: #ff69b4">app.netlify.com</a></li>
+                    <li>Click on your site "pinkspulse"</li>
+                    <li>Go to Site configuration → Environment variables</li>
+                    <li>Add these two variables:
+                        <ul>
+                            <li><code>BIGQUERY_PROJECT_ID</code> - Your Google Cloud project ID</li>
+                            <li><code>GOOGLE_APPLICATION_CREDENTIALS_JSON</code> - Your service account JSON (minified to one line)</li>
+                        </ul>
+                    </li>
+                    <li>Trigger a new deploy in Netlify</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testEnvironment() {
+            const btn = document.getElementById('envTestBtn');
+            const results = document.getElementById('envResults');
+            
+            btn.disabled = true;
+            btn.innerHTML = 'Testing...<span class="spinner"></span>';
+            results.innerHTML = '';
+            
+            try {
+                const response = await fetch('/.netlify/functions/dashboard-data-sales/test');
+                const data = await response.json();
+                
+                results.innerHTML = `
+                    <div class="status ${data.env.hasProjectId && data.env.hasCredentials ? 'success' : 'error'}">
+                        <strong>Environment Check:</strong><br>
+                        Project ID Set: ${data.env.hasProjectId ? '✅ YES' : '❌ NO'}<br>
+                        Credentials Set: ${data.env.hasCredentials ? '✅ YES' : '❌ NO'}<br>
+                        Project ID: <code>${data.env.projectId}</code><br>
+                        Credentials Length: ${data.env.credentialsLength} characters
+                    </div>
+                `;
+                
+                if (!data.env.hasProjectId || !data.env.hasCredentials) {
+                    results.innerHTML += `
+                        <div class="status error">
+                            <strong>Action Required:</strong> Set environment variables in Netlify (see instructions below)
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="status error">
+                        <strong>Test Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = 'Run Environment Test';
+        }
+
+        async function testAPI() {
+            const btn = document.getElementById('apiTestBtn');
+            const results = document.getElementById('apiResults');
+            
+            btn.disabled = true;
+            btn.innerHTML = 'Testing...<span class="spinner"></span>';
+            results.innerHTML = '';
+            
+            try {
+                const response = await fetch('/.netlify/functions/dashboard-data-sales');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `
+                        <div class="status success">
+                            <strong>API Connection:</strong> ✅ SUCCESS<br>
+                            Data received with ${Object.keys(data).length} properties
+                        </div>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch {
+                        errorData = { message: errorText };
+                    }
+                    
+                    results.innerHTML = `
+                        <div class="status error">
+                            <strong>API Error (${response.status}):</strong><br>
+                            ${errorData.message || 'Unknown error'}
+                        </div>
+                    `;
+                    
+                    if (errorData.details) {
+                        results.innerHTML += `<pre>${JSON.stringify(errorData.details, null, 2)}</pre>`;
+                    }
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="status error">
+                        <strong>Connection Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = 'Test API Connection';
+        }
+
+        async function testDashboard() {
+            const btn = document.getElementById('dashTestBtn');
+            const results = document.getElementById('dashResults');
+            
+            btn.disabled = true;
+            btn.innerHTML = 'Loading Dashboard Data...<span class="spinner"></span>';
+            results.innerHTML = '';
+            
+            try {
+                const response = await fetch('/.netlify/functions/dashboard-data-sales');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    results.innerHTML = `
+                        <div class="status success">
+                            <strong>Dashboard Data Loaded Successfully!</strong>
+                        </div>
+                        <div class="status info">
+                            <strong>Summary:</strong><br>
+                            Total Quotes: ${data.quotes?.length || 0}<br>
+                            Total Jobs: ${data.jobs?.length || 0}<br>
+                            Reviews This Week: ${data.kpis?.reviewsThisWeek || 0}<br>
+                            Quotes Today: ${data.kpis?.quotesToday || 0}<br>
+                            Jobs Today: ${data.kpis?.jobsToday || 0}
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="status error">
+                            <strong>Failed to load dashboard data</strong><br>
+                            Status: ${response.status}<br>
+                            ${data.message || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="status error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = 'Test Dashboard Data';
+        }
+
+        // Run environment test automatically on load
+        window.addEventListener('load', () => {
+            setTimeout(testEnvironment, 500);
+        });
+    </script>
+</body>
+</html>

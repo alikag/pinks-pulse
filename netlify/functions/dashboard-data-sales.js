@@ -27,7 +27,9 @@ export const handler = async (event, context) => {
         timestamp: new Date().toISOString(),
         env: {
           hasProjectId: !!process.env.BIGQUERY_PROJECT_ID,
-          projectId: process.env.BIGQUERY_PROJECT_ID
+          hasCredentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+          projectId: process.env.BIGQUERY_PROJECT_ID || 'NOT_SET',
+          credentialsLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
         }
       }),
     };
@@ -238,6 +240,10 @@ export const handler = async (event, context) => {
     };
 
     console.log('[dashboard-data-sales] Initializing BigQuery with project:', process.env.BIGQUERY_PROJECT_ID);
+    
+    if (!process.env.BIGQUERY_PROJECT_ID) {
+      throw new Error('BIGQUERY_PROJECT_ID environment variable is not set');
+    }
 
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       try {
@@ -289,7 +295,7 @@ export const handler = async (event, context) => {
       LEFT JOIN job_conversion_dates j
         ON j.job_number_str = q.job_numbers
       WHERE q.sent_date IS NOT NULL
-        AND q.sent_date >= '2025-03-01'
+        AND q.sent_date >= '2024-01-01'
     `;
 
     // ============================================
@@ -313,9 +319,12 @@ export const handler = async (event, context) => {
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       WHERE Date IS NOT NULL     -- Must have a scheduled date
         -- === INCLUDE CURRENT YEAR AND NEXT 2 YEARS FOR MEDIUM-TERM OUTLOOK ===
-        -- Dynamically includes a rolling 2-year window from current date
-        -- This provides visibility into medium-term revenue projections
-        AND EXTRACT(YEAR FROM PARSE_DATE('%Y-%m-%d', Date)) IN (${currentYear}, ${nextYear}, ${yearAfterNext})
+        -- Use string comparison for year filtering to avoid type issues
+        AND (
+          Date LIKE '${currentYear}-%' 
+          OR Date LIKE '${nextYear}-%' 
+          OR Date LIKE '${yearAfterNext}-%'
+        )
       ORDER BY Date  -- Chronological order for processing
     `;
 
@@ -462,16 +471,40 @@ export const handler = async (event, context) => {
     console.error('[dashboard-data-sales] Error:', error);
     console.error('[dashboard-data-sales] Error stack:', error.stack);
     
+    let errorDetails = {
+      error: 'Failed to fetch dashboard data',
+      message: error.message,
+      details: error.toString(),
+      dataSource: 'error',
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add specific error context
+    if (error.message.includes('permission') || error.message.includes('denied')) {
+      errorDetails.hint = 'Check BigQuery permissions for the service account';
+      errorDetails.requiredRoles = ['BigQuery Data Viewer', 'BigQuery Job User'];
+    } else if (error.message.includes('not found')) {
+      errorDetails.hint = 'Check if dataset and tables exist in BigQuery';
+      errorDetails.expectedTables = ['jobber_data.v_quotes', 'jobber_data.v_jobs', 'jobber_data.v_requests'];
+    } else if (error.message.includes('credentials') || error.message.includes('authentication')) {
+      errorDetails.hint = 'Check GOOGLE_APPLICATION_CREDENTIALS_JSON format';
+      errorDetails.credentialsCheck = {
+        hasCredentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+        credentialsLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
+      };
+    } else if (error.message.includes('BIGQUERY_PROJECT_ID')) {
+      errorDetails.hint = 'BIGQUERY_PROJECT_ID is not set';
+      errorDetails.environmentCheck = {
+        hasProjectId: !!process.env.BIGQUERY_PROJECT_ID,
+        projectIdValue: process.env.BIGQUERY_PROJECT_ID || 'NOT_SET'
+      };
+    }
+    
     // Return detailed error for debugging
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({
-        error: 'Failed to fetch dashboard data',
-        message: error.message,
-        details: error.toString(),
-        dataSource: 'error'
-      }),
+      body: JSON.stringify(errorDetails),
     };
   }
 };
@@ -2173,7 +2206,7 @@ function processYearData(quotesData, referenceDate, parseDate) {
 
 function processAllTimeData(quotesData, referenceDate, parseDate) {
   // Since launch (March 2025)
-  const launchDate = new Date('2025-03-01');
+  const launchDate = new Date('2024-01-01');
   const allTimeQuotes = quotesData.filter(q => {
     const sentDate = q.sent_date ? parseDate(q.sent_date) : null;
     return sentDate && sentDate >= launchDate;
