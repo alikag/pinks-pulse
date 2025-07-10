@@ -1,8 +1,8 @@
 // Mobile chart optimizations for DashboardV2
 import type { ChartOptions } from 'chart.js'
 
-const isMobile = () => window.innerWidth < 640
-const isTablet = () => window.innerWidth >= 640 && window.innerWidth < 1024
+// const isMobile = () => window.innerWidth < 640
+// const isTablet = () => window.innerWidth >= 640 && window.innerWidth < 1024
 
 // Format compact currency for mobile
 export const formatMobileCurrency = (value: number): string => {

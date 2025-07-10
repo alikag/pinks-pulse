@@ -22,7 +22,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
-import { optimizeChartForMobile } from './MobileChartFix'
+// import { optimizeChartForMobile } from './MobileChartFix'
 import { DiagnosticPanel } from '../DiagnosticPanel'
 
 /**
@@ -1346,7 +1346,7 @@ const DashboardV2: React.FC = () => {
   useEffect(() => {
     const setupCharts = () => {
       // Get responsive configuration
-      const responsiveConfig = getResponsiveChartConfig()
+      // const responsiveConfig = getResponsiveChartConfig()
       
       // Setup charts with dark theme
       Chart.defaults.color = 'rgba(255, 255, 255, 0.6)'

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { AlertCircle, CheckCircle, XCircle, RefreshCw, AlertTriangle } from 'lucide-react'
-import { DiagnosticRunner, DiagnosticResult } from '../utils/diagnostics'
+import { DiagnosticRunner, type DiagnosticResult } from '../utils/diagnostics'
 
 export const DiagnosticPanel: React.FC = () => {
   const [results, setResults] = useState<DiagnosticResult[]>([])

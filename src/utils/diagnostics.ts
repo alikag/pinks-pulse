@@ -55,7 +55,7 @@ export class DiagnosticRunner {
         test: 'Environment Variables',
         status: 'fail',
         message: 'Cannot reach test endpoint',
-        details: { error: error.message }
+        details: { error: error instanceof Error ? error.message : String(error) }
       }
     }
   }
@@ -143,7 +143,7 @@ export class DiagnosticRunner {
         test: 'API Endpoint',
         status: 'fail',
         message: 'Cannot reach API endpoint',
-        details: { error: error.message }
+        details: { error: error instanceof Error ? error.message : String(error) }
       }
     }
   }
