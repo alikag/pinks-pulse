@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
 import { optimizeChartForMobile } from './MobileChartFix'
+import { MockDataBanner } from '../MockDataBanner'
 
 /**
  * KPI INTERFACE
@@ -2221,6 +2222,10 @@ const DashboardV2: React.FC = () => {
 
   return (
     <div className="h-full w-full bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white font-inter flex flex-col overflow-hidden">
+      {/* Mock Data Banner */}
+      {data?.dataSource === 'mock' && (
+        <MockDataBanner />
+      )}
 
           {/* Top bar - Responsive */}
           <header className="px-4 lg:px-6 py-4 border-b border-white/10 bg-gray-900/30 backdrop-blur-lg">
