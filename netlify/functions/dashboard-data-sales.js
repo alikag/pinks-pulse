@@ -270,11 +270,11 @@ export const handler = async (event, context) => {
         -- Get the earliest conversion date for each job number
         -- This handles recurring jobs that might have multiple entries
         SELECT 
-          CAST(Job_Number AS STRING) as job_number_str,
-          MIN(PARSE_DATE('%Y-%m-%d', Date_Converted)) as earliest_conversion_date
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-        WHERE Date_Converted IS NOT NULL
-        GROUP BY Job_Number
+          CAST(job_number AS STRING) as job_number_str,
+          MIN(DATE(created_at)) as earliest_conversion_date
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.jobber_jobs\`
+        WHERE created_at IS NOT NULL
+        GROUP BY job_number
       )
       SELECT 
         q.quote_number,
@@ -310,22 +310,23 @@ export const handler = async (event, context) => {
     
     const jobsQuery = `
       SELECT 
-        Job_Number,          -- Unique job identifier
-        Date,                -- When the job is scheduled to happen
-        Date_Converted,      -- When the quote became a job
-        SalesPerson,         -- Who closed the deal
-        Job_type,            -- 'RECURRING' or 'ONE_OFF' (important for 2026 recurring metric)
-        Calculated_Value     -- Revenue value of the job (excluding sales tax)
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      WHERE Date IS NOT NULL     -- Must have a scheduled date
+        CAST(job_number AS STRING) AS Job_Number,  -- Unique job identifier
+        date AS Date,                              -- When the job is scheduled to happen
+        created_at AS Date_Converted,              -- When the job was created
+        SalesPerson,                               -- Who closed the deal
+        job_type AS Job_type,                      -- 'RECURRING' or 'ONE_OFF'
+        CAST(total AS FLOAT64) AS Calculated_Value -- Revenue value (total)
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.jobber_jobs\`
+      WHERE date IS NOT NULL     -- Must have a scheduled date
+        AND status != 'CANCELLED'  -- Exclude cancelled jobs
         -- === INCLUDE CURRENT YEAR AND NEXT 2 YEARS FOR MEDIUM-TERM OUTLOOK ===
         -- Use string comparison for year filtering to avoid type issues
         AND (
-          Date LIKE '${currentYear}-%' 
-          OR Date LIKE '${nextYear}-%' 
-          OR Date LIKE '${yearAfterNext}-%'
+          date LIKE '${currentYear}-%' 
+          OR date LIKE '${nextYear}-%' 
+          OR date LIKE '${yearAfterNext}-%'
         )
-      ORDER BY Date  -- Chronological order for processing
+      ORDER BY date  -- Chronological order for processing
     `;
 
     // ============================================
