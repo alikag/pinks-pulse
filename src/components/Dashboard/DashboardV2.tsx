@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
 import { optimizeChartForMobile } from './MobileChartFix'
+import { DiagnosticPanel } from '../DiagnosticPanel'
 
 /**
  * KPI INTERFACE
@@ -2208,11 +2209,23 @@ const DashboardV2: React.FC = () => {
 
   if (error) {
     return (
-      <div className="h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f]">
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <p className="text-red-400 mb-4">Error loading dashboard</p>
-            <p className="text-white/60">{error}</p>
+      <div className="h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] overflow-y-auto">
+        <div className="max-w-4xl mx-auto py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-red-400 mb-4">Dashboard Data Unavailable</h1>
+            <p className="text-white/60">The dashboard cannot connect to BigQuery. Running diagnostics...</p>
+          </div>
+          <DiagnosticPanel />
+          <div className="text-center mt-8">
+            <button
+              onClick={() => {
+                haptics.medium()
+                refetch()
+              }}
+              className="px-6 py-3 bg-pink-500 hover:bg-pink-600 rounded-lg transition-colors font-medium"
+            >
+              Retry Dashboard Load
+            </button>
           </div>
         </div>
       </div>
