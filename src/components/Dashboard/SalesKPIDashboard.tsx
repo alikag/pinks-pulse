@@ -21,7 +21,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
-import { getSalespersonThumbnail, SALESPERSON_THUMBNAILS } from '../../utils/salespersonThumbnails'
+import { getSalespersonThumbnail } from '../../utils/salespersonThumbnails'
 
 /**
  * KPI INTERFACE
