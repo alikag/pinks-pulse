@@ -791,7 +791,7 @@ const DashboardV2: React.FC = () => {
       avgQPD,
       // TODO: Add speed to lead calculation when we have request data
       speedToLead30Days: 0,
-      reviewsThisWeek: 3 // Reviews are not filtered by salesperson
+      reviewsThisWeek: 0 // Reviews are not filtered by salesperson
     };
   };
 
@@ -955,10 +955,10 @@ const DashboardV2: React.FC = () => {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 2',
-        value: 3, // Updated to 3 reviews this week
+        value: 0, // Updated to 0 reviews today
         target: 2,
         format: 'number',
-        status: 'success', // 3 reviews >= 2 target
+        status: 'danger', // 0 reviews < 2 target
         trend: 0
       }
     ]

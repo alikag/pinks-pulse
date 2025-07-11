@@ -275,6 +275,15 @@ export const handler = async (event, context) => {
         FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
         WHERE Date_Converted IS NOT NULL
         GROUP BY Job_Number
+      ),
+      job_details AS (
+        -- Get job details including type and scheduled date
+        SELECT DISTINCT
+          CAST(Job_Number AS STRING) as job_number_str,
+          FIRST_VALUE(Job_type) OVER (PARTITION BY Job_Number ORDER BY Date) as job_type,
+          FIRST_VALUE(Date) OVER (PARTITION BY Job_Number ORDER BY Date) as job_date,
+          FIRST_VALUE(Client_Name) OVER (PARTITION BY Job_Number ORDER BY Date) as visit_title
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
       )
       SELECT 
         q.quote_number,
@@ -290,10 +299,16 @@ export const handler = async (event, context) => {
           CAST(q.converted_date AS DATE)
         ) as converted_date,
         q.days_to_convert,
-        q.job_numbers
+        q.job_numbers,
+        -- Include job details
+        jd.job_type,
+        jd.job_date,
+        jd.visit_title
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
       LEFT JOIN job_conversion_dates j
         ON j.job_number_str = q.job_numbers
+      LEFT JOIN job_details jd
+        ON jd.job_number_str = q.job_numbers
       WHERE q.sent_date IS NOT NULL
         AND q.sent_date >= '2024-01-01'
     `;
@@ -1218,7 +1233,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
             quoteNumber: quote.quote_number || quote.Quote_Number,
             jobNumber: quote.job_numbers || quote.Job_Numbers,
             date: quote.job_date ? parseDate(quote.job_date).toLocaleDateString("en-US", {timeZone: "America/New_York"}) : '',
-            jobType: quote.job_type || quote.Job_Type || 'ONE_OFF',
+            jobType: quote.job_type || 'ONE_OFF',
             clientName: quote.client_name || quote.Client_Name,
             salesPerson: quote.salesperson || quote.Salesperson,
             // Construct Jobber URL - use the internal Jobber ID
