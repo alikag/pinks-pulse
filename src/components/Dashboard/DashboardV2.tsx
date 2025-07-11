@@ -180,6 +180,7 @@ const DashboardV2: React.FC = () => {
       'Christian Ruddy': '/christian-ruddy.jpg',
       'Luigi': '/luigi.jpg',
       'Michael Squires': '/michael-squires.jpg',
+      'Jared Niedhardt': '/jared-gpt.png',
       // Add more mappings as images become available
     };
     
