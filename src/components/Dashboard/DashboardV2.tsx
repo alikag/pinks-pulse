@@ -22,6 +22,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
+import { getSalespersonThumbnail, getDisplayName } from '../../utils/salespersonThumbnails'
 // import { optimizeChartForMobile } from './MobileChartFix'
 import { DiagnosticPanel } from '../DiagnosticPanel'
 
@@ -165,28 +166,6 @@ const DashboardV2: React.FC = () => {
     return name.trim().toLowerCase();
   };
   
-  // Helper function to get display name for salesperson (proper case)
-  const getDisplayName = (name: string): string => {
-    if (!name) return 'Unknown';
-    // Convert to proper case: "christian ruddy" -> "Christian Ruddy"
-    return name.split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
-  };
-  
-  // Helper function to get salesperson thumbnail
-  const getSalespersonThumbnail = (name: string): string | null => {
-    const thumbnailMap: Record<string, string> = {
-      'Christian Ruddy': '/christian-ruddy.jpg',
-      'Luigi': '/luigi.jpg',
-      'Michael Squires': '/michael-squires.jpg',
-      'Jared Niedhardt': '/jared-gpt.png',
-      // Add more mappings as images become available
-    };
-    
-    // Try exact match first, then try display name format
-    return thumbnailMap[name] || thumbnailMap[getDisplayName(name)] || null;
-  };
 
   // Helper function to calculate combined Dec/Jan/Feb OTB
   const calculateWinterOTB = (monthlyData?: Record<number, number>) => {

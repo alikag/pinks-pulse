@@ -21,6 +21,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
+import { getSalespersonThumbnail, SALESPERSON_THUMBNAILS } from '../../utils/salespersonThumbnails'
 
 /**
  * KPI INTERFACE
@@ -1908,22 +1909,16 @@ const SalesKPIDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   {data.salespersons.slice(0, 5).map((sp, index) => {
-                    // Map salesperson names to their headshot images
-                    const headshots: { [key: string]: string } = {
-                      'Christian Ruddy': '/christian-ruddy.jpg',
-                      'Michael Squires': '/michael-squires.jpg',
-                      'Giovanni Femia': '/luigi.jpg'
-                    }
-                    
                     const avgQuoteValue = sp.quotesSent > 0 ? sp.valueSent / sp.quotesSent : 0
+                    const thumbnail = getSalespersonThumbnail(sp.name)
                     
                     return (
                       <div key={sp.name} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition gap-3">
                         <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                           <div className="relative flex-shrink-0">
-                            {headshots[sp.name] ? (
+                            {thumbnail ? (
                               <img 
-                                src={headshots[sp.name]} 
+                                src={thumbnail} 
                                 alt={sp.name}
                                 className="min-w-[48px] min-h-[48px] w-12 h-12 rounded-full object-cover border-2 border-gray-700"
                                 style={{ aspectRatio: '1/1' }}

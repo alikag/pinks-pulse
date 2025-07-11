@@ -5,6 +5,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
 import { getMobilePadding } from '../../utils/mobileOptimizations'
+import { getSalespersonThumbnail, getDisplayName } from '../../utils/salespersonThumbnails'
 
 interface QuoteDetails {
   quoteNumber: string
@@ -50,27 +51,6 @@ const SalesTeamPerformance: React.FC = () => {
   const [showScoreDetails, setShowScoreDetails] = useState(false)
   const [selectedMetric, setSelectedMetric] = useState<SummaryMetric | null>(null)
 
-  // Helper function to get display name for salesperson (proper case)
-  const getDisplayName = (name: string): string => {
-    if (!name) return 'Unknown'
-    // Convert to proper case: "christian ruddy" -> "Christian Ruddy"
-    return name.split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ')
-  }
-  
-  // Helper function to get salesperson thumbnail
-  const getSalespersonThumbnail = (name: string): string | null => {
-    const thumbnailMap: Record<string, string> = {
-      'Christian Ruddy': '/christian-ruddy.jpg',
-      'Luigi': '/luigi.jpg',
-      'Michael Squires': '/michael-squires.jpg',
-      // Add more mappings as images become available
-    }
-    
-    // Try exact match first, then try display name format
-    return thumbnailMap[name] || thumbnailMap[getDisplayName(name)] || null
-  }
 
   // Parse date for filtering
   const parseDate = (dateStr: string | Date | any): Date | null => {
