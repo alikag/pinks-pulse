@@ -10,8 +10,8 @@ export const SALESPERSON_THUMBNAILS: Record<string, string> = {
   'Giovanni Femia': '/luigi.jpg', // Giovanni uses the same image as Luigi
   'Giovanni': '/luigi.jpg', // Alternative spelling
   'Michael Squires': '/michael-squires.jpg',
-  'Jared Niedhardt': '/jared-gpt.png',
-  'Jared Neidhardt': '/jared-gpt.png', // Alternative spelling
+  'Jared Niedhardt': '/jared-gpt-2.png',
+  'Jared Neidhardt': '/jared-gpt-2.png', // Alternative spelling
   // Add more mappings as images become available
 };
 
