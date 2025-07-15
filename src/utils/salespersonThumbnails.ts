@@ -5,13 +5,34 @@
 
 // Thumbnail mapping for all salespeople
 export const SALESPERSON_THUMBNAILS: Record<string, string> = {
+  // Christian Ruddy variations
   'Christian Ruddy': '/christian-ruddy.jpg',
+  'christian ruddy': '/christian-ruddy.jpg',
+  'CHRISTIAN RUDDY': '/christian-ruddy.jpg',
+  
+  // Luigi/Giovanni variations
   'Luigi': '/luigi.jpg',
-  'Giovanni Femia': '/luigi.jpg', // Giovanni uses the same image as Luigi
-  'Giovanni': '/luigi.jpg', // Alternative spelling
+  'luigi': '/luigi.jpg',
+  'LUIGI': '/luigi.jpg',
+  'Giovanni Femia': '/luigi.jpg',
+  'giovanni femia': '/luigi.jpg',
+  'GIOVANNI FEMIA': '/luigi.jpg',
+  'Giovanni': '/luigi.jpg',
+  'giovanni': '/luigi.jpg',
+  
+  // Michael Squires variations
   'Michael Squires': '/michael-squires.jpg',
+  'michael squires': '/michael-squires.jpg',
+  'MICHAEL SQUIRES': '/michael-squires.jpg',
+  
+  // Jared variations (both spellings)
   'Jared Niedhardt': '/jared-gpt-2.png',
-  'Jared Neidhardt': '/jared-gpt-2.png', // Alternative spelling
+  'jared niedhardt': '/jared-gpt-2.png',
+  'JARED NIEDHARDT': '/jared-gpt-2.png',
+  'Jared Neidhardt': '/jared-gpt-2.png',
+  'jared neidhardt': '/jared-gpt-2.png',
+  'JARED NEIDHARDT': '/jared-gpt-2.png',
+  
   // Add more mappings as images become available
 };
 
@@ -26,14 +47,21 @@ export const getDisplayName = (name: string): string => {
 
 // Helper function to get salesperson thumbnail
 export const getSalespersonThumbnail = (name: string): string | null => {
-  // Debug: Log the name being looked up
-  console.log('[Thumbnail Lookup] Looking for:', name, 'Display name:', getDisplayName(name));
+  if (!name) return null;
   
-  // Try exact match first, then try display name format
-  const thumbnail = SALESPERSON_THUMBNAILS[name] || SALESPERSON_THUMBNAILS[getDisplayName(name)] || null;
+  // Normalize the name (trim whitespace)
+  const trimmedName = name.trim();
   
-  if (!thumbnail && name) {
-    console.log('[Thumbnail Missing] No thumbnail found for:', name);
+  // Try multiple approaches to find a match
+  const thumbnail = SALESPERSON_THUMBNAILS[trimmedName] || 
+                   SALESPERSON_THUMBNAILS[getDisplayName(trimmedName)] ||
+                   SALESPERSON_THUMBNAILS[trimmedName.toLowerCase()] ||
+                   SALESPERSON_THUMBNAILS[trimmedName.toUpperCase()] ||
+                   null;
+  
+  // Log only when thumbnail is not found (for debugging)
+  if (!thumbnail && trimmedName) {
+    console.warn(`[Thumbnail Missing] No thumbnail found for: "${trimmedName}"`);
   }
   
   return thumbnail;
