@@ -3365,6 +3365,24 @@ const DashboardV2: React.FC = () => {
                         </p>
                       </div>
                     )}
+                    
+                    {/* Additional context for Average Quotes/Day */}
+                    {selectedMetric.id === 'avg-qpd' && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                        <h3 className="text-sm font-semibold text-blue-300 mb-2">Current Period Breakdown</h3>
+                        <div className="space-y-1 text-sm">
+                          <p className="text-blue-200">
+                            Total quotes in last 30 days: <span className="font-mono font-semibold">{Math.round(selectedMetric.value * getBusinessDaysInLast30Days())}</span>
+                          </p>
+                          <p className="text-blue-200">
+                            Business days in last 30 days: <span className="font-mono font-semibold">{getBusinessDaysInLast30Days()}</span>
+                          </p>
+                          <p className="text-blue-200">
+                            Average per business day: <span className="font-mono font-semibold">{selectedMetric.value.toFixed(2)}</span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-center">
