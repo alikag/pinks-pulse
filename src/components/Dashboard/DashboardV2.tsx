@@ -1855,14 +1855,32 @@ const DashboardV2: React.FC = () => {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
+                mode: 'index',
+                intersect: false,
                 callbacks: {
+                  title: (context) => {
+                    return context[0].label || '';
+                  },
                   label: (context) => {
                     const label = context.dataset.label || '';
                     const value = context.parsed.y;
                     if (label === 'Target') {
                       return `Target: $${value.toLocaleString()}`;
                     }
-                    return `OTB: $${value.toLocaleString()}`;
+                    return `Actual OTB: $${value.toLocaleString()}`;
+                  },
+                  afterLabel: (context) => {
+                    if (context.datasetIndex === 0) {
+                      // After showing actual, calculate percentage of target
+                      const actualValue = context.parsed.y;
+                      const targetData = context.chart.data.datasets[1]?.data[context.dataIndex];
+                      const targetValue = typeof targetData === 'number' ? targetData : 0;
+                      if (targetValue > 0) {
+                        const percentage = ((actualValue / targetValue) * 100).toFixed(1);
+                        return `${percentage}% of target`;
+                      }
+                    }
+                    return '';
                   }
                 }
               }
@@ -2058,14 +2076,32 @@ const DashboardV2: React.FC = () => {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
+                mode: 'index',
+                intersect: false,
                 callbacks: {
+                  title: (context) => {
+                    return context[0].label || '';
+                  },
                   label: (context) => {
                     const label = context.dataset.label || '';
                     const value = context.parsed.y;
                     if (label === 'Target') {
                       return `Target: $${value.toLocaleString()}`;
                     }
-                    return `OTB: $${value.toLocaleString()}`;
+                    return `Actual OTB: $${value.toLocaleString()}`;
+                  },
+                  afterLabel: (context) => {
+                    if (context.datasetIndex === 0) {
+                      // After showing actual, calculate percentage of target
+                      const actualValue = context.parsed.y;
+                      const targetData = context.chart.data.datasets[1]?.data[context.dataIndex];
+                      const targetValue = typeof targetData === 'number' ? targetData : 0;
+                      if (targetValue > 0) {
+                        const percentage = ((actualValue / targetValue) * 100).toFixed(1);
+                        return `${percentage}% of target`;
+                      }
+                    }
+                    return '';
                   }
                 }
               }
