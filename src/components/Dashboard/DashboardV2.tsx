@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
 import { getSalespersonThumbnail, getDisplayName } from '../../utils/salespersonThumbnails'
+import { getBusinessDaysInLast30Days } from '../../utils/businessDays'
 // import { optimizeChartForMobile } from './MobileChartFix'
 import { DiagnosticPanel } from '../DiagnosticPanel'
 
@@ -740,7 +741,9 @@ const DashboardV2: React.FC = () => {
     const cvr30Days = metrics.quotes30Days > 0
       ? (metrics.converted30Days / metrics.quotes30Days) * 100
       : 0;
-    const avgQPD = metrics.quotes30Days / 30;
+    // Calculate average quotes per business day (excluding weekends)
+    const businessDaysInLast30 = getBusinessDaysInLast30Days();
+    const avgQPD = metrics.quotes30Days / businessDaysInLast30;
 
     // Debug final metrics
     if (salesperson && salesperson !== 'all') {
@@ -1296,9 +1299,9 @@ const DashboardV2: React.FC = () => {
         }
       case 'avg-qpd':
         return {
-          formula: 'COUNT(quotes WHERE sent_date >= TODAY - 30 DAYS) ÷ 30',
-          description: 'Simple average of quotes sent per day over the last 30 calendar days.',
-          notes: 'Fixed 30-day denominator. Helps track sales activity consistency.'
+          formula: 'COUNT(quotes WHERE sent_date >= TODAY - 30 DAYS) ÷ NUMBER_OF_BUSINESS_DAYS_IN_LAST_30',
+          description: 'Average number of quotes sent per business day (Monday-Friday) over the last 30 calendar days.',
+          notes: 'Excludes weekends from the calculation. Typically ~22 business days in a 30-day period. Helps track sales activity consistency on working days.'
         }
       case 'reviews-week':
         return {
