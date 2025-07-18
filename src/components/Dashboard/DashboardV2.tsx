@@ -841,7 +841,7 @@ const DashboardV2: React.FC = () => {
       {
         id: 'converted-week',
         label: 'Converted This Week',
-        subtitle: 'total_dollars',
+        subtitle: `${metrics.convertedThisWeek} quotes converted`,
         value: metrics.convertedThisWeekDollars,
         target: 157500,
         format: 'currency',
