@@ -28,6 +28,7 @@ interface SalespersonScore {
   totalRevenue: number
   quotesCount: number
   conversionsCount: number
+  avgSpeedToLead: number | null
 }
 
 interface SummaryMetric {
@@ -253,13 +254,27 @@ const SalesTeamPerformance: React.FC = () => {
       const conversionRate = quotesCount > 0 ? (conversionsCount / quotesCount) * 100 : 0
       const avgDealSize = conversionsCount > 0 ? totalRevenue / conversionsCount : 0
       
-      // Calculate composite score (0-100)
-      // Weights: Quotes/Day (30%), Conversion Rate (40%), Avg Deal Size (30%)
-      const quotesPerDayScore = Math.min((quotesPerDay / 12) * 100, 100) * 0.3 // Target: 12 quotes/day
-      const conversionRateScore = Math.min((conversionRate / 45) * 100, 100) * 0.4 // Target: 45% CVR
-      const avgDealSizeScore = Math.min((avgDealSize / 3000) * 100, 100) * 0.3 // Target: $3000 avg deal
+      // Get speed to lead from salespersons data
+      const salespersonInfo = data?.salespersons?.find((sp: any) => 
+        sp.name?.toLowerCase() === name.toLowerCase()
+      ) || data?.salespersonsThisWeek?.find((sp: any) => 
+        sp.name?.toLowerCase() === name.toLowerCase()
+      )
+      const avgSpeedToLead = salespersonInfo?.avgSpeedToLead || null
       
-      const compositeScore = quotesPerDayScore + conversionRateScore + avgDealSizeScore
+      // Calculate composite score (0-100)
+      // Weights: Quotes/Day (25%), Conversion Rate (35%), Avg Deal Size (25%), Speed to Lead (15%)
+      const quotesPerDayScore = Math.min((quotesPerDay / 12) * 100, 100) * 0.25 // Target: 12 quotes/day
+      const conversionRateScore = Math.min((conversionRate / 45) * 100, 100) * 0.35 // Target: 45% CVR
+      const avgDealSizeScore = Math.min((avgDealSize / 3000) * 100, 100) * 0.25 // Target: $3000 avg deal
+      
+      // Speed to lead score (lower is better, target: 24 hours = 1440 minutes)
+      let speedToLeadScore = 0
+      if (avgSpeedToLead !== null && avgSpeedToLead > 0) {
+        speedToLeadScore = Math.min((1440 / avgSpeedToLead) * 100, 100) * 0.15
+      }
+      
+      const compositeScore = quotesPerDayScore + conversionRateScore + avgDealSizeScore + speedToLeadScore
       
       scores.push({
         name,
@@ -269,13 +284,14 @@ const SalesTeamPerformance: React.FC = () => {
         avgDealSize,
         totalRevenue,
         quotesCount,
-        conversionsCount
+        conversionsCount,
+        avgSpeedToLead
       })
     })
     
     // Sort by composite score
     return scores.sort((a, b) => b.compositeScore - a.compositeScore)
-  }, [sortedQuotes, dateRange])
+  }, [sortedQuotes, dateRange, data])
 
   // Handle sorting
   const handleSort = (column: keyof QuoteDetails) => {
@@ -716,15 +732,16 @@ const SalesTeamPerformance: React.FC = () => {
               <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <h4 className="text-sm font-semibold text-blue-300 mb-2">Composite Score Calculation</h4>
                 <p className="text-sm text-gray-300 mb-2">
-                  The performance score is calculated using three key metrics with the following weights:
+                  The performance score is calculated using four key metrics with the following weights:
                 </p>
                 <ul className="text-sm text-gray-400 space-y-1 ml-4">
-                  <li>• <span className="text-gray-300">Quotes per Day (30%)</span> - Target: 12 quotes/day</li>
-                  <li>• <span className="text-gray-300">Conversion Rate (40%)</span> - Target: 45% conversion rate</li>
-                  <li>• <span className="text-gray-300">Average Deal Size (30%)</span> - Target: $3,000 per deal</li>
+                  <li>• <span className="text-gray-300">Quotes per Day (25%)</span> - Target: 12 quotes/day</li>
+                  <li>• <span className="text-gray-300">Conversion Rate (35%)</span> - Target: 45% conversion rate</li>
+                  <li>• <span className="text-gray-300">Average Deal Size (25%)</span> - Target: $3,000 per deal</li>
+                  <li>• <span className="text-gray-300">Speed to Lead (15%)</span> - Target: 24 hours or less</li>
                 </ul>
                 <p className="text-xs text-gray-500 mt-2">
-                  Score = (Quotes/Day ÷ 12) × 30 + (CVR ÷ 45) × 40 + (Avg Deal ÷ $3,000) × 30
+                  Score = (Quotes/Day ÷ 12) × 25 + (CVR ÷ 45) × 35 + (Avg Deal ÷ $3,000) × 25 + (24h ÷ Speed) × 15
                 </p>
               </div>
             )}
@@ -814,6 +831,20 @@ const SalesTeamPerformance: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-400">Avg Deal Size:</span>
                       <span className="font-medium">{formatCurrency(person.avgDealSize)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Speed to Lead:</span>
+                      <span className={`font-medium ${
+                        person.avgSpeedToLead === null ? 'text-gray-500' :
+                        person.avgSpeedToLead <= 1440 ? 'text-green-400' : 
+                        person.avgSpeedToLead <= 2880 ? 'text-yellow-400' : 
+                        'text-red-400'
+                      }`}>
+                        {person.avgSpeedToLead === null ? 'N/A' : 
+                         person.avgSpeedToLead < 60 ? `${Math.round(person.avgSpeedToLead)}m` :
+                         person.avgSpeedToLead < 1440 ? `${(person.avgSpeedToLead / 60).toFixed(1)}h` :
+                         `${(person.avgSpeedToLead / 1440).toFixed(1)}d`}
+                      </span>
                     </div>
                     <div className="flex justify-between border-t border-white/10 pt-2">
                       <span className="text-gray-400">Total Revenue:</span>
