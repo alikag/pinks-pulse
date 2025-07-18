@@ -950,12 +950,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     quotesLastWeekConverted: 0,  // Quotes sent last week that converted
     
     // === CHART DATA STRUCTURES ===
-    weeklyOTBBreakdown: {        // Week-by-week OTB for 5-week chart
+    weeklyOTBBreakdown: {        // Week-by-week OTB for 11-week chart
       week0: 0,
       week1: 0,
       week2: 0,
       week3: 0,
-      week4: 0
+      week4: 0,
+      week5: 0,
+      week6: 0,
+      week7: 0,
+      week8: 0,
+      week9: 0,
+      week10: 0
     },
     monthlyOTBData: {            // Month-by-month OTB for yearly chart
       1: 0,   // January
@@ -1392,7 +1398,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.totalOTB += jobValue;
     }
     
-    // Calculate weekly OTB for 5-week display
+    // Calculate weekly OTB for 11-week display
     // Find the current week's Sunday
     const currentWeekStart = new Date(estToday);
     if (currentWeekStart.getDay() !== 0) {
@@ -1400,15 +1406,15 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
     currentWeekStart.setHours(0, 0, 0, 0);
     
-    // Calculate 5 weeks centered on current week (2 before, current, 2 after)
-    const weeksToShow = 5;
-    const weeksBefore = 2;
+    // Calculate 11 weeks centered on current week (4 before, current, 6 after)
+    const weeksToShow = 11;
+    const weeksBefore = 4;
     
-    // Start from 2 weeks before current week
+    // Start from 4 weeks before current week
     const startWeek = new Date(currentWeekStart);
     startWeek.setDate(startWeek.getDate() - (weeksBefore * 7));
     
-    // Process each of the 5 weeks
+    // Process each of the 11 weeks
     for (let weekIndex = 0; weekIndex < weeksToShow; weekIndex++) {
       const weekStart = new Date(startWeek);
       weekStart.setDate(startWeek.getDate() + (weekIndex * 7));
@@ -1559,17 +1565,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log(`[Monthly OTB Data for ${currentYear} + Jan/Feb ${nextYear}]:`, metrics.monthlyOTBData);
   console.log('[Next Month OTB (July 2025)]:', metrics.nextMonthOTB);
   
-  // Log 5-week range details
+  // Log 11-week range details
   const debugCurrentWeekStart = new Date(estToday);
   if (debugCurrentWeekStart.getDay() !== 0) {
     debugCurrentWeekStart.setDate(debugCurrentWeekStart.getDate() - debugCurrentWeekStart.getDay());
   }
   debugCurrentWeekStart.setHours(0, 0, 0, 0);
   
-  console.log('[5-Week OTB Debug]:');
-  for (let i = 0; i < 5; i++) {
+  console.log('[11-Week OTB Debug]:');
+  for (let i = 0; i < 11; i++) {
     const weekStart = new Date(debugCurrentWeekStart);
-    weekStart.setDate(debugCurrentWeekStart.getDate() + ((i - 2) * 7));
+    weekStart.setDate(debugCurrentWeekStart.getDate() + ((i - 4) * 7));
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
     console.log(`  week${i}: ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()} = $${metrics.weeklyOTBBreakdown[`week${i}`] || 0}`);

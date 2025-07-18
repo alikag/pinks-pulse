@@ -1971,21 +1971,21 @@ const DashboardV2: React.FC = () => {
           currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay())
         }
         
-        // Create array of 5 weeks with current week in middle
+        // Create array of 11 weeks with current week in middle
         const weekRanges: string[] = []
         const weeklyOTBData: number[] = []
         const weeklyTargets: number[] = []
-        const weeksToShow = 5 // Total weeks to display
-        const weeksBefore = 2  // Weeks before current week
+        const weeksToShow = 11 // Total weeks to display
+        const weeksBefore = 4  // Weeks before current week
         
-        // Start from 2 weeks before current week
+        // Start from 4 weeks before current week
         const startWeek = new Date(currentWeekStart)
         startWeek.setDate(startWeek.getDate() - (weeksBefore * 7))
         
         // Calculate revenue targets based on van capacity
         const perVanPerDay = 1500;
         
-        // Build 5 weeks of data
+        // Build 11 weeks of data
         for (let i = 0; i < weeksToShow; i++) {
           const weekStart = new Date(startWeek)
           weekStart.setDate(startWeek.getDate() + (i * 7))
@@ -2976,7 +2976,7 @@ const DashboardV2: React.FC = () => {
               <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="mb-4">
                   <div className="flex items-center gap-3">
-                    <h2 className="font-medium">On the Books by Week - 5 Week View</h2>
+                    <h2 className="font-medium">On the Books by Week - 11 Week View</h2>
                     {selectedSalesperson !== 'all' && (
                       getSalespersonThumbnail(selectedSalesperson) ? (
                         <img 
