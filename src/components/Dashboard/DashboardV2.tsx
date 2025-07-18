@@ -1456,6 +1456,22 @@ const DashboardV2: React.FC = () => {
               borderWidth: 2,
               borderRadius: 4,
               yAxisID: 'y',
+              order: 3
+            }, {
+              label: 'Quotes Converted',
+              type: 'line',
+              data: chartData?.quotesConverted || new Array(7).fill(0),
+              borderColor: CHART_COLORS.quotes.converted,
+              backgroundColor: 'transparent',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointBackgroundColor: CHART_COLORS.quotes.converted,
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              yAxisID: 'y2',
               order: 2
             }, {
               label: 'Quotes Sent',
@@ -1505,6 +1521,8 @@ const DashboardV2: React.FC = () => {
                   label: (context) => {
                     if (context.dataset.label === '$ Converted') {
                       return `Revenue: $${context.parsed.y.toLocaleString()}`;
+                    } else if (context.dataset.label === 'Quotes Converted') {
+                      return `Quotes Converted: ${context.parsed.y}`;
                     } else {
                       return `Quotes Sent: ${context.parsed.y}`;
                     }
@@ -1547,6 +1565,15 @@ const DashboardV2: React.FC = () => {
                   display: true,
                   text: 'Quotes Sent',
                   color: 'rgba(255, 255, 255, 0.6)'
+                }
+              },
+              y2: {
+                type: 'linear',
+                display: false,
+                position: 'right',
+                beginAtZero: true,
+                grid: {
+                  drawOnChartArea: false,
                 }
               },
               x: {
@@ -2818,14 +2845,18 @@ const DashboardV2: React.FC = () => {
                       )
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-orange-400 rounded"></div>
-                      <span className="text-gray-400">Sent Quotes</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 bg-blue-500 rounded"></div>
+                      <span className="text-gray-400">Revenue</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                      <span className="text-gray-400">Converted</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 bg-blue-600 rounded"></div>
+                      <span className="text-gray-400">Quotes</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 bg-orange-400 rounded"></div>
+                      <span className="text-gray-400">Sent</span>
                     </div>
                   </div>
                 </div>
