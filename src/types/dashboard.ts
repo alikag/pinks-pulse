@@ -67,8 +67,13 @@ export interface DashboardData {
   recentConvertedQuotes?: Array<{
     dateConverted: string;
     quoteNumber: string;
+    jobNumber?: string;
+    date?: string;
+    jobType?: string;
     clientName: string;
     salesPerson: string;
+    jobberLink?: string;
+    visitTitle?: string;
     totalDollars: number;
     status: string;
   }>;

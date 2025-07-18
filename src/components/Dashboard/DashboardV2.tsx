@@ -75,7 +75,14 @@ const DashboardV2: React.FC = () => {
       console.log('[Converted Quotes Debug]', {
         hasData: !!data,
         recentConvertedQuotes: data.recentConvertedQuotes,
-        length: data.recentConvertedQuotes?.length || 0
+        length: data.recentConvertedQuotes?.length || 0,
+        sampleQuotes: data.recentConvertedQuotes?.slice(0, 3).map(q => ({
+          quoteNumber: q.quoteNumber,
+          jobType: q.jobType,
+          hasJobType: 'jobType' in q,
+          jobTypeValue: q.jobType,
+          allKeys: Object.keys(q)
+        }))
       })
       
       // CRITICAL DEBUG: Log Jobber quote processing results
