@@ -167,6 +167,16 @@ const DashboardV2: React.FC = () => {
     return name.trim().toLowerCase();
   };
   
+  // Helper function to format currency values with k notation
+  const formatCurrencyAxis = (value: number): string => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}k`;
+    }
+    return `$${value}`;
+  };
+  
 
   // Helper function to calculate combined Dec/Jan/Feb OTB
   const calculateWinterOTB = (monthlyData?: Record<number, number>) => {
@@ -1538,9 +1548,7 @@ const DashboardV2: React.FC = () => {
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value: any) => {
-                    return '$' + Number(value).toLocaleString();
-                  }
+                  callback: (value: any) => formatCurrencyAxis(Number(value))
                 },
                 title: {
                   display: true,
@@ -1721,9 +1729,7 @@ const DashboardV2: React.FC = () => {
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
                   color: 'rgba(255, 255, 255, 0.6)',
-                  callback: function(value) {
-                    return '$' + value.toLocaleString();
-                  }
+                  callback: (value: any) => formatCurrencyAxis(Number(value))
                 },
                 title: {
                   display: true,
@@ -1917,7 +1923,7 @@ const DashboardV2: React.FC = () => {
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => `$${Number(value) / 1000}k`,
+                  callback: (value: any) => formatCurrencyAxis(Number(value)),
                   autoSkip: false,
                   maxTicksLimit: 6
                 },
@@ -2138,7 +2144,7 @@ const DashboardV2: React.FC = () => {
                 beginAtZero: true,
                 grid: { color: 'rgba(255, 255, 255, 0.05)' },
                 ticks: {
-                  callback: (value) => `$${Number(value).toLocaleString()}`,
+                  callback: (value: any) => formatCurrencyAxis(Number(value)),
                   autoSkip: false,
                   maxTicksLimit: 6
                 },
