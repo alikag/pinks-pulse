@@ -2808,30 +2808,47 @@ const DashboardV2: React.FC = () => {
               ))}
             </div>
 
-            {/* Data Quality Indicators */}
-            <div className="flex items-center justify-between bg-gray-900/30 rounded-lg p-3">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-400" />
-                  <span className="text-xs text-gray-400">BigQuery Connected</span>
+            {/* Data Sync Status */}
+            <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-lg p-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                    <span className="text-xs text-gray-400">BigQuery Connected</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-blue-400 animate-pulse" />
+                    <span className="text-xs text-gray-400">Live Data</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <span className="text-xs text-gray-400">Last sync:</span>
+                    </div>
+                    <span className="text-xs text-gray-300">
+                      {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZoneName: 'short'
+                      }) : 'Loading...'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-400 animate-pulse" />
-                  <span className="text-xs text-gray-400">Live Data</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span className="text-xs text-gray-400">
-                    Last updated: {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : 'Just now'}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <span className="text-xs text-gray-500">
+                    Jobber → BigQuery syncs hourly
                   </span>
+                  {data?.dataSource === 'mock' && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 rounded-md">
+                      <AlertCircle className="h-4 w-4 text-yellow-400" />
+                      <span className="text-xs text-yellow-400">Using mock data</span>
+                    </div>
+                  )}
                 </div>
               </div>
-              {data?.dataSource === 'mock' && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 rounded-md">
-                  <AlertCircle className="h-4 w-4 text-yellow-400" />
-                  <span className="text-xs text-yellow-400">Using mock data</span>
-                </div>
-              )}
             </div>
             
 
