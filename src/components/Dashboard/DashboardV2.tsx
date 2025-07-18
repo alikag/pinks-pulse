@@ -841,7 +841,7 @@ const DashboardV2: React.FC = () => {
       {
         id: 'converted-week',
         label: 'Converted This Week',
-        subtitle: `${metrics.convertedThisWeek} quotes converted`,
+        subtitle: 'Target: $157.5k',
         value: metrics.convertedThisWeekDollars,
         target: 157500,
         format: 'currency',
@@ -2656,6 +2656,17 @@ const DashboardV2: React.FC = () => {
                         return formatValue(kpi.value, kpi.format);
                       })()}
                     </p>
+                    {/* Add quote count for Converted This Week */}
+                    {kpi.id === 'converted-week' && kpi.value > 0 && data && (
+                      <p className="text-sm text-gray-400 mt-1">
+                        {(() => {
+                          const metrics = (data.rawQuotes && data.rawJobs && selectedSalesperson !== 'all') 
+                            ? calculateKPIsFromRawData(data.rawQuotes, data.rawJobs, selectedSalesperson)
+                            : data.kpiMetrics;
+                          return `${metrics?.convertedThisWeek || 0} quotes converted`;
+                        })()}
+                      </p>
+                    )}
                     {/* Add note for CVR This Week when using last week's data */}
                     {kpi.id === 'cvr-week' && kpi.value > 0 && (data?.kpiMetrics as any)?.debugInfo?.usingLastWeekCVR && (
                       <p className="text-xs text-blue-400 mt-1">
