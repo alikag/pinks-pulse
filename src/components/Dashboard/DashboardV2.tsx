@@ -65,7 +65,7 @@ const DashboardV2: React.FC = () => {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
   const [convertedQuotesSortBy, setConvertedQuotesSortBy] = useState<string>('dateConverted')
   const [convertedQuotesSortOrder, setConvertedQuotesSortOrder] = useState<'asc' | 'desc'>('desc')
-  const { data, loading, error, refetch } = useDashboardData()
+  const { data, loading, error, refetch, isRefreshing, lastError } = useDashboardData()
   const mainContentRef = useRef<HTMLElement>(null)
   const filterButtonRef = useRef<HTMLButtonElement>(null)
   
@@ -2465,9 +2465,9 @@ const DashboardV2: React.FC = () => {
                 }
               `}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="text-sm font-medium">
-                {loading ? 'Refreshing...' : 'Refresh'}
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </span>
             </button>
               </div>
@@ -2562,7 +2562,7 @@ const DashboardV2: React.FC = () => {
                     }
                   `}
                 >
-                  <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
               
@@ -2850,6 +2850,23 @@ const DashboardV2: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Refresh Error Notification */}
+            {lastError && (
+              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 flex items-start gap-3">
+                <XCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-red-300 font-medium">Refresh Failed</p>
+                  <p className="text-xs text-red-300/70 mt-1">
+                    Unable to fetch latest data from BigQuery. Displaying data from {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    }) : 'previous load'}.
+                  </p>
+                </div>
+              </div>
+            )}
             
 
             {/* Charts Row 1 */}
