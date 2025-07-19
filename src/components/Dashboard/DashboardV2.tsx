@@ -20,7 +20,7 @@ import { Clock, AlertCircle, CheckCircle, RefreshCw, TrendingUp, XCircle, Filter
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
-import RainbowLoadingWave from '../RainbowLoadingWave'
+import WindowCleaningLoader from '../WindowCleaningLoader'
 import { haptics } from '../../utils/haptics'
 import { getSalespersonThumbnail, getDisplayName } from '../../utils/salespersonThumbnails'
 import { getBusinessDaysInLast30Days } from '../../utils/businessDays'
@@ -2263,7 +2263,7 @@ const DashboardV2: React.FC = () => {
   }, [data, loading, selectedSalesperson])
 
   if (loading) {
-    return <RainbowLoadingWave />
+    return <WindowCleaningLoader />
   }
 
   if (error) {

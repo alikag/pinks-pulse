@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
-import RainbowLoadingWave from '../RainbowLoadingWave';
+import WindowCleaningLoader from '../WindowCleaningLoader';
 
 interface PasswordProtectProps {
   children: React.ReactNode;
@@ -36,11 +36,11 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
       setError('');
       setShowLoadingAnimation(true);
       
-      // Show loading animation for 2 seconds before revealing dashboard
+      // Show loading animation for 3 seconds before revealing dashboard
       setTimeout(() => {
         setIsAuthenticated(true);
         setShowLoadingAnimation(false);
-      }, 2000);
+      }, 3000);
     } else {
       setError('Incorrect password. Please try again.');
       setPassword('');
@@ -50,7 +50,7 @@ const PasswordProtect: React.FC<PasswordProtectProps> = ({ children }) => {
   };
 
   if (showLoadingAnimation) {
-    return <RainbowLoadingWave />;
+    return <WindowCleaningLoader />;
   }
 
   if (isAuthenticated) {
