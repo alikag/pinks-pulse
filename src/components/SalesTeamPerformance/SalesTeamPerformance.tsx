@@ -708,7 +708,7 @@ const SalesTeamPerformance: React.FC = () => {
         {/* Performance Scores by Salesperson */}
         {salespersonScores.length > 0 && (
           <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
               <div className="flex items-center gap-3">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Star className="h-5 w-5 text-yellow-400" />
@@ -724,7 +724,43 @@ const SalesTeamPerformance: React.FC = () => {
                   <Info className="h-4 w-4 text-gray-400" />
                 </button>
               </div>
-              <span className="text-sm text-gray-400">{dateRange === 'custom' ? 'Custom period' : `Last ${dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : 90} days`}</span>
+              
+              {/* Period Selector */}
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                <select
+                  value={dateRange}
+                  onChange={(e) => {
+                    haptics.light()
+                    setDateRange(e.target.value as any)
+                  }}
+                  className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+                >
+                  <option value="7days">Last 7 Days</option>
+                  <option value="30days">Last 30 Days</option>
+                  <option value="90days">Last 90 Days</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+                
+                {/* Custom Date Range */}
+                {dateRange === 'custom' && (
+                  <>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+                    />
+                    <span className="text-gray-400 text-sm">to</span>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="bg-gray-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-pink-500"
+                    />
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Score Calculation Explanation */}
