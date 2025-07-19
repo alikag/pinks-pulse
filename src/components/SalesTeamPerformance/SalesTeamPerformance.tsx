@@ -41,7 +41,7 @@ interface SummaryMetric {
 }
 
 const SalesTeamPerformance: React.FC = () => {
-  const { data, loading, error, refetch } = useDashboardData()
+  const { data, loading, error, refetch, isRefreshing } = useDashboardData()
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'custom'>('30days')
   const [customStartDate, setCustomStartDate] = useState<string>('')
@@ -403,7 +403,7 @@ const SalesTeamPerformance: React.FC = () => {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (loading || isRefreshing) {
     return <RainbowLoadingWave />
   }
 

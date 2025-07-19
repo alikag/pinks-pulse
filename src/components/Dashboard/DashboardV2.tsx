@@ -2262,7 +2262,7 @@ const DashboardV2: React.FC = () => {
     }
   }, [data, loading, selectedSalesperson])
 
-  if (loading) {
+  if (loading || isRefreshing) {
     return <RainbowLoadingWave />
   }
 
