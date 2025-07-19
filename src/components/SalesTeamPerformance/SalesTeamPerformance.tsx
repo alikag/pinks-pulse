@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { Calendar, ChevronDown, Download, TrendingUp, Clock, Target, Award, CheckCircle, Info, Star, XCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
-import WindowCleaningLoader from '../WindowCleaningLoader'
+import RainbowLoadingWave from '../RainbowLoadingWave'
 import { haptics } from '../../utils/haptics'
 import { getMobilePadding } from '../../utils/mobileOptimizations'
 import { getSalespersonThumbnail, getDisplayName } from '../../utils/salespersonThumbnails'
@@ -404,7 +404,7 @@ const SalesTeamPerformance: React.FC = () => {
   }
 
   if (loading) {
-    return <WindowCleaningLoader />
+    return <RainbowLoadingWave />
   }
 
   if (error) {
