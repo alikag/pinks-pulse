@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Calendar, ChevronDown, Download, TrendingUp, Clock, Target, Award, CheckCircle, Info, Star, XCircle } from 'lucide-react'
+import { Calendar, ChevronDown, Download, TrendingUp, Clock, Target, Award, CheckCircle, Info, Star, XCircle, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
@@ -512,6 +512,27 @@ const SalesTeamPerformance: React.FC = () => {
               <Download className="h-4 w-4" />
               Export CSV
             </button>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={() => {
+                haptics.medium()
+                refetch()
+              }}
+              disabled={loading && !data}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium
+                ${(loading && !data)
+                  ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed' 
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                }
+              `}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </span>
+            </button>
           </div>
           
           {/* Mobile Filters */}
@@ -572,6 +593,27 @@ const SalesTeamPerformance: React.FC = () => {
                 Export
               </button>
             </div>
+            
+            {/* Mobile Refresh Button */}
+            <button
+              onClick={() => {
+                haptics.medium()
+                refetch()
+              }}
+              disabled={loading && !data}
+              className={`
+                flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium w-full
+                ${(loading && !data)
+                  ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed' 
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                }
+              `}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </span>
+            </button>
             
             {/* Custom Date Range for Mobile */}
             {dateRange === 'custom' && (

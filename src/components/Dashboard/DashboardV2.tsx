@@ -2456,7 +2456,7 @@ const DashboardV2: React.FC = () => {
                 refetch();
                 fetchReviews();
               }}
-              disabled={loading}
+              disabled={loading && !data}
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-lg transition-all
                 ${loading 
@@ -2553,7 +2553,7 @@ const DashboardV2: React.FC = () => {
                     refetch();
                     fetchReviews();
                   }}
-                  disabled={loading}
+                  disabled={loading && !data}
                   className={`
                     flex items-center justify-center p-2 rounded-lg transition-all
                     ${loading 
