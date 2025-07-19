@@ -13,11 +13,14 @@ export const useDashboardData = () => {
   const fetchData = async (isInitialLoad = false, retryCount = 0) => {
     const maxRetries = 3;
     const baseDelay = 1000; // 1 second
+    const startTime = Date.now();
     
     try {
       // For refresh, show refreshing state without clearing existing data
       if (!isInitialLoad && data) {
         setIsRefreshing(true);
+        // Also set loading to true to show the full loading animation
+        setLoading(true);
       } else {
         setLoading(true);
       }
@@ -25,6 +28,13 @@ export const useDashboardData = () => {
       console.log(`Fetching dashboard data... ${retryCount > 0 ? `(retry ${retryCount}/${maxRetries})` : ''}`);
       const dashboardData = await BigQueryService.fetchDashboardData();
       console.log('Dashboard data received:', dashboardData);
+      
+      // Ensure minimum loading time of 1 second for better UX
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - elapsedTime));
+      }
+      
       setData(dashboardData);
       setError(null);
       setLastError(null);
