@@ -319,7 +319,7 @@ export const handler = async (event, context) => {
     // Purpose: Get scheduled jobs to calculate future revenue (OTB = On The Books)
     // Shows what revenue is already locked in for future dates
     // Get current year and next 2 years for medium-term outlook
-    const currentYear = new Date().getFullYear();
+    const currentYear = estToday.getFullYear();
     const nextYear = currentYear + 1;
     const yearAfterNext = currentYear + 2;
     
@@ -430,7 +430,33 @@ export const handler = async (event, context) => {
       }
     } catch (queryError) {
       console.error('[dashboard-data-sales] Critical query error:', queryError);
-      throw new Error(`BigQuery query failed: ${queryError.message}`);
+      // Try to run queries individually if parallel execution fails
+      console.log('[dashboard-data-sales] Attempting individual queries...');
+      try {
+        [quotesData] = await bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout });
+      } catch (quotesErr) {
+        console.error('[dashboard-data-sales] Quotes query failed:', quotesErr);
+        quotesData = [];
+      }
+      
+      try {
+        [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
+      } catch (jobsErr) {
+        console.error('[dashboard-data-sales] Jobs query failed:', jobsErr);
+        jobsData = [];
+      }
+      
+      try {
+        [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
+      } catch (speedErr) {
+        console.error('[dashboard-data-sales] Speed to lead query failed:', speedErr);
+        speedToLeadData = [];
+      }
+      
+      // If we still don't have essential data, throw error
+      if (quotesData.length === 0) {
+        throw new Error(`Failed to fetch any data from BigQuery: ${queryError.message}`);
+      }
     }
     
     const queryEndTime = Date.now();
@@ -1354,6 +1380,11 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[OTB Debug] Current month:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
   console.log('[OTB Debug] Reference date month:', now_utc.toLocaleString('default', { month: 'long', year: 'numeric' }));
   
+  if (jobsData.length === 0) {
+    console.warn('[CRITICAL WARNING] No jobs data returned from BigQuery! This will cause $0 values for OTB metrics.');
+    console.warn('[CRITICAL WARNING] Check if the jobs query timed out or if there\'s an issue with the v_jobs view.');
+  }
+  
   // Log first 5 jobs for debugging
   jobsData.slice(0, 5).forEach(job => {
     console.log('[OTB Debug] Sample job:', {
@@ -1447,9 +1478,17 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     }
     if (isNextMonth(jobDate)) {
       metrics.nextMonthOTB += jobValue;
+      console.log('[Next Month OTB Debug]', {
+        jobNumber: job.Job_Number,
+        date: jobDate.toLocaleDateString(),
+        value: jobValue,
+        runningTotal: metrics.nextMonthOTB,
+        currentMonth: estToday.getMonth(),
+        nextMonth: (estToday.getMonth() + 1) % 12
+      });
     }
     
-    const currentYear = new Date().getFullYear();
+    const currentYear = estToday.getFullYear();
     const nextYear = currentYear + 1;
     
     // Add to monthly OTB data for current year and next year's winter months
@@ -1469,7 +1508,18 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       // Sum BOTH one-off and visit-based dollars for complete revenue picture
       const oneOffValue = parseFloat(job.One_off_job_dollars) || 0;
       const visitBasedValue = parseFloat(job.Visit_based_dollars) || 0;
-      metrics.recurringRevenue2026 += (oneOffValue + visitBasedValue);
+      const totalValue = oneOffValue + visitBasedValue;
+      metrics.recurringRevenue2026 += totalValue;
+      
+      // Debug logging for 2026 revenue
+      console.log('[2026 Revenue Debug]', {
+        jobNumber: job.Job_Number,
+        date: jobDate.toLocaleDateString(),
+        oneOffValue,
+        visitBasedValue,
+        totalValue,
+        runningTotal: metrics.recurringRevenue2026
+      });
     }
   });
   
@@ -1580,6 +1630,25 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     weekEnd.setDate(weekStart.getDate() + 6);
     console.log(`  week${i}: ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()} = $${metrics.weeklyOTBBreakdown[`week${i}`] || 0}`);
   }
+  
+  // Calculate Winter OTB (December + January + February)
+  const calculateWinterOTB = (monthlyData) => {
+    const december = monthlyData[12] || 0;
+    const january = monthlyData[1] || 0;
+    const february = monthlyData[2] || 0;
+    return december + january + february;
+  };
+  
+  // Debug jobs-related KPIs
+  console.log('[Jobs KPI Debug]', {
+    recurringRevenue2026: metrics.recurringRevenue2026,
+    nextMonthOTB: metrics.nextMonthOTB,
+    monthlyOTBData: metrics.monthlyOTBData,
+    winterOTB: calculateWinterOTB(metrics.monthlyOTBData),
+    jobsDataLength: jobsData.length,
+    nextYear,
+    nextMonthNum: (estToday.getMonth() + 1) % 12 || 12
+  });
   
   // Log week ranges for debugging
   const debugMonth = estToday.getMonth();
