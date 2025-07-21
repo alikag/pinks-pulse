@@ -3382,9 +3382,9 @@ const DashboardV2: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className={`max-w-4xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 border ${
+              className={`max-w-4xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 border-2 ${
                 selectedMetric.id === 'next-month-otb' || selectedMetric.id === 'winter-otb' || selectedMetric.id === 'recurring-2026'
-                  ? 'border-red-500/50 ring-2 ring-red-500/30'
+                  ? 'border-red-500 ring-4 ring-red-500/50 ring-offset-4 ring-offset-black/50'
                   : 'border-white/10'
               }`}
               onClick={(e) => e.stopPropagation()}
