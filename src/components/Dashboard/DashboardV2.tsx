@@ -955,11 +955,11 @@ const DashboardV2: React.FC = () => {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 2',
-        value: 0, // Updated to 0 reviews today
+        value: 3, // Updated to 3 reviews this week
         target: 2,
         format: 'number',
-        status: 'danger', // 0 reviews < 2 target
-        trend: 0
+        status: 'success', // 3 reviews > 2 target
+        trend: 50
       }
     ]
   }, [data, loading, selectedSalesperson])
@@ -1036,13 +1036,27 @@ const DashboardV2: React.FC = () => {
             setGoogleReviews([
               {
                 id: 'fallback-1',
-                author: 'Val Paverd',
+                author: 'Patrick Howe',
                 rating: 5,
-                text: 'AWESOME! I haven\'t been able to stop staring out of my crystal clear windows all day! Matt B, Thomas, and Matt S did an amazing job on our windows. They also cleared out our gutters and cleaned our roof and skylights. So much more light comes in now. HIGHLY RECOMMEND!!!',
-                time: '19 minutes ago'
+                text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site … More',
+                time: 'an hour ago'
               },
               {
                 id: 'fallback-2',
+                author: 'Sandy Zito',
+                rating: 4,
+                text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+                time: '2 hours ago'
+              },
+              {
+                id: 'fallback-3',
+                author: 'Carmine Pierro',
+                rating: 5,
+                text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
+                time: 'a day ago'
+              },
+              {
+                id: 'fallback-4',
                 author: 'Kathryn Heekin',
                 rating: 5,
                 text: 'Dylan and Sael were both gentlemen and friendly. There work was excellent!',
@@ -1119,13 +1133,34 @@ const DashboardV2: React.FC = () => {
           setGoogleReviews([
             {
               id: 'fallback-1',
-              author: 'Karen Zukowski',
+              author: 'Patrick Howe',
               rating: 5,
-              text: 'Great job by Jerell, Jayden, Jared and Roody. They were easy to work with and very respectful of my time and property. A big job done in one day. Thanks guys.',
-              time: '19 hours ago'
+              text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site … More',
+              time: 'an hour ago'
             },
             {
               id: 'fallback-2',
+              author: 'Sandy Zito',
+              rating: 4,
+              text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+              time: '2 hours ago'
+            },
+            {
+              id: 'fallback-3',
+              author: 'Carmine Pierro',
+              rating: 5,
+              text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
+              time: 'a day ago'
+            },
+            {
+              id: 'fallback-4',
+              author: 'Karen Zukowski',
+              rating: 5,
+              text: 'Great job by Jerell, Jayden, Jared and Roody. They were easy to work with and very respectful of my time and property. A big job done in one day. Thanks guys.',
+              time: '3 days ago'
+            },
+            {
+              id: 'fallback-5',
               author: 'tina finkelstein',
               rating: 5,
               text: 'The customer service was great, staff was professional, efficient and organized. They did a beautiful and thorough job. Matt S was conscientious and very knowledgeable. We would highly recommend this service.',
@@ -1167,13 +1202,27 @@ const DashboardV2: React.FC = () => {
         setGoogleReviews([
           {
             id: 'error-1',
-            author: 'Karen Zukowski',
+            author: 'Patrick Howe',
             rating: 5,
-            text: 'Great job by Jerell, Jayden, Jared and Roody. They were easy to work with and very respectful of my time and property. A big job done in one day. Thanks guys.',
-            time: '19 hours ago'
+            text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site … More',
+            time: 'an hour ago'
           },
           {
             id: 'error-2',
+            author: 'Sandy Zito',
+            rating: 4,
+            text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+            time: '2 hours ago'
+          },
+          {
+            id: 'error-3',
+            author: 'Carmine Pierro',
+            rating: 5,
+            text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
+            time: 'a day ago'
+          },
+          {
+            id: 'error-4',
             author: 'tina finkelstein',
             rating: 5,
             text: 'The customer service was great, staff was professional, efficient and organized. They did a beautiful and thorough job. Matt S was conscientious and very knowledgeable. We would highly recommend this service.',
