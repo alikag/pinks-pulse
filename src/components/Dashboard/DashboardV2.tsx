@@ -226,6 +226,11 @@ const DashboardV2: React.FC = () => {
       };
     }
   }
+  
+  // Check if a KPI should show as potentially inaccurate (jobs data)
+  const isJobsDataKPI = (kpiId: string) => {
+    return kpiId === 'next-month-otb' || kpiId === 'winter-otb' || kpiId === 'recurring-2026'
+  }
 
   // Helper function to calculate filtered time series data for charts
   const calculateFilteredTimeSeries = (quotes: any[], salesperson: string) => {
@@ -2737,7 +2742,7 @@ const DashboardV2: React.FC = () => {
                       <p className="text-xs text-gray-500">{kpi.subtitle}</p>
                     )}
                     <p className={`font-bold ${
-                      kpi.value === 0 && (kpi.id.includes('today') || kpi.id.includes('week')) ? 'text-gray-500 text-sm' : 'text-white text-2xl'
+                      kpi.value === 0 && (kpi.id.includes('today') || kpi.id.includes('week') || isJobsDataKPI(kpi.id)) ? 'text-gray-500 text-sm' : 'text-white text-2xl'
                     }`}>
                       {(() => {
                         if (kpi.value === 0) {
@@ -2745,6 +2750,8 @@ const DashboardV2: React.FC = () => {
                           if (kpi.id === 'converted-today') return selectedSalesperson !== 'all' ? `No conversions (checking ${data?.rawQuotes?.length || 0} records)` : 'No quotes converted today';
                           if (kpi.id === 'converted-week') return selectedSalesperson !== 'all' ? `No conversions (checking ${data?.rawQuotes?.length || 0} records)` : 'No quotes converted this week';
                           if (kpi.id === 'cvr-week') return 'No quotes converted this week';
+                          // Special message for jobs data KPIs
+                          if (isJobsDataKPI(kpi.id)) return 'Data loading...';
                         }
                         return formatValue(kpi.value, kpi.format);
                       })()}
@@ -2766,8 +2773,14 @@ const DashboardV2: React.FC = () => {
                         *Using last week's rate
                       </p>
                     )}
+                    {/* Add note for jobs data KPIs */}
+                    {isJobsDataKPI(kpi.id) && kpi.value === 0 && (
+                      <p className="text-xs text-red-400 mt-1 animate-pulse">
+                        *Jobs data syncing...
+                      </p>
+                    )}
                     {/* Goal Progress Bar */}
-                    {!(kpi.value === 0 && (kpi.id === 'quotes-sent-today' || kpi.id === 'converted-today' || kpi.id === 'converted-week' || kpi.id === 'cvr-week')) && (
+                    {!(kpi.value === 0 && (kpi.id === 'quotes-sent-today' || kpi.id === 'converted-today' || kpi.id === 'converted-week' || kpi.id === 'cvr-week' || isJobsDataKPI(kpi.id))) && (
                       <div className="mt-2">
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-gray-500">Progress</span>

@@ -323,6 +323,14 @@ export const handler = async (event, context) => {
     const nextYear = currentYear + 1;
     const yearAfterNext = currentYear + 2;
     
+    console.log('[Jobs Query Years Debug]', {
+      estToday: estToday.toISOString(),
+      currentYear,
+      nextYear,
+      yearAfterNext,
+      queryingYears: `${currentYear}, ${nextYear}, ${yearAfterNext}`
+    });
+    
     const jobsQuery = `
       SELECT 
         Job_Number,                    -- Unique job identifier
