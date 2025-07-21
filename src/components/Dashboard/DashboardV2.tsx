@@ -16,7 +16,7 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Clock, AlertCircle, CheckCircle, RefreshCw, TrendingUp, XCircle, Filter, ChevronDown, User } from 'lucide-react'
+import { AlertCircle, CheckCircle, RefreshCw, TrendingUp, XCircle, Filter, ChevronDown, User } from 'lucide-react'
 import Chart from 'chart.js/auto'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -844,7 +844,6 @@ const DashboardV2: React.FC = () => {
         target: 12,
         format: 'number',
         status: metrics.quotesToday >= 12 ? 'success' : metrics.quotesToday >= 8 ? 'warning' : 'danger',
-        isLive: true,
         trend: 12.5,
         sparklineData: undefined
       },
@@ -856,7 +855,6 @@ const DashboardV2: React.FC = () => {
         target: 22500,
         format: 'currency',
         status: metrics.convertedTodayDollars >= 22500 ? 'success' : metrics.convertedTodayDollars > 15000 ? 'warning' : 'normal',
-        isLive: true,
         trend: -5.3,
         sparklineData: undefined
       },
@@ -2798,14 +2796,6 @@ const DashboardV2: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    {kpi.isLive && (
-                      <div className="flex items-center gap-2 mt-2 py-0.5">
-                        <div className="relative">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                        </div>
-                        <span className="text-xs text-gray-500">Live</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
@@ -2881,26 +2871,6 @@ const DashboardV2: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
                     <span className="text-xs text-gray-400">BigQuery Connected</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-blue-400 animate-pulse" />
-                    <span className="text-xs text-gray-400">Live Data</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-xs text-gray-400">Last sync:</span>
-                    </div>
-                    <span className="text-xs text-gray-300">
-                      {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                        timeZoneName: 'short'
-                      }) : 'Loading...'}
-                    </span>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
