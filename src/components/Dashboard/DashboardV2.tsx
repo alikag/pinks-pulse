@@ -2653,7 +2653,11 @@ const DashboardV2: React.FC = () => {
               {kpis.map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible relative"
+                  className={`bg-gray-900/40 backdrop-blur-lg border rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible relative ${
+                    kpi.id === 'next-month-otb' || kpi.id === 'winter-otb' 
+                      ? 'border-red-500/50 ring-2 ring-red-500/30' 
+                      : 'border-white/10'
+                  }`}
                   onClick={() => {
                     haptics.light();
                     setSelectedMetric(kpi);
@@ -2946,7 +2950,7 @@ const DashboardV2: React.FC = () => {
             {/* Charts Row 3 */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* On The Books by Month */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-red-500/50 ring-2 ring-red-500/30 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <h2 className="font-medium">On The Books by Month - 2025 YTD (Excluding Sales Tax)</h2>
@@ -2973,7 +2977,7 @@ const DashboardV2: React.FC = () => {
               </div>
 
               {/* On the Books by Week */}
-              <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
+              <div className="bg-gray-900/40 backdrop-blur-lg border border-red-500/50 ring-2 ring-red-500/30 rounded-xl p-6 hover:shadow-[0_0_30px_rgba(249,171,172,0.3)] transition-shadow">
                 <div className="mb-4">
                   <div className="flex items-center gap-3">
                     <h2 className="font-medium">On the Books by Week - 11 Week View</h2>
@@ -3344,6 +3348,21 @@ const DashboardV2: React.FC = () => {
                 </div>
               )}
             </div>
+            
+            {/* Data Accuracy Warning */}
+            <div className="mx-4 mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="text-red-200 font-medium mb-1">Jobs Data Accuracy Notice</p>
+                  <p className="text-red-300/80">
+                    Jobs data (marked with red borders) may be inaccurate due to API throttling. 
+                    This affects On The Books metrics, Winter OTB, and next month projections. 
+                    Live webhook integration coming soon.
+                  </p>
+                </div>
+              </div>
+            </div>
           </section>
 
       {/* Full-Screen Metric Modal */}
@@ -3363,7 +3382,11 @@ const DashboardV2: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="max-w-4xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-white/10"
+              className={`max-w-4xl w-full bg-gray-900/90 backdrop-blur-lg rounded-2xl p-6 md:p-8 border ${
+                selectedMetric.id === 'next-month-otb' || selectedMetric.id === 'winter-otb' || selectedMetric.id === 'recurring-2026'
+                  ? 'border-red-500/50 ring-2 ring-red-500/30'
+                  : 'border-white/10'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-6">
