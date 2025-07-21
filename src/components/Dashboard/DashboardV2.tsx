@@ -2654,7 +2654,7 @@ const DashboardV2: React.FC = () => {
                 <div
                   key={kpi.id}
                   className={`bg-gray-900/40 backdrop-blur-lg border rounded-xl p-4 hover:shadow-[0_0_20px_rgba(249,171,172,0.3)] transition-all cursor-pointer overflow-visible relative ${
-                    kpi.id === 'next-month-otb' || kpi.id === 'winter-otb' 
+                    kpi.id === 'next-month-otb' || kpi.id === 'winter-otb' || kpi.id === 'recurring-2026'
                       ? 'border-red-500/50 ring-2 ring-red-500/30' 
                       : 'border-white/10'
                   }`}
