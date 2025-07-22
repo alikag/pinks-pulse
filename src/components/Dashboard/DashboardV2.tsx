@@ -839,11 +839,11 @@ const DashboardV2: React.FC = () => {
       {
         id: 'quotes-sent-today',
         label: 'Quotes Sent Today',
-        subtitle: 'Target: 12',
+        subtitle: 'Target: 18',
         value: metrics.quotesToday,
-        target: 12,
+        target: 18,
         format: 'number',
-        status: metrics.quotesToday >= 12 ? 'success' : metrics.quotesToday >= 8 ? 'warning' : 'danger',
+        status: metrics.quotesToday >= 18 ? 'success' : metrics.quotesToday >= 12 ? 'warning' : 'danger',
         trend: 12.5,
         sparklineData: undefined
       },
@@ -861,20 +861,20 @@ const DashboardV2: React.FC = () => {
       {
         id: 'converted-week',
         label: 'Converted This Week',
-        subtitle: 'Target: $157.5k',
+        subtitle: 'Target: $112.5k',
         value: metrics.convertedThisWeekDollars,
-        target: 157500,
+        target: 112500,
         format: 'currency',
-        status: metrics.convertedThisWeekDollars >= 157500 ? 'success' : metrics.convertedThisWeekDollars > 100000 ? 'warning' : 'danger'
+        status: metrics.convertedThisWeekDollars >= 112500 ? 'success' : metrics.convertedThisWeekDollars > 75000 ? 'warning' : 'danger'
       },
       {
         id: 'cvr-week',
         label: 'CVR This Week',
-        subtitle: 'Target: 45%',
+        subtitle: 'Target: 40%',
         value: metrics.cvrThisWeek,
-        target: 45,
+        target: 40,
         format: 'percentage',
-        status: metrics.cvrThisWeek >= 45 ? 'success' : metrics.cvrThisWeek >= 30 ? 'warning' : 'danger'
+        status: metrics.cvrThisWeek >= 40 ? 'success' : metrics.cvrThisWeek >= 30 ? 'warning' : 'danger'
       },
       {
         id: 'recurring-2026',
@@ -940,28 +940,28 @@ const DashboardV2: React.FC = () => {
         label: '30D CVR',
         subtitle: `${metrics.converted30Days || 0}/${metrics.quotes30Days || 0} converted`,
         value: metrics.cvr30Days || 0,
-        target: 50,
+        target: 40,
         format: 'percentage',
-        status: metrics.cvr30Days >= 50 ? 'success' : metrics.cvr30Days >= 35 ? 'warning' : 'danger'
+        status: metrics.cvr30Days >= 40 ? 'success' : metrics.cvr30Days >= 30 ? 'warning' : 'danger'
       },
       {
         id: 'avg-qpd',
         label: 'Avg Quotes/Day (30D)',
-        subtitle: 'Target: 12',
+        subtitle: 'Target: 18',
         value: metrics.avgQPD,
-        target: 12,
+        target: 18,
         format: 'number',
-        status: metrics.avgQPD >= 12 ? 'success' : metrics.avgQPD >= 6 ? 'warning' : 'danger',
+        status: metrics.avgQPD >= 18 ? 'success' : metrics.avgQPD >= 12 ? 'warning' : 'danger',
         trend: 8.2
       },
       {
         id: 'reviews-week',
         label: 'Reviews This Week',
-        subtitle: 'Target: 2',
+        subtitle: 'Target: 6',
         value: 5, // Updated to 5 reviews this week
-        target: 2,
+        target: 6,
         format: 'number',
-        status: 'success', // 5 reviews > 2 target
+        status: 'warning', // 5 reviews < 6 target
         trend: 50
       }
     ]
@@ -1336,7 +1336,7 @@ const DashboardV2: React.FC = () => {
         return {
           formula: 'COUNT(*) FROM v_quotes WHERE DATE(sent_date) = TODAY_EST',
           description: 'Counts quotes where sent_date equals today in EST timezone from BigQuery view: jobber_data.v_quotes',
-          notes: 'Includes all quotes sent between 12:00 AM and 11:59 PM EST. Target: 12 quotes daily.'
+          notes: 'Includes all quotes sent between 12:00 AM and 11:59 PM EST. Target: 18 quotes daily (6 per territory × 3 territories).'
         }
       case 'converted-today':
         return {
@@ -1390,7 +1390,7 @@ const DashboardV2: React.FC = () => {
         return {
           formula: 'COUNT(reviews WHERE review_date >= SUNDAY_START AND review_date < NEXT_SUNDAY)',
           description: 'Count of Google reviews from BigQuery table where review date falls in current week.',
-          notes: 'Reviews manually added to BigQuery table. Target: 2 per week for reputation building.'
+          notes: 'Reviews manually added to BigQuery table. Target: 6 per week for reputation building (2 per territory × 3 territories).'
         }
       case 'winter-otb':
         const winterYears = getWinterYears();
