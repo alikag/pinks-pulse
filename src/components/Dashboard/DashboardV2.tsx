@@ -958,10 +958,10 @@ const DashboardV2: React.FC = () => {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 6',
-        value: 5, // Updated to 5 reviews this week
+        value: 7, // Updated to 7 reviews this week
         target: 6,
         format: 'number',
-        status: 'warning', // 5 reviews < 6 target
+        status: 'success', // 7 reviews > 6 target
         trend: 50
       }
     ]
@@ -1046,13 +1046,27 @@ const DashboardV2: React.FC = () => {
               },
               {
                 id: 'fallback-2',
+                author: 'Vanessa Dawson',
+                rating: 5,
+                text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
+                time: '5 hours ago'
+              },
+              {
+                id: 'fallback-3',
+                author: 'Barbara Levy',
+                rating: 5,
+                text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
+                time: '6 hours ago'
+              },
+              {
+                id: 'fallback-4',
                 author: 'Justin',
                 rating: 5,
                 text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
                 time: '18 hours ago'
               },
               {
-                id: 'fallback-3',
+                id: 'fallback-5',
                 author: 'Patrick Howe',
                 rating: 5,
                 text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
@@ -1157,6 +1171,20 @@ const DashboardV2: React.FC = () => {
             },
             {
               id: 'fallback-2',
+              author: 'Vanessa Dawson',
+              rating: 5,
+              text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
+              time: '5 hours ago'
+            },
+            {
+              id: 'fallback-3',
+              author: 'Barbara Levy',
+              rating: 5,
+              text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
+              time: '6 hours ago'
+            },
+            {
+              id: 'fallback-4',
               author: 'Justin',
               rating: 5,
               text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
@@ -1226,13 +1254,27 @@ const DashboardV2: React.FC = () => {
           },
           {
             id: 'error-2',
+            author: 'Vanessa Dawson',
+            rating: 5,
+            text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
+            time: '5 hours ago'
+          },
+          {
+            id: 'error-3',
+            author: 'Barbara Levy',
+            rating: 5,
+            text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
+            time: '6 hours ago'
+          },
+          {
+            id: 'error-4',
             author: 'Justin',
             rating: 5,
             text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
             time: '18 hours ago'
           },
           {
-            id: 'error-3',
+            id: 'error-5',
             author: 'Patrick Howe',
             rating: 5,
             text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
