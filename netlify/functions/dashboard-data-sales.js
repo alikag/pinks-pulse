@@ -319,12 +319,13 @@ export const handler = async (event, context) => {
     // Purpose: Get scheduled jobs to calculate future revenue (OTB = On The Books)
     // Shows what revenue is already locked in for future dates
     // Get current year and next 2 years for medium-term outlook
-    const currentYear = estToday.getFullYear();
+    const now = new Date();
+    const currentYear = now.getFullYear();
     const nextYear = currentYear + 1;
     const yearAfterNext = currentYear + 2;
     
     console.log('[Jobs Query Years Debug]', {
-      estToday: estToday.toISOString(),
+      now: now.toISOString(),
       currentYear,
       nextYear,
       yearAfterNext,
