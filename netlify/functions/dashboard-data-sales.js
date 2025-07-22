@@ -496,8 +496,8 @@ export const handler = async (event, context) => {
     // Process data into dashboard format
     let dashboardData;
     try {
-      // Manually set to 3 for the new reviews this week
-      const reviewsThisWeek = 3; // reviewsData[0]?.reviews_count || 0;
+      // Manually set to 5 for the new reviews this week
+      const reviewsThisWeek = 5; // reviewsData[0]?.reviews_count || 0;
       dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek);
     } catch (processError) {
       console.error('[dashboard-data-sales] Error processing data:', processError);
@@ -2461,7 +2461,7 @@ function getMockDashboardData_REMOVED() {
       speedToLead30Days: 22,
       recurringRevenue2026: 111160,
       nextMonthOTB: 73052.50,
-      reviewsThisWeek: 3
+      reviewsThisWeek: 5
     },
     recentConvertedQuotes: [
       {

@@ -958,10 +958,10 @@ const DashboardV2: React.FC = () => {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 2',
-        value: 3, // Updated to 3 reviews this week
+        value: 5, // Updated to 5 reviews this week
         target: 2,
         format: 'number',
-        status: 'success', // 3 reviews > 2 target
+        status: 'success', // 5 reviews > 2 target
         trend: 50
       }
     ]
@@ -1039,55 +1039,69 @@ const DashboardV2: React.FC = () => {
             setGoogleReviews([
               {
                 id: 'fallback-1',
-                author: 'Patrick Howe',
+                author: 'Lauren Card',
                 rating: 5,
-                text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site … More',
-                time: 'an hour ago'
+                text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
+                time: '11 minutes ago'
               },
               {
                 id: 'fallback-2',
-                author: 'Sandy Zito',
-                rating: 4,
-                text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-                time: '2 hours ago'
+                author: 'Justin',
+                rating: 5,
+                text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
+                time: '18 hours ago'
               },
               {
                 id: 'fallback-3',
+                author: 'Patrick Howe',
+                rating: 5,
+                text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
+                time: '22 hours ago'
+              },
+              {
+                id: 'fallback-4',
+                author: 'Sandy Zito',
+                rating: 4,
+                text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+                time: '23 hours ago'
+              },
+              {
+                id: 'fallback-5',
                 author: 'Carmine Pierro',
                 rating: 5,
                 text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
                 time: 'a day ago'
               },
               {
-                id: 'fallback-4',
+                id: 'fallback-6',
                 author: 'Kathryn Heekin',
                 rating: 5,
                 text: 'Dylan and Sael were both gentlemen and friendly. There work was excellent!',
-                time: '2 hours ago'
+                time: '2 days ago'
               },
               {
-                id: 'fallback-3',
+                id: 'fallback-7',
                 author: 'Charley Mitcherson',
                 rating: 5,
                 text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
                 time: '3 days ago'
               },
               {
-                id: 'fallback-3',
+                id: 'fallback-8',
                 author: 'Paul Falanga',
                 rating: 5,
                 text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
                 time: '5 days ago'
               },
               {
-                id: 'fallback-4',
+                id: 'fallback-9',
                 author: 'Colleen Bicknese',
                 rating: 4,
                 text: 'Our estimator never requested to see the interior so he WAY underestimated how long it would take to complete the job. The 2 window techs were fantastic, they did a very good job. They had to come back to do the exterior after finishing the interior, and between the weather and sick employees it took 2 weeks to get it all done.',
                 time: 'a week ago'
               },
               {
-                id: 'fallback-5',
+                id: 'fallback-10',
                 author: 'Iva Walsh',
                 rating: 5,
                 text: 'I have given one star review before because the company went on our property without permission. I hope then can figure it out and before then go they need to obtain the permission. I just got my windows clean by Pink\'s. Amazing job!!!! I will have my windows done exclusively by this company!!! I would even request Dylan and Sael. These guys are professional, pleasant and very, very good. They left the windows beautifully clean and the house in perfect condition as well.',
@@ -1136,55 +1150,55 @@ const DashboardV2: React.FC = () => {
           setGoogleReviews([
             {
               id: 'fallback-1',
-              author: 'Patrick Howe',
+              author: 'Lauren Card',
               rating: 5,
-              text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site … More',
-              time: 'an hour ago'
+              text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
+              time: '11 minutes ago'
             },
             {
               id: 'fallback-2',
-              author: 'Sandy Zito',
-              rating: 4,
-              text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-              time: '2 hours ago'
+              author: 'Justin',
+              rating: 5,
+              text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
+              time: '18 hours ago'
             },
             {
               id: 'fallback-3',
+              author: 'Patrick Howe',
+              rating: 5,
+              text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
+              time: '22 hours ago'
+            },
+            {
+              id: 'fallback-4',
+              author: 'Sandy Zito',
+              rating: 4,
+              text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+              time: '23 hours ago'
+            },
+            {
+              id: 'fallback-5',
               author: 'Carmine Pierro',
               rating: 5,
               text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
               time: 'a day ago'
             },
             {
-              id: 'fallback-4',
+              id: 'fallback-6',
               author: 'Karen Zukowski',
               rating: 5,
               text: 'Great job by Jerell, Jayden, Jared and Roody. They were easy to work with and very respectful of my time and property. A big job done in one day. Thanks guys.',
               time: '3 days ago'
             },
             {
-              id: 'fallback-5',
+              id: 'fallback-7',
               author: 'tina finkelstein',
               rating: 5,
               text: 'The customer service was great, staff was professional, efficient and organized. They did a beautiful and thorough job. Matt S was conscientious and very knowledgeable. We would highly recommend this service.',
-              time: 'a day ago'
+              time: '4 days ago'
             },
             {
-              id: 'fallback-3',
-              author: 'Peter Kaplan',
-              rating: 5,
-              text: 'Sael, Matt, Matt, Lexi, Dylan, Dan,Jerrel, Jaden Roodluv and of course Mike are the best. Some of guys were experienced other s literally first day. All contributed. Such nice and competent young men. Will definitely recommend Pink.',
-              time: '2 days ago'
-            },
-            {
-              id: 'fallback-4',
-              author: 'Charley Mitcherson',
-              rating: 5,
-              text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
-              time: '3 days ago'
-            },
-            {
-              id: 'fallback-5',
+              id: 'fallback-8',
               author: 'Paul Falanga',
               rating: 5,
               text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
@@ -1205,38 +1219,38 @@ const DashboardV2: React.FC = () => {
         setGoogleReviews([
           {
             id: 'error-1',
-            author: 'Patrick Howe',
+            author: 'Lauren Card',
             rating: 5,
-            text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site … More',
-            time: 'an hour ago'
+            text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
+            time: '11 minutes ago'
           },
           {
             id: 'error-2',
-            author: 'Sandy Zito',
-            rating: 4,
-            text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-            time: '2 hours ago'
+            author: 'Justin',
+            rating: 5,
+            text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
+            time: '18 hours ago'
           },
           {
             id: 'error-3',
+            author: 'Patrick Howe',
+            rating: 5,
+            text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
+            time: '22 hours ago'
+          },
+          {
+            id: 'error-4',
+            author: 'Sandy Zito',
+            rating: 4,
+            text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+            time: '23 hours ago'
+          },
+          {
+            id: 'error-5',
             author: 'Carmine Pierro',
             rating: 5,
             text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
             time: 'a day ago'
-          },
-          {
-            id: 'error-4',
-            author: 'tina finkelstein',
-            rating: 5,
-            text: 'The customer service was great, staff was professional, efficient and organized. They did a beautiful and thorough job. Matt S was conscientious and very knowledgeable. We would highly recommend this service.',
-            time: 'a day ago'
-          },
-          {
-            id: 'error-3',
-            author: 'Peter Kaplan',
-            rating: 5,
-            text: 'Sael, Matt, Matt, Lexi, Dylan, Dan,Jerrel, Jaden Roodluv and of course Mike are the best. Some of guys were experienced other s literally first day. All contributed. Such nice and competent young men. Will definitely recommend Pink.',
-            time: '2 days ago'
           }
         ])
       }
