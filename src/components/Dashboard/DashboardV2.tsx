@@ -852,20 +852,20 @@ const DashboardV2: React.FC = () => {
         label: 'Converted Today',
         subtitle: 'total_dollars',
         value: metrics.convertedTodayDollars,
-        target: 22500,
+        target: 9000,
         format: 'currency',
-        status: metrics.convertedTodayDollars >= 22500 ? 'success' : metrics.convertedTodayDollars > 15000 ? 'warning' : 'normal',
+        status: metrics.convertedTodayDollars >= 9000 ? 'success' : metrics.convertedTodayDollars > 6000 ? 'warning' : 'normal',
         trend: -5.3,
         sparklineData: undefined
       },
       {
         id: 'converted-week',
         label: 'Converted This Week',
-        subtitle: 'Target: $112.5k',
+        subtitle: 'Target: $45k',
         value: metrics.convertedThisWeekDollars,
-        target: 112500,
+        target: 45000,
         format: 'currency',
-        status: metrics.convertedThisWeekDollars >= 112500 ? 'success' : metrics.convertedThisWeekDollars > 75000 ? 'warning' : 'danger'
+        status: metrics.convertedThisWeekDollars >= 45000 ? 'success' : metrics.convertedThisWeekDollars > 30000 ? 'warning' : 'danger'
       },
       {
         id: 'cvr-week',
@@ -888,21 +888,21 @@ const DashboardV2: React.FC = () => {
       {
         id: 'next-month-otb',
         label: `${nextMonthName} OTB`,
-        subtitle: 'Target: $125k',
+        subtitle: 'Target: $175k',
         value: metrics.nextMonthOTB,
-        target: 125000,
+        target: 175000,
         format: 'currency',
-        status: metrics.nextMonthOTB >= 125000 ? 'success' : metrics.nextMonthOTB >= 100000 ? 'warning' : 'danger'
+        status: metrics.nextMonthOTB >= 175000 ? 'success' : metrics.nextMonthOTB >= 140000 ? 'warning' : 'danger'
       },
       {
         id: 'winter-otb',
         label: 'Winter OTB',
-        subtitle: `${winterYears.label}: $95k`,
+        subtitle: `${winterYears.label}: $525k`,
         value: calculateWinterOTB(metrics.monthlyOTBData),
-        target: 95000,
+        target: 525000,
         format: 'currency',
-        status: calculateWinterOTB(metrics.monthlyOTBData) >= 95000 ? 'success' : 
-                calculateWinterOTB(metrics.monthlyOTBData) >= 75000 ? 'warning' : 'danger'
+        status: calculateWinterOTB(metrics.monthlyOTBData) >= 525000 ? 'success' : 
+                calculateWinterOTB(metrics.monthlyOTBData) >= 420000 ? 'warning' : 'danger'
       }
     ]
   }, [data, loading, selectedSalesperson])
