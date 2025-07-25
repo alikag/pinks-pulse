@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import DashboardV2 from './components/Dashboard/DashboardV2'
 import SalesTeamPerformance from './components/SalesTeamPerformance/SalesTeamPerformance'
+import OperationalKPIs from './components/OperationalKPIs/OperationalKPIs'
 import PasswordProtect from './components/Auth/PasswordProtect'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -25,6 +26,7 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<DashboardV2 />} />
                 <Route path="sales-team" element={<SalesTeamPerformance />} />
+                <Route path="operational-kpis" element={<OperationalKPIs />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
