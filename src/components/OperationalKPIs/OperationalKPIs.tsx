@@ -28,9 +28,25 @@ const OperationalKPIs: React.FC = () => {
   const operationalMetrics = useMemo<OperationalMetric[]>(() => {
     if (!data) return []
 
-    // TODO: Calculate actual operational metrics from data
-    // For now, returning placeholder metrics
+    // Calculate revenue per van per day
+    const totalVans = 6
+    let revenuePerVanPerDay = 0
+    
+    if (data?.kpiMetrics?.convertedTodayDollars) {
+      // Use today's revenue divided by number of vans
+      revenuePerVanPerDay = data.kpiMetrics.convertedTodayDollars / totalVans
+    }
     return [
+      {
+        id: 'revenue-per-van',
+        label: 'Revenue per Van per Day',
+        value: Math.round(revenuePerVanPerDay),
+        icon: <Truck className="h-5 w-5 text-green-400" />,
+        format: 'currency',
+        color: 'green',
+        target: 1500,
+        description: 'Average daily revenue generated per van (6 vans total)'
+      },
       {
         id: 'productivity-rate',
         label: 'Team Productivity Rate',
@@ -50,16 +66,6 @@ const OperationalKPIs: React.FC = () => {
         color: 'green',
         target: 3,
         description: 'Average time to complete a job in hours'
-      },
-      {
-        id: 'equipment-utilization',
-        label: 'Equipment Utilization',
-        value: 78,
-        icon: <Truck className="h-5 w-5 text-purple-400" />,
-        format: 'percentage',
-        color: 'purple',
-        target: 80,
-        description: 'Percentage of equipment actively in use'
       },
       {
         id: 'team-efficiency',
@@ -456,6 +462,27 @@ const OperationalKPIs: React.FC = () => {
                           }`}
                           style={{ width: `${Math.min((selectedMetric.value / selectedMetric.target) * 100, 100)}%` }}
                         />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom details for Revenue per Van */}
+                {selectedMetric.id === 'revenue-per-van' && data?.kpiMetrics && (
+                  <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Fleet Details</h3>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Total Vans:</span>
+                        <span className="text-white">6</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Today's Total Revenue:</span>
+                        <span className="text-white">${data.kpiMetrics.convertedTodayDollars.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Revenue Gap per Van:</span>
+                        <span className="text-red-400">${Math.max(0, 1500 - selectedMetric.value).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
