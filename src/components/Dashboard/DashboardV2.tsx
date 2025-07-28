@@ -1060,8 +1060,9 @@ const DashboardV2: React.FC = () => {
       // Try different endpoints in order of reliability
       const endpoints = [
         '/.netlify/functions/google-reviews-serpapi',
-        '/.netlify/functions/google-reviews-scrapeapi',
-        '/.netlify/functions/google-reviews-proxy'
+        '/.netlify/functions/google-reviews-simple',
+        '/.netlify/functions/google-reviews-proxy',
+        '/.netlify/functions/google-reviews-scrapeapi'
       ];
       
       let response = null;

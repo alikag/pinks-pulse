@@ -36,37 +36,13 @@ export async function handler(event, context) {
       };
     }
 
-    // Pink's Window Services - we need to find the correct place_id
-    // First, let's search for Pink's Window Services
-    const searchUrl = `https://serpapi.com/search.json?engine=google_maps&q=Pink%27s+Window+Services+Seattle&api_key=${SERPAPI_KEY}`;
+    // Pink's Window Services Place ID from https://maps.app.goo.gl/ftntjbFPabdRr5BF9
+    // When you visit this URL, it redirects to the full Google Maps page with place details
+    // The place_id can be extracted from the data parameter in the URL
+    const PINKS_PLACE_ID = 'ChIJk5XuUh8RkFQRXb__t5bgmMc';
     
-    console.log('[SerpApi Reviews] Searching for Pink\'s Window Services...');
-    const searchResponse = await fetch(searchUrl);
-    
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error('[SerpApi Reviews] Search error:', searchResponse.status, errorText);
-      throw new Error(`SerpApi search error: ${searchResponse.status} - ${errorText}`);
-    }
-
-    const searchData = await searchResponse.json();
-    console.log('[SerpApi Reviews] Search results:', searchData.local_results?.length || 0, 'businesses found');
-    
-    // Find Pink's in the results
-    const pinksResult = searchData.local_results?.find(result => 
-      result.title?.toLowerCase().includes("pink") && 
-      result.title?.toLowerCase().includes("window")
-    );
-    
-    if (!pinksResult || !pinksResult.place_id) {
-      console.error('[SerpApi Reviews] Could not find Pink\'s Window Services in search results');
-      throw new Error('Pink\'s Window Services not found in search results');
-    }
-    
-    console.log('[SerpApi Reviews] Found Pink\'s:', pinksResult.title, 'Place ID:', pinksResult.place_id);
-    
-    // Now get the reviews using the place_id
-    const reviewsUrl = `https://serpapi.com/search.json?engine=google_maps_reviews&place_id=${pinksResult.place_id}&api_key=${SERPAPI_KEY}`;
+    // Get reviews directly using the known place_id
+    const reviewsUrl = `https://serpapi.com/search.json?engine=google_maps_reviews&place_id=${PINKS_PLACE_ID}&api_key=${SERPAPI_KEY}`;
     
     console.log('[SerpApi Reviews] Fetching reviews...');
     const response = await fetch(reviewsUrl);
