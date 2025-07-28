@@ -60,7 +60,6 @@ interface GoogleReview {
 const DashboardV2: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
-  const [useAutoScraping, setUseAutoScraping] = useState<boolean>(false) // Toggle for auto scraping
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
@@ -1004,359 +1003,65 @@ const DashboardV2: React.FC = () => {
 
   // Fetch Google Reviews function
   const fetchReviews = async () => {
-    // If auto scraping is disabled, use manual fallback data
-    if (!useAutoScraping) {
-      console.log('[Google Reviews] Using manual data (auto-scraping disabled)')
-      setGoogleReviews([
-        {
-          id: 'manual-1',
-          author: 'Lauren Card',
-          rating: 5,
-          text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
-          time: '11 minutes ago'
-        },
-        {
-          id: 'manual-2',
-          author: 'Vanessa Dawson',
-          rating: 5,
-          text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
-          time: '5 hours ago'
-        },
-        {
-          id: 'manual-3',
-          author: 'Barbara Levy',
-          rating: 5,
-          text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
-          time: '6 hours ago'
-        },
-        {
-          id: 'manual-4',
-          author: 'Justin',
-          rating: 5,
-          text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
-          time: '18 hours ago'
-        },
-        {
-          id: 'manual-5',
-          author: 'Patrick Howe',
-          rating: 5,
-          text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
-          time: '22 hours ago'
-        },
-        {
-          id: 'manual-6',
-          author: 'Sandy Zito',
-          rating: 4,
-          text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-          time: '23 hours ago'
-        },
-        {
-          id: 'manual-7',
-          author: 'Carmine Pierro',
-          rating: 5,
-          text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
-          time: 'a day ago'
-        }
-      ])
-      return
-    }
-
-    // Auto scraping is enabled - try to fetch live data
-    console.log('[Google Reviews] Attempting to fetch live reviews (auto-scraping enabled)')
+    console.log('[Google Reviews] Fetching reviews from Playwright scraper...')
     try {
-        // Use the Playwright scraper to get fresh reviews from Google Maps
-        let response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
-        
-        // Check if response is OK
-        if (!response.ok) {
-          console.error('[Google Reviews Scraper] Playwright scraper HTTP error:', response.status, response.statusText)
-          console.log('[Google Reviews Scraper] Trying simple scraper as fallback...')
-          
-          // Try fallback scraper
-          response = await fetch('/.netlify/functions/scrape-google-reviews')
-          
-          if (!response.ok) {
-            console.error('[Google Reviews Scraper] Simple scraper also failed:', response.status)
-            setGoogleReviews([])
-            return
-          }
-        }
-        
-        // Check Content-Type to ensure it's JSON
-        const contentType = response.headers.get("content-type")
-        if (!contentType || !contentType.includes("application/json")) {
-          console.error('[Google Reviews Scraper] Response is not JSON, got:', contentType)
-          console.log('[Google Reviews Scraper] Trying simple scraper due to HTML response...')
-          
-          // Try fallback scraper if we got HTML
-          response = await fetch('/.netlify/functions/scrape-google-reviews')
-          const fallbackContentType = response.headers.get("content-type")
-          
-          if (!fallbackContentType || !fallbackContentType.includes("application/json")) {
-            console.error('[Google Reviews Scraper] Both scrapers returning HTML')
-            // Use fallback reviews when both scrapers fail
-            console.log('[Google Reviews] Using fallback reviews due to scraper failures')
-            setGoogleReviews([
-              {
-                id: 'fallback-1',
-                author: 'Lauren Card',
-                rating: 5,
-                text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
-                time: '11 minutes ago'
-              },
-              {
-                id: 'fallback-2',
-                author: 'Vanessa Dawson',
-                rating: 5,
-                text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
-                time: '5 hours ago'
-              },
-              {
-                id: 'fallback-3',
-                author: 'Barbara Levy',
-                rating: 5,
-                text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
-                time: '6 hours ago'
-              },
-              {
-                id: 'fallback-4',
-                author: 'Justin',
-                rating: 5,
-                text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
-                time: '18 hours ago'
-              },
-              {
-                id: 'fallback-5',
-                author: 'Patrick Howe',
-                rating: 5,
-                text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
-                time: '22 hours ago'
-              },
-              {
-                id: 'fallback-4',
-                author: 'Sandy Zito',
-                rating: 4,
-                text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-                time: '23 hours ago'
-              },
-              {
-                id: 'fallback-5',
-                author: 'Carmine Pierro',
-                rating: 5,
-                text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
-                time: 'a day ago'
-              },
-              {
-                id: 'fallback-6',
-                author: 'Kathryn Heekin',
-                rating: 5,
-                text: 'Dylan and Sael were both gentlemen and friendly. There work was excellent!',
-                time: '2 days ago'
-              },
-              {
-                id: 'fallback-7',
-                author: 'Charley Mitcherson',
-                rating: 5,
-                text: 'Today the two Matts came and did an excellent job of cleaning my windows!',
-                time: '3 days ago'
-              },
-              {
-                id: 'fallback-8',
-                author: 'Paul Falanga',
-                rating: 5,
-                text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
-                time: '5 days ago'
-              },
-              {
-                id: 'fallback-9',
-                author: 'Colleen Bicknese',
-                rating: 4,
-                text: 'Our estimator never requested to see the interior so he WAY underestimated how long it would take to complete the job. The 2 window techs were fantastic, they did a very good job. They had to come back to do the exterior after finishing the interior, and between the weather and sick employees it took 2 weeks to get it all done.',
-                time: 'a week ago'
-              },
-              {
-                id: 'fallback-10',
-                author: 'Iva Walsh',
-                rating: 5,
-                text: 'I have given one star review before because the company went on our property without permission. I hope then can figure it out and before then go they need to obtain the permission. I just got my windows clean by Pink\'s. Amazing job!!!! I will have my windows done exclusively by this company!!! I would even request Dylan and Sael. These guys are professional, pleasant and very, very good. They left the windows beautifully clean and the house in perfect condition as well.',
-                time: 'a week ago'
-              }
-            ])
-            return
-          }
-        }
-        
-        const result = await response.json()
-        
-        console.log('[Google Reviews Scraper] Fetch result:', {
-          success: result.success,
-          hasData: !!result.data,
-          reviewCount: result.data?.reviews?.length || 0,
-          averageRating: result.data?.averageRating,
-          totalReviews: result.data?.totalReviews,
-          businessName: result.data?.businessName
-        })
-        
-        if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews)) {
-          // Take the latest 10 reviews and format them
-          const latestReviews = result.data.reviews.slice(0, 10).map((review: any, index: number) => ({
-            id: `review-${index}`,
-            author: review.author || 'Anonymous',
-            rating: review.rating || 5,
-            text: review.text || '',
-            time: review.relativeTime || review.time || 'Recently'
-          }))
-          setGoogleReviews(latestReviews)
-          
-          // Also store the average rating and total reviews if needed
-          if (result.data.averageRating || result.data.totalReviews) {
-            console.log('[Google Reviews] Business stats:', {
-              averageRating: result.data.averageRating,
-              totalReviews: result.data.totalReviews
-            })
-          }
-        } else {
-          // No reviews available or scraper failed
-          console.error('[Google Reviews Scraper] No reviews found or error:', result.error || 'Unknown error')
-          
-          // Use fallback reviews if scraper fails
-          console.log('[Google Reviews] Using fallback data')
-          setGoogleReviews([
-            {
-              id: 'fallback-1',
-              author: 'Lauren Card',
-              rating: 5,
-              text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
-              time: '11 minutes ago'
-            },
-            {
-              id: 'fallback-2',
-              author: 'Vanessa Dawson',
-              rating: 5,
-              text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
-              time: '5 hours ago'
-            },
-            {
-              id: 'fallback-3',
-              author: 'Barbara Levy',
-              rating: 5,
-              text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
-              time: '6 hours ago'
-            },
-            {
-              id: 'fallback-4',
-              author: 'Justin',
-              rating: 5,
-              text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
-              time: '18 hours ago'
-            },
-            {
-              id: 'fallback-3',
-              author: 'Patrick Howe',
-              rating: 5,
-              text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
-              time: '22 hours ago'
-            },
-            {
-              id: 'fallback-4',
-              author: 'Sandy Zito',
-              rating: 4,
-              text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-              time: '23 hours ago'
-            },
-            {
-              id: 'fallback-5',
-              author: 'Carmine Pierro',
-              rating: 5,
-              text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
-              time: 'a day ago'
-            },
-            {
-              id: 'fallback-6',
-              author: 'Karen Zukowski',
-              rating: 5,
-              text: 'Great job by Jerell, Jayden, Jared and Roody. They were easy to work with and very respectful of my time and property. A big job done in one day. Thanks guys.',
-              time: '3 days ago'
-            },
-            {
-              id: 'fallback-7',
-              author: 'tina finkelstein',
-              rating: 5,
-              text: 'The customer service was great, staff was professional, efficient and organized. They did a beautiful and thorough job. Matt S was conscientious and very knowledgeable. We would highly recommend this service.',
-              time: '4 days ago'
-            },
-            {
-              id: 'fallback-8',
-              author: 'Paul Falanga',
-              rating: 5,
-              text: 'A Great customer centered crew. Sael was terrific. Bryan, very consciencious. Matt, Matt and Dillon came to perform the complementary service and stepped up to the challenge. Much appreciate all efforts and positive attitudes.',
-              time: '5 days ago'
-            },
-            {
-              id: 'fallback-6',
-              author: 'Colleen Bicknese',
-              rating: 4,
-              text: 'Our estimator never requested to see the interior so he WAY underestimated how long it would take to complete the job. The 2 window techs were fantastic, they did a very good job. They had to come back to do the exterior after finishing the interior, and between the weather and sick employees it took 2 weeks to get it all done.',
-              time: 'a week ago'
-            }
-          ])
-        }
-      } catch (error) {
-        console.error('Failed to fetch Google reviews from scraper:', error)
-        // Fallback to sample reviews
-        setGoogleReviews([
-          {
-            id: 'error-1',
-            author: 'Lauren Card',
-            rating: 5,
-            text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
-            time: '11 minutes ago'
-          },
-          {
-            id: 'error-2',
-            author: 'Vanessa Dawson',
-            rating: 5,
-            text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
-            time: '5 hours ago'
-          },
-          {
-            id: 'error-3',
-            author: 'Barbara Levy',
-            rating: 5,
-            text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
-            time: '6 hours ago'
-          },
-          {
-            id: 'error-4',
-            author: 'Justin',
-            rating: 5,
-            text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
-            time: '18 hours ago'
-          },
-          {
-            id: 'error-5',
-            author: 'Patrick Howe',
-            rating: 5,
-            text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
-            time: '22 hours ago'
-          },
-          {
-            id: 'error-4',
-            author: 'Sandy Zito',
-            rating: 4,
-            text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
-            time: '23 hours ago'
-          },
-          {
-            id: 'error-5',
-            author: 'Carmine Pierro',
-            rating: 5,
-            text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
-            time: 'a day ago'
-          }
-        ])
+      // Use the Playwright scraper to get fresh reviews from Google Maps
+      const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
+      
+      // Check if response is OK
+      if (!response.ok) {
+        console.error('[Google Reviews Scraper] HTTP error:', response.status, response.statusText)
+        setGoogleReviews([])
+        return
       }
+      
+      // Check Content-Type to ensure it's JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error('[Google Reviews Scraper] Response is not JSON, got:', contentType)
+        setGoogleReviews([])
+        return
+      }
+      
+      const result = await response.json()
+      
+      console.log('[Google Reviews Scraper] Fetch result:', {
+        success: result.success,
+        hasData: !!result.data,
+        reviewCount: result.data?.reviews?.length || 0,
+        averageRating: result.data?.averageRating,
+        totalReviews: result.data?.totalReviews,
+        businessName: result.data?.businessName
+      })
+      
+      if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews) && result.data.reviews.length > 0) {
+        // Take the latest 10 reviews and format them
+        const latestReviews = result.data.reviews.slice(0, 10).map((review: any, index: number) => ({
+          id: `review-${index}`,
+          author: review.reviewerName || review.author || 'Anonymous',
+          rating: review.rating || 5,
+          text: review.text || '',
+          time: review.date || review.time || 'Recently'
+        }))
+        setGoogleReviews(latestReviews)
+        
+        // Also store the average rating and total reviews if needed
+        if (result.data.averageRating || result.data.totalReviews) {
+          console.log('[Google Reviews] Business stats:', {
+            averageRating: result.data.averageRating,
+            totalReviews: result.data.totalReviews
+          })
+        }
+      } else {
+        // No reviews available or scraper failed
+        console.error('[Google Reviews Scraper] No reviews found or error:', result.error || 'Unknown error')
+        setGoogleReviews([])
+      }
+    } catch (error) {
+      console.error('Failed to fetch Google reviews from scraper:', error)
+      setGoogleReviews([])
     }
+  }
   
   // Fetch reviews on mount
   useEffect(() => {
@@ -3157,47 +2862,23 @@ const DashboardV2: React.FC = () => {
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-medium">Latest Customer Reviews</h2>
-                <div className="flex items-center gap-4">
-                  {/* Auto-scraping toggle */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">Auto-scrape</span>
-                    <button
-                      onClick={() => {
-                        haptics.light();
-                        const newValue = !useAutoScraping;
-                        setUseAutoScraping(newValue);
-                        // Re-fetch reviews with new setting
-                        fetchReviews();
-                      }}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        useAutoScraping ? 'bg-blue-600' : 'bg-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          useAutoScraping ? 'translate-x-5' : 'translate-x-0.5'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  <a 
-                    href="https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    View on Google
-                  </a>
-                </div>
+                <a 
+                  href="https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  View on Google
+                </a>
               </div>
               {googleReviews.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="text-center">
-                    <p className="text-gray-400">Loading reviews from Google Maps...</p>
-                    <p className="text-xs text-gray-500 mt-2">If this persists, the scraper may need updating</p>
+                    <p className="text-gray-400">Unable to load Google reviews</p>
+                    <p className="text-xs text-gray-500 mt-2">Please check scraper configuration</p>
                   </div>
                 </div>
               ) : (
