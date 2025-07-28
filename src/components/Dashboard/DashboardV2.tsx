@@ -958,14 +958,66 @@ const DashboardV2: React.FC = () => {
         id: 'reviews-week',
         label: 'Reviews This Week',
         subtitle: 'Target: 6',
-        value: 7, // Updated to 7 reviews this week
+        value: (() => {
+          // Count reviews from this week based on fetched Google reviews
+          const now = new Date();
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - now.getDay()); // Start of this week (Sunday)
+          weekStart.setHours(0, 0, 0, 0);
+          
+          let weekCount = 0;
+          googleReviews.forEach(review => {
+            // Parse relative time like "2 days ago", "a week ago", etc.
+            const timeStr = review.time.toLowerCase();
+            let daysAgo = 0;
+            
+            if (timeStr.includes('hour') || timeStr.includes('minute')) {
+              daysAgo = 0; // Today
+            } else if (timeStr.includes('day')) {
+              const match = timeStr.match(/(\d+)\s*day/);
+              daysAgo = match ? parseInt(match[1]) : 1;
+            } else if (timeStr.includes('week')) {
+              const match = timeStr.match(/(\d+)\s*week/);
+              const weeks = match ? parseInt(match[1]) : 1;
+              daysAgo = weeks * 7;
+            }
+            
+            // Check if review is from this week
+            if (daysAgo <= now.getDay()) {
+              weekCount++;
+            }
+          });
+          
+          return weekCount;
+        })(),
         target: 6,
         format: 'number',
-        status: 'success', // 7 reviews > 6 target
+        status: (() => {
+          const weekCount = googleReviews.filter(review => {
+            const timeStr = review.time.toLowerCase();
+            const now = new Date();
+            let daysAgo = 0;
+            
+            if (timeStr.includes('hour') || timeStr.includes('minute')) {
+              daysAgo = 0;
+            } else if (timeStr.includes('day')) {
+              const match = timeStr.match(/(\d+)\s*day/);
+              daysAgo = match ? parseInt(match[1]) : 1;
+            } else if (timeStr.includes('week')) {
+              const match = timeStr.match(/(\d+)\s*week/);
+              const weeks = match ? parseInt(match[1]) : 1;
+              daysAgo = weeks * 7;
+            }
+            
+            return daysAgo <= now.getDay();
+          }).length;
+          
+          return weekCount >= 6 ? 'success' : weekCount >= 4 ? 'warning' : 'danger';
+        })(),
         trend: 50
       }
     ]
-  }, [data, loading, selectedSalesperson])
+  }, [data, loading, selectedSalesperson, googleReviews])
 
   // Get unique salespeople list
   const salespeople = useMemo(() => {
@@ -1221,9 +1273,9 @@ const DashboardV2: React.FC = () => {
         }
       case 'reviews-week':
         return {
-          formula: 'COUNT(reviews WHERE review_date >= SUNDAY_START AND review_date < NEXT_SUNDAY)',
-          description: 'Count of Google reviews from BigQuery table where review date falls in current week.',
-          notes: 'Reviews manually added to BigQuery table. Target: 6 per week for reputation building (2 per territory × 3 territories).'
+          formula: 'COUNT(reviews WHERE review_time indicates <= DAYS_SINCE_SUNDAY)',
+          description: 'Count of Google reviews fetched from Google Maps where review time indicates they were posted this week (since Sunday).',
+          notes: 'Live data from Google Maps. Counts reviews with timestamps like "X hours ago" or "X days ago" that fall within the current week. Target: 6 per week for reputation building (2 per territory × 3 territories).'
         }
       case 'winter-otb':
         const winterYears = getWinterYears();
