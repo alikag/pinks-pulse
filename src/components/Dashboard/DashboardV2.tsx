@@ -1059,10 +1059,10 @@ const DashboardV2: React.FC = () => {
     try {
       // Try different endpoints in order of reliability
       const endpoints = [
+        '/.netlify/functions/google-reviews-static',  // Always works, shows current data
         '/.netlify/functions/google-reviews-serpapi',
         '/.netlify/functions/google-reviews-simple',
-        '/.netlify/functions/google-reviews-proxy',
-        '/.netlify/functions/google-reviews-scrapeapi'
+        '/.netlify/functions/google-reviews-proxy'
       ];
       
       let response = null;
