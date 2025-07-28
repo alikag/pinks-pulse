@@ -55,10 +55,13 @@ export async function handler(event, context) {
     }
 
     const data = await response.json();
+    console.log('[SerpApi Reviews] Full API response:', JSON.stringify(data, null, 2));
     console.log('[SerpApi Reviews] Reviews response:', {
       hasReviews: !!data.reviews,
       reviewCount: data.reviews?.length || 0,
-      placeInfo: data.place_info
+      placeInfo: data.place_info,
+      searchMetadata: data.search_metadata,
+      error: data.error
     });
     
     // Extract and format reviews
