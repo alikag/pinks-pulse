@@ -37,51 +37,21 @@ exports.handler = async (event, context) => {
   try {
     console.log('[late-jobs-details] Starting request...');
 
-    // Query late jobs directly - the view might have issues
+    // Query late jobs from the v_late_jobs view with proper column names
     const query = `
-      WITH late_jobs AS (
-        SELECT 
-          j.Job_Number,
-          j.Client_Name,
-          j.Date as scheduled_date,
-          j.Date_Converted,
-          j.SalesPerson,
-          j.Job_type,
-          COALESCE(j.One_off_job_dollars, 0) + COALESCE(j.Visit_based_dollars, 0) as job_value,
-          j.One_off_job_dollars,
-          j.Visit_based_dollars,
-          DATE_DIFF(CURRENT_DATE('America/New_York'), DATE(j.Date), DAY) as days_late
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
-        WHERE 
-          -- Jobs that are past their scheduled date
-          DATE(j.Date) < CURRENT_DATE('America/New_York')
-          -- Include only jobs that haven't been completed yet
-          AND j.Date_Converted IS NULL
-      )
       SELECT 
-        Job_Number as job_number,
-        Client_Name as name,
-        FORMAT_DATE('%Y-%m-%d', DATE(scheduled_date)) as date_of_visit,
-        CAST(NULL AS STRING) as date_of_next_visit,
-        CONCAT('https://secure.getjobber.com/jobs/', Job_Number) as link_to_job,
-        job_value as value,
-        CAST(NULL AS FLOAT64) as discount_applied,
-        CONCAT(
-          'Job scheduled for ', FORMAT_DATE('%b %d, %Y', DATE(scheduled_date)),
-          ' (', days_late, ' days late). ',
-          'Job type: ', Job_type, '. ',
-          'Salesperson: ', SalesPerson, '.'
-        ) as notes,
-        days_late,
-        Job_type as job_type,
-        SalesPerson as salesperson,
-        One_off_job_dollars as one_off_value,
-        Visit_based_dollars as recurring_value,
-        CAST(NULL AS STRING) as quote_number,
-        Date_Converted as date_converted
-      FROM late_jobs
-      WHERE days_late > 0
-      ORDER BY days_late DESC, job_value DESC
+        \`Job #\` as job_number,
+        \`Name\` as name,
+        FORMAT_DATE('%Y-%m-%d', \`Date of visit\`) as date_of_visit,
+        FORMAT_DATE('%Y-%m-%d', \`Date of next visit\`) as date_of_next_visit,
+        \`Link to job\` as link_to_job,
+        \`Value\` as value,
+        \`Discount applied\` as discount_applied,
+        \`Notes\` as notes,
+        -- Calculate days late from date of visit
+        DATE_DIFF(CURRENT_DATE('America/New_York'), DATE(\`Date of visit\`), DAY) as days_late
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_late_jobs\`
+      ORDER BY \`Date of visit\` DESC, \`Job #\`
       LIMIT 100
     `;
 
@@ -89,24 +59,32 @@ exports.handler = async (event, context) => {
     const [rows] = await bigquery.query({ query });
     
     console.log(`[late-jobs-details] Found ${rows.length} late jobs`);
+    
+    // Get summary statistics from the view
+    const summaryQuery = `
+      SELECT
+        COUNT(*) as total_late_jobs,
+        SUM(\`Value\`) as total_value,
+        SUM(\`Discount applied\`) as total_discounts
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_late_jobs\`
+    `;
+    
+    const [summaryRows] = await bigquery.query({ query: summaryQuery });
+    const summaryStats = summaryRows[0] || {};
 
     // The view already provides all the formatted data
     const lateJobs = rows.map(job => ({
-      job_number: job.job_number,
-      name: job.name,
-      date_of_visit: job.date_of_visit,
-      date_of_next_visit: job.date_of_next_visit,
-      link_to_job: job.link_to_job,
-      value: job.value,
-      discount_applied: job.discount_applied,
-      notes: job.notes,
-      days_late: job.days_late,
-      job_type: job.job_type,
-      salesperson: job.salesperson,
-      one_off_value: job.one_off_value,
-      recurring_value: job.recurring_value,
-      quote_number: job.quote_number,
-      date_converted: job.date_converted,
+      job_number: job.job_number?.toString() || '',
+      name: job.name || '',
+      date_of_visit: job.date_of_visit || '',
+      date_of_next_visit: job.date_of_next_visit || null,
+      link_to_job: job.link_to_job || '',
+      value: job.value || 0,
+      discount_applied: job.discount_applied || null,
+      notes: job.notes || '',
+      days_late: job.days_late || 0,
+      job_type: '', // Not available in the view
+      salesperson: '', // Not available in the view
       status: job.days_late > 7 ? 'very_late' : 'late'
     }));
 
@@ -127,20 +105,8 @@ exports.handler = async (event, context) => {
       : 0;
     const veryLateCount = lateJobs.filter(job => job.days_late > 7).length;
     
-    // Group by salesperson
-    const bySalesperson = lateJobs.reduce((acc, job) => {
-      if (!acc[job.salesperson]) {
-        acc[job.salesperson] = {
-          count: 0,
-          total_value: 0,
-          jobs: []
-        };
-      }
-      acc[job.salesperson].count++;
-      acc[job.salesperson].total_value += job.value || 0;
-      acc[job.salesperson].jobs.push(job.job_number);
-      return acc;
-    }, {});
+    // Since salesperson is not in the view, we can't group by it
+    const bySalesperson = {};
 
     return {
       statusCode: 200,
@@ -150,12 +116,13 @@ exports.handler = async (event, context) => {
         late_jobs: lateJobs,
         total_count: lateJobs.length,
         summary: {
-          total_value: totalValue,
+          total_value: summaryStats.total_value || totalValue,
+          total_discounts: summaryStats.total_discounts || 0,
           average_days_late: avgDaysLate,
           very_late_count: veryLateCount,
           by_salesperson: bySalesperson
         },
-        note: 'Data from v_late_jobs view. Some fields like date_of_next_visit require Jobber API integration.'
+        note: 'Data from v_late_jobs view.'
       }),
     };
 
