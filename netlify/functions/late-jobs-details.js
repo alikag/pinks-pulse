@@ -37,26 +37,51 @@ exports.handler = async (event, context) => {
   try {
     console.log('[late-jobs-details] Starting request...');
 
-    // Query late jobs from the v_late_jobs view
+    // Query late jobs directly - the view might have issues
     const query = `
+      WITH late_jobs AS (
+        SELECT 
+          j.Job_Number,
+          j.Client_Name,
+          j.Date as scheduled_date,
+          j.Date_Converted,
+          j.SalesPerson,
+          j.Job_type,
+          COALESCE(j.One_off_job_dollars, 0) + COALESCE(j.Visit_based_dollars, 0) as job_value,
+          j.One_off_job_dollars,
+          j.Visit_based_dollars,
+          DATE_DIFF(CURRENT_DATE('America/New_York'), DATE(j.Date), DAY) as days_late
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
+        WHERE 
+          -- Jobs that are past their scheduled date
+          DATE(j.Date) < CURRENT_DATE('America/New_York')
+          -- Exclude completed jobs (no Date_Converted or Date_Converted is in the future)
+          AND (j.Date_Converted IS NULL OR DATE(j.Date_Converted) > DATE(j.Date))
+      )
       SELECT 
-        job_number,
-        name,
-        date_of_visit,
-        date_of_next_visit,
-        link_to_job,
-        value,
-        discount_applied,
-        notes,
+        Job_Number as job_number,
+        Client_Name as name,
+        FORMAT_DATE('%Y-%m-%d', DATE(scheduled_date)) as date_of_visit,
+        CAST(NULL AS STRING) as date_of_next_visit,
+        CONCAT('https://secure.getjobber.com/jobs/', Job_Number) as link_to_job,
+        job_value as value,
+        CAST(NULL AS FLOAT64) as discount_applied,
+        CONCAT(
+          'Job scheduled for ', FORMAT_DATE('%b %d, %Y', DATE(scheduled_date)),
+          ' (', days_late, ' days late). ',
+          'Job type: ', Job_type, '. ',
+          'Salesperson: ', SalesPerson, '.'
+        ) as notes,
         days_late,
-        job_type,
-        salesperson,
-        one_off_value,
-        recurring_value,
-        quote_number,
-        date_converted
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_late_jobs\`
-      ORDER BY days_late DESC, value DESC
+        Job_type as job_type,
+        SalesPerson as salesperson,
+        One_off_job_dollars as one_off_value,
+        Visit_based_dollars as recurring_value,
+        CAST(NULL AS STRING) as quote_number,
+        Date_Converted as date_converted
+      FROM late_jobs
+      WHERE days_late > 0
+      ORDER BY days_late DESC, job_value DESC
       LIMIT 100
     `;
 
