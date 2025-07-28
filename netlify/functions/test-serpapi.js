@@ -20,17 +20,45 @@ export async function handler(event, context) {
     }
 
     // First, search for Pink's Window Services to verify it exists
-    const searchUrl = `https://serpapi.com/search.json?engine=google_maps&q=Pink%27s+Window+Services+Seattle&api_key=${SERPAPI_KEY}`;
+    // Try different search queries
+    const searchQueries = [
+      "Pink's Window Services Hudson Valley",
+      "Pink's Window Cleaning Hudson Valley NY",
+      "Pink's Window Services",
+      "Pink's Window Cleaning"
+    ];
     
-    console.log('[Test SerpApi] Searching for business...');
-    const searchResponse = await fetch(searchUrl);
-    const searchData = await searchResponse.json();
+    let pinksResult = null;
+    let allSearchResults = [];
     
-    // Find Pink's in the results
-    const pinksResult = searchData.local_results?.find(result => 
-      result.title?.toLowerCase().includes("pink") && 
-      result.title?.toLowerCase().includes("window")
-    );
+    for (const query of searchQueries) {
+      const searchUrl = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(query)}&ll=@41.7909,-73.9394,10z&api_key=${SERPAPI_KEY}`;
+      
+      console.log(`[Test SerpApi] Searching for: ${query}`);
+      const searchResponse = await fetch(searchUrl);
+      const searchData = await searchResponse.json();
+      
+      allSearchResults.push({
+        query: query,
+        resultsCount: searchData.local_results?.length || 0,
+        topResults: searchData.local_results?.slice(0, 3).map(r => ({
+          title: r.title,
+          place_id: r.place_id,
+          data_id: r.data_id
+        }))
+      });
+      
+      // Find Pink's in the results
+      const found = searchData.local_results?.find(result => 
+        result.title?.toLowerCase().includes("pink") && 
+        (result.title?.toLowerCase().includes("window") || result.title?.toLowerCase().includes("cleaning"))
+      );
+      
+      if (found) {
+        pinksResult = found;
+        break;
+      }
+    }
     
     // Now try to get reviews using different methods
     const results = {
@@ -41,9 +69,11 @@ export async function handler(event, context) {
           place_id: pinksResult.place_id,
           data_id: pinksResult.data_id,
           rating: pinksResult.rating,
-          reviews: pinksResult.reviews
+          reviews: pinksResult.reviews,
+          address: pinksResult.address,
+          type: pinksResult.type
         } : null,
-        totalResults: searchData.local_results?.length || 0
+        allSearchAttempts: allSearchResults
       },
       reviewsAttempts: []
     };
