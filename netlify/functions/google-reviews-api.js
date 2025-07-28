@@ -18,7 +18,8 @@ exports.handler = async (event, context) => {
     
     // You'll need to set this in Netlify environment variables
     const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-    const PLACE_ID = process.env.GOOGLE_PLACE_ID || 'ChIJN1t_tDeuEmsRUsoyG83frY4'; // Pink's place ID
+    // To find your Place ID: https://developers.google.com/maps/documentation/places/web-service/place-id
+    const PLACE_ID = process.env.GOOGLE_PLACE_ID || 'ChIJN1t_tDeuEmsRUsoyG83frY4'; // Update with Pink's actual place ID
     
     if (!GOOGLE_API_KEY) {
       console.error('[Google Reviews API] No API key found');

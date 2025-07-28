@@ -4,13 +4,27 @@ export const handler = async (event, context) => {
   let browser = null;
   
   console.log('[Scraper] Starting Google Reviews scraper...');
+  console.log('[Scraper] Function timeout:', context.getRemainingTimeInMillis ? context.getRemainingTimeInMillis() : 'Unknown');
+  
+  // Handle preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
+      body: ''
+    };
+  }
   
   try {
     // Launch browser
     console.log('[Scraper] Launching Chromium browser...');
     browser = await chromium.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
     console.log('[Scraper] Browser launched successfully');
     
