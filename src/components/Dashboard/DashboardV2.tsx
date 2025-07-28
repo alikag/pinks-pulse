@@ -1067,20 +1067,32 @@ const DashboardV2: React.FC = () => {
       let response = null;
       let lastError = null;
       
-      // Try each endpoint until one succeeds
+      // Try each endpoint until one succeeds with actual reviews
       for (const endpoint of endpoints) {
         try {
           console.log(`[Google Reviews] Trying ${endpoint}...`);
-          response = await fetch(endpoint);
+          const testResponse = await fetch(endpoint);
           
-          if (response.ok) {
-            const contentType = response.headers.get("content-type");
+          if (testResponse.ok) {
+            const contentType = testResponse.headers.get("content-type");
             if (contentType && contentType.includes("application/json")) {
-              break; // Success, use this response
+              const testResult = await testResponse.json();
+              
+              // Check if we got actual reviews
+              if (testResult.success && testResult.data?.reviews?.length > 0) {
+                response = testResponse;
+                // Need to store the parsed result since we already consumed the response
+                (response as any)._parsedResult = testResult;
+                console.log(`[Google Reviews] Success with ${endpoint}: ${testResult.data.reviews.length} reviews`);
+                break;
+              } else {
+                lastError = `${endpoint} returned no reviews`;
+                console.log(`[Google Reviews] ${endpoint} failed:`, testResult.error || 'No reviews');
+              }
             }
+          } else {
+            lastError = `${endpoint} returned ${testResponse.status}`;
           }
-          
-          lastError = `${endpoint} returned ${response.status}`;
         } catch (err) {
           lastError = `${endpoint} failed: ${err instanceof Error ? err.message : String(err)}`;
           console.error(lastError);
@@ -1101,20 +1113,22 @@ const DashboardV2: React.FC = () => {
         return
       }
       
-      const result = await response.json()
+      // Use the pre-parsed result if available, otherwise parse it
+      const result = (response as any)._parsedResult || await response.json()
       
       console.log('[Google Reviews] Result:', {
         success: result.success,
-        reviewCount: result.data?.reviews?.length || 0
+        reviewCount: result.data?.reviews?.length || 0,
+        endpoint: result.data?.method || 'unknown'
       })
       
       if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews) && result.data.reviews.length > 0) {
         // Take the latest 10 reviews and format them
         const latestReviews = result.data.reviews.slice(0, 10).map((review: any, index: number) => ({
-          id: `review-${index}`,
-          author: review.reviewerName || review.author || 'Anonymous',
+          id: review.id || `review-${index}`,
+          author: review.user?.name || review.author || review.reviewerName || 'Anonymous',
           rating: review.rating || 5,
-          text: review.text || '',
+          text: review.snippet || review.text || review.review || '',
           time: review.date || review.time || 'Recently'
         }))
         setGoogleReviews(latestReviews)
