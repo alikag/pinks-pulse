@@ -1109,6 +1109,7 @@ const DashboardV2: React.FC = () => {
         businessName: result.data?.businessName,
         method: result.data?.method,
         error: result.error,
+        errorDetails: result.errorDetails,
         firstReview: result.data?.reviews?.[0]
       })
       
