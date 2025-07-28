@@ -1003,16 +1003,21 @@ const DashboardV2: React.FC = () => {
 
   // Fetch Google Reviews function
   const fetchReviews = async () => {
-    console.log('[Google Reviews] Fetching reviews from Playwright scraper...')
+    console.log('[Google Reviews] Fetching reviews...')
     try {
-      // Use the Playwright scraper to get fresh reviews from Google Maps
-      const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
+      // Try the Google Places API first (lightweight and reliable)
+      let response = await fetch('/.netlify/functions/google-reviews-api')
       
-      // Check if response is OK
+      // If API fails, try Playwright scraper
       if (!response.ok) {
-        console.error('[Google Reviews Scraper] HTTP error:', response.status, response.statusText)
-        setGoogleReviews([])
-        return
+        console.log('[Google Reviews] API failed, trying Playwright scraper...')
+        response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
+        
+        if (!response.ok) {
+          console.error('[Google Reviews Scraper] Both methods failed:', response.status)
+          setGoogleReviews([])
+          return
+        }
       }
       
       // Check Content-Type to ensure it's JSON
@@ -1031,7 +1036,11 @@ const DashboardV2: React.FC = () => {
         reviewCount: result.data?.reviews?.length || 0,
         averageRating: result.data?.averageRating,
         totalReviews: result.data?.totalReviews,
-        businessName: result.data?.businessName
+        businessName: result.data?.businessName,
+        error: result.error,
+        errorType: result.errorType,
+        test: result.test,
+        firstReview: result.data?.reviews?.[0]
       })
       
       if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews) && result.data.reviews.length > 0) {
