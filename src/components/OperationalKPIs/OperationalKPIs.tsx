@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react'
-import { Calendar, Download, Clock, Info, Star, XCircle, RefreshCw, Activity, Zap, Users, Truck } from 'lucide-react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Calendar, Download, Clock, Info, Star, XCircle, RefreshCw, Activity, Zap, Users, Truck, AlertCircle, ExternalLink } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
@@ -17,12 +17,30 @@ interface OperationalMetric {
   description?: string
 }
 
+interface LateJob {
+  job_number: string
+  name: string
+  date_of_visit: string
+  date_of_next_visit: string | null
+  link_to_job: string
+  value: number
+  discount_applied: number | null
+  notes: string
+  days_late: number
+  job_type: string
+  salesperson: string
+  status: string
+}
+
 const OperationalKPIs: React.FC = () => {
   const { data, loading, error, refetch, isRefreshing } = useDashboardData()
   const [selectedMetric, setSelectedMetric] = useState<OperationalMetric | null>(null)
   const [dateRange, setDateRange] = useState<'7days' | '30days' | '90days' | 'custom'>('30days')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [lateJobs, setLateJobs] = useState<LateJob[]>([])
+  const [lateJobsLoading, setLateJobsLoading] = useState(false)
+  const [lateJobsSummary, setLateJobsSummary] = useState<any>(null)
 
   // Calculate operational metrics from the data
   const operationalMetrics = useMemo<OperationalMetric[]>(() => {
@@ -99,6 +117,29 @@ const OperationalKPIs: React.FC = () => {
       }
     ]
   }, [data])
+
+  // Fetch late jobs data
+  useEffect(() => {
+    const fetchLateJobs = async () => {
+      setLateJobsLoading(true)
+      try {
+        const response = await fetch('/.netlify/functions/late-jobs-details')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            setLateJobs(data.late_jobs || [])
+            setLateJobsSummary(data.summary || null)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching late jobs:', error)
+      } finally {
+        setLateJobsLoading(false)
+      }
+    }
+
+    fetchLateJobs()
+  }, [])
 
   // Format value based on type
   const formatValue = (value: number, format: 'number' | 'currency' | 'percentage' | 'time'): string => {
@@ -360,26 +401,121 @@ const OperationalKPIs: React.FC = () => {
           ))}
         </div>
 
-        {/* Placeholder for additional content */}
-        <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-8 text-center">
-          <h2 className="text-xl font-semibold mb-4">Operational Insights</h2>
-          <p className="text-gray-400 mb-6">
-            Detailed operational analytics and insights will be displayed here.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">Coming Soon</h3>
-              <p className="text-2xl font-bold">Crew Performance</p>
-            </div>
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">Coming Soon</h3>
-              <p className="text-2xl font-bold">Route Optimization</p>
-            </div>
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">Coming Soon</h3>
-              <p className="text-2xl font-bold">Resource Planning</p>
+        {/* Late Jobs Table */}
+        <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+                <h2 className="text-xl font-semibold">Late Jobs</h2>
+                {lateJobsSummary && (
+                  <span className="text-sm text-gray-400">
+                    ({lateJobs.length} jobs, ${lateJobsSummary.total_value?.toLocaleString() || 0} total value)
+                  </span>
+                )}
+              </div>
+              {lateJobsLoading && (
+                <div className="text-sm text-gray-400">Loading...</div>
+              )}
             </div>
           </div>
+          
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-900/60">
+                <tr>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Job #</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Name</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Date of Visit</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Next Visit</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Link</th>
+                  <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Value</th>
+                  <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Discount</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {lateJobs.length === 0 && !lateJobsLoading ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-400">
+                      No late jobs found
+                    </td>
+                  </tr>
+                ) : (
+                  lateJobs.slice(0, 10).map((job) => (
+                    <tr key={job.job_number} className="hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {job.job_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {job.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={job.days_late > 7 ? 'text-red-400' : 'text-yellow-400'}>
+                          {job.date_of_visit}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({job.days_late}d late)
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                        {job.date_of_next_visit || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <a
+                          href={job.link_to_job}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-pink-400 hover:text-pink-300 transition-colors inline-flex items-center gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            haptics.light()
+                          }}
+                        >
+                          View
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        ${job.value.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        {job.discount_applied ? `$${job.discount_applied.toLocaleString()}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-400 max-w-xs truncate" title={job.notes}>
+                        {job.notes}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Summary Stats */}
+          {lateJobsSummary && lateJobs.length > 0 && (
+            <div className="p-4 bg-gray-900/60 border-t border-white/10">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Total Value:</span>
+                  <span className="ml-2 font-medium">${lateJobsSummary.total_value?.toLocaleString() || 0}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Avg Days Late:</span>
+                  <span className="ml-2 font-medium">{lateJobsSummary.average_days_late || 0} days</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Very Late (&gt;7d):</span>
+                  <span className="ml-2 font-medium text-red-400">{lateJobsSummary.very_late_count || 0} jobs</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Total Jobs:</span>
+                  <span className="ml-2 font-medium">{lateJobs.length}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
