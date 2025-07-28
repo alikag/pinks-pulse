@@ -1005,19 +1005,13 @@ const DashboardV2: React.FC = () => {
   const fetchReviews = async () => {
     console.log('[Google Reviews] Fetching reviews...')
     try {
-      // Try the Google Places API first (lightweight and reliable)
-      let response = await fetch('/.netlify/functions/google-reviews-api')
+      // Use Playwright scraper directly
+      const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
       
-      // If API fails, try Playwright scraper
       if (!response.ok) {
-        console.log('[Google Reviews] API failed, trying Playwright scraper...')
-        response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
-        
-        if (!response.ok) {
-          console.error('[Google Reviews Scraper] Both methods failed:', response.status)
-          setGoogleReviews([])
-          return
-        }
+        console.error('[Google Reviews Scraper] HTTP error:', response.status, response.statusText)
+        setGoogleReviews([])
+        return
       }
       
       // Check Content-Type to ensure it's JSON
