@@ -1005,13 +1005,36 @@ const DashboardV2: React.FC = () => {
   const fetchReviews = async () => {
     console.log('[Google Reviews] Fetching reviews...')
     try {
-      // Use Playwright scraper directly
-      const response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
+      // Try different endpoints in order of reliability
+      const endpoints = [
+        '/.netlify/functions/google-reviews-serpapi',
+        '/.netlify/functions/google-reviews-scrapeapi',
+        '/.netlify/functions/google-reviews-proxy'
+      ];
       
-      if (!response.ok) {
-        console.error('[Google Reviews Scraper] HTTP error:', response.status, response.statusText)
-        setGoogleReviews([])
-        return
+      let response = null;
+      let successfulEndpoint = null;
+      
+      for (const endpoint of endpoints) {
+        console.log(`[Google Reviews] Trying ${endpoint}...`);
+        try {
+          response = await fetch(endpoint);
+          if (response.ok) {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              successfulEndpoint = endpoint;
+              break;
+            }
+          }
+        } catch (e) {
+          console.error(`[Google Reviews] Failed to fetch from ${endpoint}:`, e);
+        }
+      }
+      
+      if (!response || !response.ok || !successfulEndpoint) {
+        console.error('[Google Reviews] All endpoints failed');
+        setGoogleReviews([]);
+        return;
       }
       
       // Check Content-Type to ensure it's JSON
@@ -1025,15 +1048,15 @@ const DashboardV2: React.FC = () => {
       const result = await response.json()
       
       console.log('[Google Reviews Scraper] Fetch result:', {
+        endpoint: successfulEndpoint,
         success: result.success,
         hasData: !!result.data,
         reviewCount: result.data?.reviews?.length || 0,
         averageRating: result.data?.averageRating,
         totalReviews: result.data?.totalReviews,
         businessName: result.data?.businessName,
+        method: result.data?.method,
         error: result.error,
-        errorType: result.errorType,
-        test: result.test,
         firstReview: result.data?.reviews?.[0]
       })
       
