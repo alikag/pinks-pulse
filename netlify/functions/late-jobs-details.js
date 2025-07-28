@@ -55,8 +55,8 @@ exports.handler = async (event, context) => {
         WHERE 
           -- Jobs that are past their scheduled date
           DATE(j.Date) < CURRENT_DATE('America/New_York')
-          -- Exclude completed jobs (no Date_Converted or Date_Converted is in the future)
-          AND (j.Date_Converted IS NULL OR DATE(j.Date_Converted) > DATE(j.Date))
+          -- Include only jobs that haven't been completed yet
+          AND j.Date_Converted IS NULL
       )
       SELECT 
         Job_Number as job_number,
