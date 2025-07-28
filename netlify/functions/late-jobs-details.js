@@ -4,14 +4,19 @@
 
 const { BigQuery } = require('@google-cloud/bigquery');
 
-// Initialize BigQuery client
-const bigquery = new BigQuery({
-  projectId: process.env.BIGQUERY_PROJECT_ID,
-  credentials: {
-    client_email: process.env.BIGQUERY_CLIENT_EMAIL,
-    private_key: process.env.BIGQUERY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  },
-});
+// Initialize BigQuery client with proper credentials
+function getBigQueryClient() {
+  const config = {
+    projectId: process.env.BIGQUERY_PROJECT_ID
+  };
+  
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    config.credentials = credentials;
+  }
+  
+  return new BigQuery(config);
+}
 
 // Jobber API configuration (would need to be set up)
 const JOBBER_API_KEY = process.env.JOBBER_API_KEY;
@@ -32,53 +37,53 @@ exports.handler = async (event, context) => {
   try {
     console.log('[late-jobs-details] Starting request...');
 
-    // Query late jobs from BigQuery
+    // Query late jobs from the v_late_jobs view
     const query = `
       SELECT 
-        j.Job_Number as job_number,
-        j.Client_Name as client_name,
-        j.Date as scheduled_date,
-        DATE_DIFF(CURRENT_DATE('America/New_York'), DATE(j.Date), DAY) as days_late,
-        j.Job_type as job_type,
-        COALESCE(j.One_off_job_dollars, 0) + COALESCE(j.Visit_based_dollars, 0) as job_value,
-        j.SalesPerson as salesperson
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\` j
-      WHERE 
-        DATE(j.Date) < CURRENT_DATE('America/New_York')
-        AND j.Date_Converted IS NOT NULL
-      ORDER BY DATE(j.Date) DESC
-      LIMIT 50
+        job_number,
+        name,
+        date_of_visit,
+        date_of_next_visit,
+        link_to_job,
+        value,
+        discount_applied,
+        notes,
+        days_late,
+        job_type,
+        salesperson,
+        one_off_value,
+        recurring_value,
+        quote_number,
+        date_converted
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_late_jobs\`
+      ORDER BY days_late DESC, value DESC
+      LIMIT 100
     `;
 
+    const bigquery = getBigQueryClient();
     const [rows] = await bigquery.query({ query });
     
     console.log(`[late-jobs-details] Found ${rows.length} late jobs`);
 
-    // Transform the data to include additional fields
-    const lateJobs = rows.map(job => {
-      // Format dates
-      const scheduledDate = new Date(job.scheduled_date.value);
-      const formattedDate = scheduledDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-
-      return {
-        job_number: job.job_number,
-        name: job.client_name,
-        date_of_visit: formattedDate,
-        date_of_next_visit: null, // Would need Jobber API call
-        link_to_job: `https://secure.getjobber.com/jobs/${job.job_number}`,
-        value: job.job_value,
-        discount_applied: 0, // Would need Jobber API call
-        notes: generateBasicSummary(job),
-        days_late: job.days_late,
-        job_type: job.job_type,
-        salesperson: job.salesperson,
-        status: 'late' // Would need Jobber API call for actual status
-      };
-    });
+    // The view already provides all the formatted data
+    const lateJobs = rows.map(job => ({
+      job_number: job.job_number,
+      name: job.name,
+      date_of_visit: job.date_of_visit,
+      date_of_next_visit: job.date_of_next_visit,
+      link_to_job: job.link_to_job,
+      value: job.value,
+      discount_applied: job.discount_applied,
+      notes: job.notes,
+      days_late: job.days_late,
+      job_type: job.job_type,
+      salesperson: job.salesperson,
+      one_off_value: job.one_off_value,
+      recurring_value: job.recurring_value,
+      quote_number: job.quote_number,
+      date_converted: job.date_converted,
+      status: job.days_late > 7 ? 'very_late' : 'late'
+    }));
 
     // TODO: Implement Jobber API calls to get additional details
     // This would require:
@@ -90,6 +95,28 @@ exports.handler = async (event, context) => {
     //    - Current status
     // 3. Implementing AI summary generation
 
+    // Calculate summary statistics
+    const totalValue = lateJobs.reduce((sum, job) => sum + (job.value || 0), 0);
+    const avgDaysLate = lateJobs.length > 0 
+      ? Math.round(lateJobs.reduce((sum, job) => sum + job.days_late, 0) / lateJobs.length)
+      : 0;
+    const veryLateCount = lateJobs.filter(job => job.days_late > 7).length;
+    
+    // Group by salesperson
+    const bySalesperson = lateJobs.reduce((acc, job) => {
+      if (!acc[job.salesperson]) {
+        acc[job.salesperson] = {
+          count: 0,
+          total_value: 0,
+          jobs: []
+        };
+      }
+      acc[job.salesperson].count++;
+      acc[job.salesperson].total_value += job.value || 0;
+      acc[job.salesperson].jobs.push(job.job_number);
+      return acc;
+    }, {});
+
     return {
       statusCode: 200,
       headers,
@@ -97,7 +124,13 @@ exports.handler = async (event, context) => {
         success: true,
         late_jobs: lateJobs,
         total_count: lateJobs.length,
-        note: 'This is a basic implementation. Additional fields require Jobber API integration.'
+        summary: {
+          total_value: totalValue,
+          average_days_late: avgDaysLate,
+          very_late_count: veryLateCount,
+          by_salesperson: bySalesperson
+        },
+        note: 'Data from v_late_jobs view. Some fields like date_of_next_visit require Jobber API integration.'
       }),
     };
 
