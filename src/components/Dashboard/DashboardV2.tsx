@@ -1057,35 +1057,11 @@ const DashboardV2: React.FC = () => {
   const fetchReviews = async () => {
     console.log('[Google Reviews] Fetching reviews...')
     try {
-      // Try different endpoints in order of reliability
-      const endpoints = [
-        '/.netlify/functions/google-reviews-static',  // Always works, shows current data
-        '/.netlify/functions/google-reviews-serpapi',
-        '/.netlify/functions/google-reviews-simple',
-        '/.netlify/functions/google-reviews-proxy'
-      ];
+      // Use the simple reviews endpoint
+      const response = await fetch('/.netlify/functions/reviews');
       
-      let response = null;
-      let successfulEndpoint = null;
-      
-      for (const endpoint of endpoints) {
-        console.log(`[Google Reviews] Trying ${endpoint}...`);
-        try {
-          response = await fetch(endpoint);
-          if (response.ok) {
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              successfulEndpoint = endpoint;
-              break;
-            }
-          }
-        } catch (e) {
-          console.error(`[Google Reviews] Failed to fetch from ${endpoint}:`, e);
-        }
-      }
-      
-      if (!response || !response.ok || !successfulEndpoint) {
-        console.error('[Google Reviews] All endpoints failed');
+      if (!response.ok) {
+        console.error('[Google Reviews] Failed:', response.status);
         setGoogleReviews([]);
         return;
       }
@@ -1100,18 +1076,9 @@ const DashboardV2: React.FC = () => {
       
       const result = await response.json()
       
-      console.log('[Google Reviews Scraper] Fetch result:', {
-        endpoint: successfulEndpoint,
+      console.log('[Google Reviews] Result:', {
         success: result.success,
-        hasData: !!result.data,
-        reviewCount: result.data?.reviews?.length || 0,
-        averageRating: result.data?.averageRating,
-        totalReviews: result.data?.totalReviews,
-        businessName: result.data?.businessName,
-        method: result.data?.method,
-        error: result.error,
-        errorDetails: result.errorDetails,
-        firstReview: result.data?.reviews?.[0]
+        reviewCount: result.data?.reviews?.length || 0
       })
       
       if (result.success && result.data && result.data.reviews && Array.isArray(result.data.reviews) && result.data.reviews.length > 0) {
