@@ -60,6 +60,7 @@ interface GoogleReview {
 const DashboardV2: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<KPI | null>(null)
   const [googleReviews, setGoogleReviews] = useState<GoogleReview[]>([])
+  const [useAutoScraping, setUseAutoScraping] = useState<boolean>(false) // Toggle for auto scraping
   const [selectedSalesperson, setSelectedSalesperson] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
@@ -1003,7 +1004,66 @@ const DashboardV2: React.FC = () => {
 
   // Fetch Google Reviews function
   const fetchReviews = async () => {
-      try {
+    // If auto scraping is disabled, use manual fallback data
+    if (!useAutoScraping) {
+      console.log('[Google Reviews] Using manual data (auto-scraping disabled)')
+      setGoogleReviews([
+        {
+          id: 'manual-1',
+          author: 'Lauren Card',
+          rating: 5,
+          text: 'Pink\'s Windows is excellent. I highly recommend them to anyone looking for amazing customer service, a friendly interaction and top-notch work. My windows are shining, and I couldn\'t be happier. The team did not stop until everything was perfect - leaving no streaks behind!',
+          time: '11 minutes ago'
+        },
+        {
+          id: 'manual-2',
+          author: 'Vanessa Dawson',
+          rating: 5,
+          text: 'Responsive, efficient service with a very high tech and cost effective way to clean your windows. Our four story facade is sparkling and no one had to hang onto ledges or wear climbing gear. They did it all from the street with poles, brushes, a hose and reverse osmosis canisters. Fantastic! Dylan & Roody are perfectionists and took great care to make sure we were absolutely satisfied before they left. Highly recommend Pinks and Dylan and Roody!',
+          time: '5 hours ago'
+        },
+        {
+          id: 'manual-3',
+          author: 'Barbara Levy',
+          rating: 5,
+          text: 'We used Pink\'s for the first time yesterday, and they did an excellent job. Dylan and Rudy were unobtrusive and went out of their way to make sure everything was done properly and put back the way it was. I would definitely recommend them.',
+          time: '6 hours ago'
+        },
+        {
+          id: 'manual-4',
+          author: 'Justin',
+          rating: 5,
+          text: 'Super friendly staff of Sales and Matt did a wonderful job of cleaning all the windows and glass on our French doors. They cleaned the screens and repaired some screens too. Very pleased 😁',
+          time: '18 hours ago'
+        },
+        {
+          id: 'manual-5',
+          author: 'Patrick Howe',
+          rating: 5,
+          text: '"Worth every dollar!" I had a flawless experience with Pinks Window Cleaning company. It was "just like the old days" of a reliable, high quality company to work with from the initial on-line form request estimate process, to an on-site estimate, to the work performed. The cleaners were extremely conscientious and respectful of the interior and exterior of my home, and the glass became cleaner than I have ever seen. The transformation was so prominent that it was as if the home had a fresh paint job and renovation! I loved the work and feel so positive about the experience I can\'t wait to use them again. Bravo Pinks!',
+          time: '22 hours ago'
+        },
+        {
+          id: 'manual-6',
+          author: 'Sandy Zito',
+          rating: 4,
+          text: 'Sael and Matt worked hard and efficiently and were attentive to our requests. Would have had 5 stars but they forgot to do the small windows of the garage doors which is not important to us.',
+          time: '23 hours ago'
+        },
+        {
+          id: 'manual-7',
+          author: 'Carmine Pierro',
+          rating: 5,
+          text: 'Very professional and excellent work. I would highly recommend pinks to anyone interested in having the best clean Windows they ever had',
+          time: 'a day ago'
+        }
+      ])
+      return
+    }
+
+    // Auto scraping is enabled - try to fetch live data
+    console.log('[Google Reviews] Attempting to fetch live reviews (auto-scraping enabled)')
+    try {
         // Use the Playwright scraper to get fresh reviews from Google Maps
         let response = await fetch('/.netlify/functions/scrape-google-reviews-playwright')
         
@@ -3097,17 +3157,41 @@ const DashboardV2: React.FC = () => {
             <div className="bg-gray-900/40 backdrop-blur-lg border border-white/10 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-medium">Latest Customer Reviews</h2>
-                <a 
-                  href="https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  View on Google
-                </a>
+                <div className="flex items-center gap-4">
+                  {/* Auto-scraping toggle */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">Auto-scrape</span>
+                    <button
+                      onClick={() => {
+                        haptics.light();
+                        const newValue = !useAutoScraping;
+                        setUseAutoScraping(newValue);
+                        // Re-fetch reviews with new setting
+                        fetchReviews();
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        useAutoScraping ? 'bg-blue-600' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          useAutoScraping ? 'translate-x-5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <a 
+                    href="https://maps.app.goo.gl/3K6LkrZVrpfDZEWs7" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    View on Google
+                  </a>
+                </div>
               </div>
               {googleReviews.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
