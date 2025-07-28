@@ -42,9 +42,10 @@ export async function handler(event, context) {
     const PINKS_PLACE_ID = 'ChIJk5XuUh8RkFQRXb__t5bgmMc';
     
     // Get reviews directly using the known place_id
-    const reviewsUrl = `https://serpapi.com/search.json?engine=google_maps_reviews&place_id=${PINKS_PLACE_ID}&api_key=${SERPAPI_KEY}`;
+    // Add hl=en to ensure English results and sort_by to get newest first
+    const reviewsUrl = `https://serpapi.com/search.json?engine=google_maps_reviews&place_id=${PINKS_PLACE_ID}&hl=en&sort_by=newestFirst&api_key=${SERPAPI_KEY}`;
     
-    console.log('[SerpApi Reviews] Fetching reviews...');
+    console.log('[SerpApi Reviews] Fetching reviews for place_id:', PINKS_PLACE_ID);
     const response = await fetch(reviewsUrl);
     
     if (!response.ok) {

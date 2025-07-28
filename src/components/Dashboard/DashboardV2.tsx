@@ -1057,11 +1057,38 @@ const DashboardV2: React.FC = () => {
   const fetchReviews = async () => {
     console.log('[Google Reviews] Fetching reviews...')
     try {
-      // Use the simple reviews endpoint
-      const response = await fetch('/.netlify/functions/reviews');
+      // Try multiple endpoints to get real reviews
+      const endpoints = [
+        '/.netlify/functions/google-reviews-scraper',
+        '/.netlify/functions/google-reviews-fetch',
+        '/.netlify/functions/google-reviews-serpapi'
+      ];
       
-      if (!response.ok) {
-        console.error('[Google Reviews] Failed:', response.status);
+      let response = null;
+      let lastError = null;
+      
+      // Try each endpoint until one succeeds
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`[Google Reviews] Trying ${endpoint}...`);
+          response = await fetch(endpoint);
+          
+          if (response.ok) {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              break; // Success, use this response
+            }
+          }
+          
+          lastError = `${endpoint} returned ${response.status}`;
+        } catch (err) {
+          lastError = `${endpoint} failed: ${err instanceof Error ? err.message : String(err)}`;
+          console.error(lastError);
+        }
+      }
+      
+      if (!response || !response.ok) {
+        console.error('[Google Reviews] All endpoints failed:', lastError);
         setGoogleReviews([]);
         return;
       }
