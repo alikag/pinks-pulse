@@ -122,16 +122,16 @@ export async function handler(event, context) {
       }
     }
     
-    // Try method 3: Using hardcoded place_id
+    // Try method 3: Using correct data_id from Google Maps URL
     try {
-      const hardcodedPlaceId = 'ChIJk5XuUh8RkFQRXb__t5bgmMc';
-      const reviewsUrl3 = `https://serpapi.com/search.json?engine=google_maps_reviews&place_id=${hardcodedPlaceId}&api_key=${SERPAPI_KEY}`;
+      const correctDataId = '0x506eb8258adb631:0xcc29b8eaf89512ee';
+      const reviewsUrl3 = `https://serpapi.com/search.json?engine=google_maps_reviews&data_id=${correctDataId}&api_key=${SERPAPI_KEY}`;
       const reviewsResponse3 = await fetch(reviewsUrl3);
       const reviewsData3 = await reviewsResponse3.json();
       
       results.reviewsAttempts.push({
-        method: 'hardcoded_place_id',
-        place_id: hardcodedPlaceId,
+        method: 'correct_data_id',
+        data_id: correctDataId,
         success: !!reviewsData3.reviews,
         reviewCount: reviewsData3.reviews?.length || 0,
         error: reviewsData3.error,
@@ -139,7 +139,7 @@ export async function handler(event, context) {
       });
     } catch (e) {
       results.reviewsAttempts.push({
-        method: 'hardcoded_place_id',
+        method: 'correct_data_id',
         error: e.message
       });
     }

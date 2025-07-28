@@ -36,16 +36,14 @@ export async function handler(event, context) {
       };
     }
 
-    // Pink's Window Services Place ID from https://maps.app.goo.gl/ftntjbFPabdRr5BF9
-    // When you visit this URL, it redirects to the full Google Maps page with place details
-    // The place_id can be extracted from the data parameter in the URL
-    const PINKS_PLACE_ID = 'ChIJk5XuUh8RkFQRXb__t5bgmMc';
+    // Pink's Windows Hudson Valley data_id from the Google Maps URL
+    // https://www.google.com/maps/place/Pink's+Windows+Hudson+Valley/@42.3901596,-72.8032962,7z/data=!4m16!1m9!3m8!1s0x506eb8258adb631:0xcc29b8eaf89512ee
+    const PINKS_DATA_ID = '0x506eb8258adb631:0xcc29b8eaf89512ee';
     
-    // Get reviews directly using the known place_id
-    // Add hl=en to ensure English results and sort_by to get newest first
-    const reviewsUrl = `https://serpapi.com/search.json?engine=google_maps_reviews&place_id=${PINKS_PLACE_ID}&hl=en&sort_by=newestFirst&api_key=${SERPAPI_KEY}`;
+    // Use data_id instead of place_id for SerpApi
+    const reviewsUrl = `https://serpapi.com/search.json?engine=google_maps_reviews&data_id=${PINKS_DATA_ID}&hl=en&sort_by=newestFirst&api_key=${SERPAPI_KEY}`;
     
-    console.log('[SerpApi Reviews] Fetching reviews for place_id:', PINKS_PLACE_ID);
+    console.log('[SerpApi Reviews] Fetching reviews for data_id:', PINKS_DATA_ID);
     const response = await fetch(reviewsUrl);
     
     if (!response.ok) {

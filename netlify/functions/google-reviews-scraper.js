@@ -1,8 +1,10 @@
 // Real Google Reviews scraper using Google Places API
 const https = require('https');
 
-// Pink's Window Services place ID from the Google Maps URL
-const PLACE_ID = 'ChIJk5XuUh8RkFQRXb__t5bgmMc';
+// Pink's Windows Hudson Valley place ID from the Google Maps URL
+// From: https://www.google.com/maps/place/Pink's+Windows+Hudson+Valley/
+// The format Google uses: ChIJ + base64 encoded location data
+const PLACE_ID = 'ChIJMWbbrSXo5okR7hKV4Oq4Kcw';
 
 export async function handler(event, context) {
   const headers = {
@@ -80,8 +82,8 @@ async function scrapeWithoutAPI() {
   try {
     console.log('[Google Reviews Scraper] Attempting web scrape...');
     
-    // Use the place URL directly
-    const placeUrl = `https://www.google.com/maps/place/?q=place_id:${PLACE_ID}`;
+    // Use the actual Google Maps URL for Pink's Windows Hudson Valley
+    const placeUrl = `https://www.google.com/maps/place/Pink's+Windows+Hudson+Valley/@41.827325,-74.134006,17z/data=!3m1!4b1!4m6!3m5!1s0x506eb8258adb631:0xcc29b8eaf89512ee!8m2!3d41.827325!4d-74.134006!16s%2Fg%2F11x3273wjh`;
     
     // Fetch through a different proxy that handles Google Maps better
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(placeUrl)}`;
