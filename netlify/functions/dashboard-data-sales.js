@@ -1602,6 +1602,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     reviewsThisWeek: reviewsThisWeek,
     // Add jobs metrics
     jobsToday: metrics.jobsToday || 0,
+    jobsTodayValue: metrics.jobsTodayValue || 0,
     jobsThisWeek: metrics.jobsThisWeek || 0,
     // Add OTB by year
     otb2025: metrics.otb2025 || 0,

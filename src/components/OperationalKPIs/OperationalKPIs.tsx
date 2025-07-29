@@ -46,13 +46,13 @@ const OperationalKPIs: React.FC = () => {
   const operationalMetrics = useMemo<OperationalMetric[]>(() => {
     if (!data) return []
 
-    // Calculate revenue per van per day
+    // Calculate revenue per van per day based on jobs completed today
     const totalVans = 6
     let revenuePerVanPerDay = 0
     
-    if (data?.kpiMetrics?.convertedTodayDollars) {
-      // Use today's revenue divided by number of vans
-      revenuePerVanPerDay = data.kpiMetrics.convertedTodayDollars / totalVans
+    if (data?.kpiMetrics?.jobsTodayValue) {
+      // Use today's completed jobs value divided by number of vans
+      revenuePerVanPerDay = data.kpiMetrics.jobsTodayValue / totalVans
     }
     return [
       {
@@ -63,7 +63,7 @@ const OperationalKPIs: React.FC = () => {
         format: 'currency',
         color: 'green',
         target: 1500,
-        description: 'Average daily revenue generated per van (6 vans total)'
+        description: 'Average revenue per van from jobs completed today (6 vans total)'
       },
       {
         id: 'productivity-rate',
@@ -613,8 +613,8 @@ const OperationalKPIs: React.FC = () => {
                         <span className="text-white">6</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Today's Total Revenue:</span>
-                        <span className="text-white">${data.kpiMetrics.convertedTodayDollars.toLocaleString()}</span>
+                        <span className="text-gray-400">Today's Jobs Revenue:</span>
+                        <span className="text-white">${(data.kpiMetrics.jobsTodayValue || 0).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Revenue Gap per Van:</span>
