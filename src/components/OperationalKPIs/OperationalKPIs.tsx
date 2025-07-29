@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { Calendar, Download, Clock, Info, Star, XCircle, RefreshCw, Activity, Zap, Users, Truck, AlertCircle, ExternalLink } from 'lucide-react'
+import { Calendar, Download, Info, Star, XCircle, RefreshCw, Truck, AlertCircle, ExternalLink } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
@@ -66,36 +66,6 @@ const OperationalKPIs: React.FC = () => {
         description: 'Average revenue per van from jobs completed today (6 vans total)'
       },
       {
-        id: 'productivity-rate',
-        label: 'Team Productivity Rate',
-        value: 87.5,
-        icon: <Activity className="h-5 w-5 text-blue-400" />,
-        format: 'percentage',
-        color: 'blue',
-        target: 85,
-        description: 'Average team productivity across all operations'
-      },
-      {
-        id: 'job-completion-time',
-        label: 'Avg Job Completion Time',
-        value: 2.5,
-        icon: <Clock className="h-5 w-5 text-green-400" />,
-        format: 'time',
-        color: 'green',
-        target: 3,
-        description: 'Average time to complete a job in hours'
-      },
-      {
-        id: 'team-efficiency',
-        label: 'Team Efficiency Score',
-        value: 92,
-        icon: <Zap className="h-5 w-5 text-yellow-400" />,
-        format: 'number',
-        color: 'yellow',
-        target: 90,
-        description: 'Overall team efficiency score (0-100)'
-      },
-      {
         id: 'customer-satisfaction',
         label: 'Customer Satisfaction',
         value: 4.8,
@@ -104,16 +74,6 @@ const OperationalKPIs: React.FC = () => {
         color: 'pink',
         target: 4.5,
         description: 'Average customer rating (out of 5)'
-      },
-      {
-        id: 'crew-utilization',
-        label: 'Crew Utilization Rate',
-        value: 83,
-        icon: <Users className="h-5 w-5 text-indigo-400" />,
-        format: 'percentage',
-        color: 'indigo',
-        target: 85,
-        description: 'Percentage of crew time spent on billable work'
       }
     ]
   }, [data])
