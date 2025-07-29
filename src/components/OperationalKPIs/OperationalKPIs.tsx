@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { Calendar, Download, Info, Star, XCircle, RefreshCw, Truck, AlertCircle, ExternalLink } from 'lucide-react'
+import { Calendar, Download, Info, Star, XCircle, RefreshCw, Truck, AlertCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import RainbowLoadingWave from '../RainbowLoadingWave'
@@ -41,6 +41,7 @@ const OperationalKPIs: React.FC = () => {
   const [lateJobs, setLateJobs] = useState<LateJob[]>([])
   const [lateJobsLoading, setLateJobsLoading] = useState(false)
   const [lateJobsSummary, setLateJobsSummary] = useState<any>(null)
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
 
   // Calculate operational metrics from the data
   const operationalMetrics = useMemo<OperationalMetric[]>(() => {
@@ -125,6 +126,18 @@ const OperationalKPIs: React.FC = () => {
     if (percentageOfTarget >= 100) return 'text-green-400'
     if (percentageOfTarget >= 90) return 'text-yellow-400'
     return 'text-red-400'
+  }
+
+  // Toggle expanded notes
+  const toggleNoteExpanded = (jobNumber: string) => {
+    const newExpanded = new Set(expandedNotes)
+    if (newExpanded.has(jobNumber)) {
+      newExpanded.delete(jobNumber)
+    } else {
+      newExpanded.add(jobNumber)
+    }
+    setExpandedNotes(newExpanded)
+    haptics.light()
   }
 
   if (loading || isRefreshing) {
@@ -392,7 +405,7 @@ const OperationalKPIs: React.FC = () => {
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Link</th>
                   <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Value</th>
                   <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Discount</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Notes</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-6 py-3">Internal Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -443,8 +456,25 @@ const OperationalKPIs: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                         {job.discount_applied ? `$${job.discount_applied.toLocaleString()}` : '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-400 max-w-xs truncate" title={job.notes}>
-                        {job.notes}
+                      <td className="px-6 py-4 text-sm text-gray-400">
+                        <div className="flex items-start gap-2">
+                          <div className={`flex-1 ${expandedNotes.has(job.job_number) ? '' : 'max-w-xs truncate'}`}>
+                            {job.notes}
+                          </div>
+                          {job.notes && job.notes.length > 50 && (
+                            <button
+                              onClick={() => toggleNoteExpanded(job.job_number)}
+                              className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors"
+                              aria-label={expandedNotes.has(job.job_number) ? 'Collapse note' : 'Expand note'}
+                            >
+                              {expandedNotes.has(job.job_number) ? (
+                                <ChevronUp className="h-4 w-4 text-gray-500" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
