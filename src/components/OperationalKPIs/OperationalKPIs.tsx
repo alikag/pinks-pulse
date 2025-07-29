@@ -595,23 +595,73 @@ const OperationalKPIs: React.FC = () => {
 
                 {/* Custom details for Revenue per Van */}
                 {selectedMetric.id === 'revenue-per-van' && data?.kpiMetrics && (
-                  <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                    <h3 className="text-sm font-semibold text-gray-300 mb-2">Fleet Details</h3>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Total Vans:</span>
-                        <span className="text-white">6</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Today's Jobs Revenue:</span>
-                        <span className="text-white">${(data.kpiMetrics.jobsTodayValue || 0).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Revenue Gap per Van:</span>
-                        <span className="text-red-400">${Math.max(0, 1500 - selectedMetric.value).toLocaleString()}</span>
+                  <>
+                    <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                      <h3 className="text-sm font-semibold text-gray-300 mb-2">Fleet Details</h3>
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Total Vans:</span>
+                          <span className="text-white">6</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Today's Jobs Revenue:</span>
+                          <span className="text-white">${(data.kpiMetrics.jobsTodayValue || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Number of Jobs Today:</span>
+                          <span className="text-white">{data.kpiMetrics.jobsToday || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Revenue Gap per Van:</span>
+                          <span className="text-red-400">${Math.max(0, 1500 - selectedMetric.value).toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                    
+                    {/* Today's Jobs List */}
+                    {data.rawJobs && (
+                      <div className="bg-gray-800/50 rounded-lg p-4">
+                        <h3 className="text-sm font-semibold text-gray-300 mb-3">Today's Jobs</h3>
+                        <div className="max-h-60 overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="text-xs text-gray-400 border-b border-gray-700">
+                              <tr>
+                                <th className="text-left pb-2">Job #</th>
+                                <th className="text-left pb-2">Type</th>
+                                <th className="text-left pb-2">Salesperson</th>
+                                <th className="text-right pb-2">Value</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-700">
+                              {data.rawJobs
+                                .filter(job => {
+                                  const jobDate = new Date(job.date);
+                                  const today = new Date();
+                                  return jobDate.toDateString() === today.toDateString();
+                                })
+                                .map((job, index) => (
+                                  <tr key={job.job_number || index}>
+                                    <td className="py-2 text-white">{job.job_number}</td>
+                                    <td className="py-2 text-gray-300">{job.job_type || '-'}</td>
+                                    <td className="py-2 text-gray-300">{job.salesperson}</td>
+                                    <td className="py-2 text-right text-white">
+                                      ${(job.calculated_value || 0).toLocaleString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                          {data.rawJobs.filter(job => {
+                            const jobDate = new Date(job.date);
+                            const today = new Date();
+                            return jobDate.toDateString() === today.toDateString();
+                          }).length === 0 && (
+                            <p className="text-gray-500 text-center py-4">No jobs scheduled for today</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Time Period */}
