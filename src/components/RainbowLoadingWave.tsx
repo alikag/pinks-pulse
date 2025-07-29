@@ -2,19 +2,19 @@ import React, { useEffect, useRef, useState } from 'react'
 import './RainbowLoadingWave.css'
 
 const loadingMessages = [
-  "Go grab a coffee. We've got this.",
-  "Stretch your legs. It'll be ready when it's ready.",
-  "Almost done. Maybe take a deep breath?",
-  "Hang tight. Nobody likes a hoverer.",
-  "Almost ready. Go stare out a window if you're bored.",
-  "You could clean your keyboard while we finish up.",
-  "Chill the fuck out, we're polishing your numbers.",
-  "We're making it look better than we found it",
-  "Still better than waiting for a window cleaner to call you back",
-  "Almost ready. You could go wipe a counter or something.",
-  "Your dashboard's getting a streak-free shine. Almost there!",
-  "Squeegeeing your view...",
-  "Loading faster than a ResiCon agenda pivot"
+  "Loading your dashboard...",
+  "Fetching the latest data...",
+  "Almost there...",
+  "Preparing your analytics...",
+  "Gathering business insights...",
+  "Loading KPI metrics...",
+  "Refreshing your data...",
+  "Your dashboard is loading...",
+  "Syncing with BigQuery...",
+  "Loading performance data...",
+  "Getting the latest numbers...",
+  "Just a moment...",
+  "Loading Pink's Pulse..."
 ]
 
 const RainbowLoadingWave: React.FC = () => {
