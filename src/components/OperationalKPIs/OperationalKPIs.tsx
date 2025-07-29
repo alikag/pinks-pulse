@@ -80,25 +80,25 @@ const OperationalKPIs: React.FC = () => {
   }, [data])
 
   // Fetch late jobs data
-  useEffect(() => {
-    const fetchLateJobs = async () => {
-      setLateJobsLoading(true)
-      try {
-        const response = await fetch('/.netlify/functions/late-jobs-details')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            setLateJobs(data.late_jobs || [])
-            setLateJobsSummary(data.summary || null)
-          }
+  const fetchLateJobs = async () => {
+    setLateJobsLoading(true)
+    try {
+      const response = await fetch('/.netlify/functions/late-jobs-details')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setLateJobs(data.late_jobs || [])
+          setLateJobsSummary(data.summary || null)
         }
-      } catch (error) {
-        console.error('Error fetching late jobs:', error)
-      } finally {
-        setLateJobsLoading(false)
       }
+    } catch (error) {
+      console.error('Error fetching late jobs:', error)
+    } finally {
+      setLateJobsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchLateJobs()
   }, [])
 
@@ -230,6 +230,7 @@ const OperationalKPIs: React.FC = () => {
               onClick={() => {
                 haptics.medium()
                 refetch()
+                fetchLateJobs()
               }}
               disabled={loading && !data}
               className={`
@@ -240,9 +241,9 @@ const OperationalKPIs: React.FC = () => {
                 }
               `}
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isRefreshing || lateJobsLoading ? 'animate-spin' : ''}`} />
               <span>
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                {isRefreshing || lateJobsLoading ? 'Refreshing...' : 'Refresh'}
               </span>
             </button>
           </div>
@@ -283,6 +284,7 @@ const OperationalKPIs: React.FC = () => {
               onClick={() => {
                 haptics.medium()
                 refetch()
+                fetchLateJobs()
               }}
               disabled={loading && !data}
               className={`
@@ -293,9 +295,9 @@ const OperationalKPIs: React.FC = () => {
                 }
               `}
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isRefreshing || lateJobsLoading ? 'animate-spin' : ''}`} />
               <span>
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                {isRefreshing || lateJobsLoading ? 'Refreshing...' : 'Refresh'}
               </span>
             </button>
             
