@@ -34,6 +34,46 @@ export const handler = async (event, context) => {
       }),
     };
   }
+
+  // Add simple test endpoint for basic query
+  if (event.path && event.path.includes('/simple-test')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      console.log('[simple-test] Testing basic query...');
+      
+      const simpleQuery = `SELECT 1 as test_value`;
+      const [rows] = await bigquery.query({ query: simpleQuery, timeoutMs: 5000 });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Simple test successful',
+          result: rows,
+          timestamp: new Date().toISOString()
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Simple test failed',
+          message: error.message,
+          stack: error.stack
+        }),
+      };
+    }
+  }
   
   // Add debug endpoint to check join issue
   if (event.path && event.path.includes('/debug-join')) {
@@ -519,13 +559,18 @@ export const handler = async (event, context) => {
   } catch (error) {
     console.error('[dashboard-data-sales] Error:', error);
     console.error('[dashboard-data-sales] Error stack:', error.stack);
+    console.error('[dashboard-data-sales] Error name:', error.name);
+    console.error('[dashboard-data-sales] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     
     let errorDetails = {
       error: 'Failed to fetch dashboard data',
       message: error.message,
       details: error.toString(),
+      stack: error.stack,
+      name: error.name,
       dataSource: 'error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      errorLocation: 'main_handler'
     };
     
     // Add specific error context
