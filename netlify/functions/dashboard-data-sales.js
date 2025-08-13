@@ -74,6 +74,50 @@ export const handler = async (event, context) => {
       };
     }
   }
+
+  // Add endpoint to test table access
+  if (event.path && event.path.includes('/table-test')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      console.log('[table-test] Testing table access...');
+      
+      const tableQuery = `
+        SELECT COUNT(*) as quote_count 
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` 
+        LIMIT 1`;
+      
+      const [rows] = await bigquery.query({ query: tableQuery, timeoutMs: 5000 });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Table access test successful',
+          result: rows,
+          timestamp: new Date().toISOString()
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Table access test failed',
+          message: error.message,
+          stack: error.stack
+        }),
+      };
+    }
+  }
   
   // Add debug endpoint to check join issue
   if (event.path && event.path.includes('/debug-join')) {
@@ -453,22 +497,22 @@ export const handler = async (event, context) => {
     
     try {
       // Add timeout to prevent Netlify function timeout
-      const queryTimeout = 9000; // 9 seconds (leaving 1s buffer for processing)
+      const queryTimeout = 6000; // 6 seconds (leaving more buffer for processing)
       
-      // Execute main queries in parallel for better performance with timeout
-      console.log('[dashboard-data-sales] Starting parallel queries with 9s timeout...');
-      const queryPromises = Promise.all([
-        bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout }),
-        bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout }),
-        bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout })
-      ]);
+      // Execute main queries sequentially to avoid memory/timeout issues
+      console.log('[dashboard-data-sales] Starting sequential queries with 6s timeout each...');
       
-      [[quotesData], [jobsData], [speedToLeadData]] = await Promise.race([
-        queryPromises,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout - exceeded 9 seconds')), queryTimeout)
-        )
-      ]);
+      console.log('[dashboard-data-sales] Fetching quotes data...');
+      [quotesData] = await bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout });
+      console.log('[dashboard-data-sales] Quotes data fetched, rows:', quotesData?.length);
+      
+      console.log('[dashboard-data-sales] Fetching jobs data...');
+      [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
+      console.log('[dashboard-data-sales] Jobs data fetched, rows:', jobsData?.length);
+      
+      console.log('[dashboard-data-sales] Fetching speed to lead data...');
+      [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
+      console.log('[dashboard-data-sales] Speed to lead data fetched, rows:', speedToLeadData?.length);
       
       // Try to get reviews count, but don't fail if it doesn't work
       try {
