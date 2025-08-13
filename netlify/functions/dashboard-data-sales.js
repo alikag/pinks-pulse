@@ -1,7 +1,7 @@
 import { BigQuery } from '@google-cloud/bigquery';
 
 export const handler = async (event, context) => {
-  // Enable CORS
+  // Enable CORS - Updated 2025-08-13
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
