@@ -2416,10 +2416,13 @@ const DashboardV2: React.FC = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="fixed w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
+                        className="fixed bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
                         style={{
                           top: `${dropdownPosition.top}px`,
                           right: `${dropdownPosition.right}px`,
+                          width: 'auto',
+                          minWidth: '200px',
+                          maxWidth: '280px',
                           maxHeight: '320px',
                           zIndex: 999999
                         }}
@@ -2437,7 +2440,7 @@ const DashboardV2: React.FC = () => {
                             setSelectedSalesperson('all');
                             setIsFilterOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all whitespace-nowrap ${
                             selectedSalesperson === 'all' 
                               ? 'bg-pink-500/20 text-pink-400' 
                               : 'text-gray-300 hover:bg-white/5 hover:text-white'
@@ -2458,7 +2461,7 @@ const DashboardV2: React.FC = () => {
                                 setSelectedSalesperson(person);
                                 setIsFilterOpen(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all whitespace-nowrap ${
                                 selectedSalesperson === person 
                                   ? 'bg-pink-500/20 text-pink-400' 
                                   : 'text-gray-300 hover:bg-white/5 hover:text-white'
@@ -2620,11 +2623,14 @@ const DashboardV2: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="fixed w-64 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
+                      className="fixed bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
                       style={{
                         top: `${dropdownPosition.top}px`,
                         left: '50%',
                         transform: 'translateX(-50%)',
+                        width: 'auto',
+                        minWidth: '240px',
+                        maxWidth: '320px',
                         maxHeight: '320px',
                         zIndex: 999999
                       }}
@@ -2642,7 +2648,7 @@ const DashboardV2: React.FC = () => {
                           setSelectedSalesperson('all');
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all ${
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all whitespace-nowrap ${
                           selectedSalesperson === 'all' 
                             ? 'bg-pink-500/20 text-pink-400' 
                             : 'text-gray-300 hover:bg-white/5'
@@ -2663,7 +2669,7 @@ const DashboardV2: React.FC = () => {
                               setSelectedSalesperson(person);
                               setIsFilterOpen(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all ${
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all whitespace-nowrap ${
                               selectedSalesperson === person 
                                 ? 'bg-pink-500/20 text-pink-400' 
                                 : 'text-gray-300 hover:bg-white/5'
