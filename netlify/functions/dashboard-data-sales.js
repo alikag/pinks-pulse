@@ -1599,6 +1599,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     thisWeekOTB: metrics.thisWeekOTB,
     weeklyOTBBreakdown: metrics.weeklyOTBBreakdown,
     monthlyOTBData: metrics.monthlyOTBData,
+    winterOTB: calculateWinterOTB(metrics.monthlyOTBData),
     reviewsThisWeek: reviewsThisWeek,
     // Add jobs metrics
     jobsToday: metrics.jobsToday || 0,

@@ -48,6 +48,7 @@ export interface DashboardData {
     thisWeekOTB: number;
     weeklyOTBBreakdown?: Record<string, number>;
     monthlyOTBData?: Record<number, number>;
+    winterOTB?: number;
     reviewsThisWeek: number;
     jobsToday?: number;
     jobsTodayValue?: number;

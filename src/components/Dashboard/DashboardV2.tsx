@@ -238,10 +238,41 @@ const DashboardV2: React.FC = () => {
     
     const normalizedFilterName = normalizeSalespersonName(salesperson);
     const filteredQuotes = quotes.filter(q => normalizeSalespersonName(q.salesperson) === normalizedFilterName);
+    
+    // Debug entry
+    if (salesperson.toLowerCase().includes('jared')) {
+      console.log('[FILTER TIME SERIES ENTRY]', {
+        salesperson,
+        quotesLength: quotes?.length,
+        normalizedFilterName,
+        filteredQuotesLength: filteredQuotes.length
+      });
+    }
+    
+    // Use Eastern Time for consistency with calculateKPIsFromRawData
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    // Get Eastern Time components using the same method as calculateKPIsFromRawData
+    const options = {
+      timeZone: 'America/New_York',
+      year: 'numeric' as const,
+      month: 'numeric' as const,
+      day: 'numeric' as const,
+      hour: 'numeric' as const,
+      minute: 'numeric' as const,
+      second: 'numeric' as const,
+      hour12: false
+    };
+    const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(now);
+    const nowET: any = {};
+    parts.forEach(part => {
+      if (part.type !== 'literal') {
+        nowET[part.type] = parseInt(part.value);
+      }
+    });
+    
+    // Calculate week start in Eastern Time (matching calculateKPIsFromRawData exactly)
+    const dayOfWeek = new Date(nowET.year, nowET.month - 1, nowET.day).getDay();
+    const weekStart = new Date(nowET.year, nowET.month - 1, nowET.day - dayOfWeek);
     
     // Parse date helper - match backend's EST timezone handling
     const parseDate = (dateStr: string | Date | any) => {
@@ -282,12 +313,25 @@ const DashboardV2: React.FC = () => {
     // Current week daily data
     const currentWeekDaily = {
       labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      quotesSent: [0, 0, 0, 0, 0, 0, 0],
       quotesConverted: [0, 0, 0, 0, 0, 0, 0],
       conversionRevenue: [0, 0, 0, 0, 0, 0, 0]
     };
     
     // Process quotes for current week
+    let debugQuotesThisWeek = 0;
     filteredQuotes.forEach(quote => {
+      // Track sent quotes
+      const sentDate = parseDate(quote.sent_date);
+      if (sentDate && sentDate >= weekStart) {
+        debugQuotesThisWeek++;
+        const dayIndex = sentDate.getDay();
+        if (dayIndex >= 0 && dayIndex < 7) {
+          currentWeekDaily.quotesSent[dayIndex]++;
+        }
+      }
+      
+      // Track converted quotes
       const convertedDate = parseDate(quote.converted_date);
       if (convertedDate && convertedDate >= weekStart) {
         const dayIndex = convertedDate.getDay();
@@ -297,6 +341,18 @@ const DashboardV2: React.FC = () => {
         }
       }
     });
+    
+    // Debug for Jared
+    if (salesperson.toLowerCase().includes('jared')) {
+      console.log('[JARED TIME SERIES]', {
+        salesperson,
+        weekStart: weekStart.toISOString(),
+        filteredQuotesCount: filteredQuotes.length,
+        quotesThisWeek: debugQuotesThisWeek,
+        quotesSentArray: currentWeekDaily.quotesSent,
+        totalInArray: currentWeekDaily.quotesSent.reduce((a, b) => a + b, 0)
+      });
+    }
     
     // Weekly conversion rate trend (last 8 weeks)
     const weeklyTrend = {
@@ -467,6 +523,7 @@ const DashboardV2: React.FC = () => {
       const trimmedMatches = quotes.filter(q => q.salesperson?.trim() === salesperson.trim());
       const fullMatches = quotes.filter(q => q.salesperson?.trim().toLowerCase() === salesperson.trim().toLowerCase());
       
+      
       console.log('[Salesperson Filter Debug]', {
         filteringBy: salesperson,
         filteringByLength: salesperson.length,
@@ -556,6 +613,7 @@ const DashboardV2: React.FC = () => {
     // Calculate week start in Eastern Time
     const dayOfWeek = new Date(nowET.year, nowET.month - 1, nowET.day).getDay();
     const weekStart = new Date(nowET.year, nowET.month - 1, nowET.day - dayOfWeek);
+    
     
     // Parse date helper - match backend's EST timezone handling
     const parseDate = (dateStr: string | Date | any) => {
@@ -794,6 +852,7 @@ const DashboardV2: React.FC = () => {
       cvrThisWeek,
       cvr30Days,
       avgQPD,
+      winterOTB: calculateWinterOTB(metrics.monthlyOTBData),
       // TODO: Add speed to lead calculation when we have request data
       speedToLead30Days: 0,
       reviewsThisWeek: 0 // Reviews are not filtered by salesperson
@@ -898,11 +957,11 @@ const DashboardV2: React.FC = () => {
         id: 'winter-otb',
         label: 'Winter OTB',
         subtitle: `${winterYears.label}: $525k`,
-        value: calculateWinterOTB(metrics.monthlyOTBData),
+        value: metrics.winterOTB || calculateWinterOTB(metrics.monthlyOTBData),
         target: 525000,
         format: 'currency',
-        status: calculateWinterOTB(metrics.monthlyOTBData) >= 525000 ? 'success' : 
-                calculateWinterOTB(metrics.monthlyOTBData) >= 420000 ? 'warning' : 'danger'
+        status: (metrics.winterOTB || calculateWinterOTB(metrics.monthlyOTBData)) >= 525000 ? 'success' : 
+                (metrics.winterOTB || calculateWinterOTB(metrics.monthlyOTBData)) >= 420000 ? 'warning' : 'danger'
       }
     ]
   }, [data, loading, selectedSalesperson])
@@ -1384,6 +1443,17 @@ const DashboardV2: React.FC = () => {
         // Use filtered data if a salesperson is selected
         const filteredTimeSeries = data.rawQuotes ? calculateFilteredTimeSeries(data.rawQuotes, selectedSalesperson) : null;
         
+        // Debug what we're getting back
+        if (selectedSalesperson !== 'all' && selectedSalesperson.toLowerCase().includes('jared')) {
+          console.log('[CONVERTED CHART - FilteredTimeSeries]', {
+            salesperson: selectedSalesperson,
+            hasFilteredTimeSeries: !!filteredTimeSeries,
+            currentWeekDaily: filteredTimeSeries?.currentWeekDaily,
+            quotesSentArray: filteredTimeSeries?.currentWeekDaily?.quotesSent,
+            totalQuotesSent: filteredTimeSeries?.currentWeekDaily?.quotesSent?.reduce((a, b) => a + b, 0)
+          });
+        }
+        
         // Get revenue data from filtered time series or calculate from main data
         let chartData;
         let conversionRevenue;
@@ -1391,7 +1461,7 @@ const DashboardV2: React.FC = () => {
         if (selectedSalesperson !== 'all' && filteredTimeSeries) {
           chartData = {
             labels: filteredTimeSeries.currentWeekDaily.labels,
-            quotesSent: new Array(7).fill(0), // We don't track sent quotes in filtered data
+            quotesSent: filteredTimeSeries.currentWeekDaily.quotesSent || new Array(7).fill(0),
             quotesConverted: filteredTimeSeries.currentWeekDaily.quotesConverted
           };
           conversionRevenue = filteredTimeSeries.currentWeekDaily.conversionRevenue;
@@ -2334,25 +2404,33 @@ const DashboardV2: React.FC = () => {
 
                 {/* Dropdown */}
                 {isFilterOpen && createPortal(
-                  <AnimatePresence>
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="fixed w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
-                      style={{
-                        top: `${dropdownPosition.top}px`,
-                        right: `${dropdownPosition.right}px`,
-                        zIndex: 999999
-                      }}
-                    >
+                  <>
+                    {/* Invisible backdrop to catch clicks */}
+                    <div 
+                      className="fixed inset-0" 
+                      style={{ zIndex: 999998 }}
+                      onClick={() => setIsFilterOpen(false)}
+                    />
+                    <AnimatePresence>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="fixed w-56 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
+                        style={{
+                          top: `${dropdownPosition.top}px`,
+                          right: `${dropdownPosition.right}px`,
+                          maxHeight: '320px',
+                          zIndex: 999999
+                        }}
+                      >
                       <div className="p-2 border-b border-white/10">
                         <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
                           <Filter className="h-3 w-3" />
                           <span>Filter by Salesperson</span>
                         </div>
                       </div>
-                      <div className="max-h-64 overflow-y-auto">
+                      <div className="max-h-48 overflow-y-auto">
                         <button
                           onClick={() => {
                             haptics.light();
@@ -2405,7 +2483,8 @@ const DashboardV2: React.FC = () => {
                         })}
                       </div>
                     </motion.div>
-                  </AnimatePresence>,
+                  </AnimatePresence>
+                  </>,
                   document.body
                 )}
               </div>
@@ -2475,7 +2554,7 @@ const DashboardV2: React.FC = () => {
                       if (rect && !isFilterOpen) {
                         setDropdownPosition({
                           top: rect.bottom + 8,
-                          right: 16 // Fixed margin from edge on mobile
+                          right: 0 // Not used for mobile since we center it
                         });
                       }
                       
@@ -2529,19 +2608,27 @@ const DashboardV2: React.FC = () => {
               
               {/* Mobile Dropdown - Reuse the same portal */}
               {isFilterOpen && createPortal(
-                <AnimatePresence>
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="fixed bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
-                    style={{
-                      top: `${dropdownPosition.top}px`,
-                      left: '16px',
-                      right: '16px',
-                      zIndex: 999999
-                    }}
-                  >
+                <>
+                  {/* Invisible backdrop to catch clicks */}
+                  <div 
+                    className="fixed inset-0" 
+                    style={{ zIndex: 999998 }}
+                    onClick={() => setIsFilterOpen(false)}
+                  />
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="fixed w-64 bg-gray-900/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl overflow-hidden"
+                      style={{
+                        top: `${dropdownPosition.top}px`,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        maxHeight: '320px',
+                        zIndex: 999999
+                      }}
+                    >
                     <div className="p-2 border-b border-white/10">
                       <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
                         <Filter className="h-3 w-3" />
@@ -2601,7 +2688,8 @@ const DashboardV2: React.FC = () => {
                       })}
                     </div>
                   </motion.div>
-                </AnimatePresence>,
+                </AnimatePresence>
+                </>,
                 document.body
               )}
             </div>
