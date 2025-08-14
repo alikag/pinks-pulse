@@ -493,14 +493,16 @@ export const handler = async (event, context) => {
     const speedToLeadQuery = `
       SELECT 
         AVG(TIMESTAMP_DIFF(
-          CAST(sent_date AS TIMESTAMP),
-          CAST(requested_on_date AS TIMESTAMP), 
+          CAST(q.sent_date AS TIMESTAMP),
+          CAST(r.requested_on_date AS TIMESTAMP), 
           MINUTE
         )) as avg_minutes_to_quote
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_speed_to_lead\`
-      WHERE requested_on_date IS NOT NULL
-        AND sent_date IS NOT NULL
-        AND DATE(requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
+      JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+        ON r.quote_number = q.quote_number
+      WHERE r.requested_on_date IS NOT NULL
+        AND q.sent_date IS NOT NULL
+        AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
       LIMIT 1
     `;
 
