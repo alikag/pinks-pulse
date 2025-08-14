@@ -207,13 +207,14 @@ export const handler = async (event, context) => {
       
       const jobsTestQuery = `
         SELECT 
-          COUNT(*) as total_jobs,
-          SUM(COALESCE(One_off_job_dollars, 0) + COALESCE(Visit_based_dollars, 0)) as total_value,
-          MIN(Date) as earliest_job,
-          MAX(Date) as latest_job
+          EXTRACT(MONTH FROM DATE(Date)) as month,
+          COUNT(*) as job_count,
+          SUM(COALESCE(One_off_job_dollars, 0) + COALESCE(Visit_based_dollars, 0)) as month_value
         FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
         WHERE Date IS NOT NULL
           AND EXTRACT(YEAR FROM DATE(Date)) = 2025
+        GROUP BY month
+        ORDER BY month
       `;
       
       const [rows] = await bigquery.query({ query: jobsTestQuery, timeoutMs: 5000 });
@@ -222,8 +223,8 @@ export const handler = async (event, context) => {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          message: 'Jobs table test successful',
-          result: rows[0] || null,
+          message: 'Jobs table test by month',
+          result: rows,
           timestamp: new Date().toISOString()
         }),
       };
