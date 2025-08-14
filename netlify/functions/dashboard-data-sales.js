@@ -90,19 +90,35 @@ export const handler = async (event, context) => {
       const bigquery = new BigQuery(bigqueryConfig);
       console.log('[table-test] Testing table access...');
       
+      // Test v_requests table exists
+      const requestsTestQuery = `
+        SELECT COUNT(*) as request_count 
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` 
+        LIMIT 1`;
+      
       const tableQuery = `
         SELECT COUNT(*) as quote_count 
         FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` 
         LIMIT 1`;
       
-      const [rows] = await bigquery.query({ query: tableQuery, timeoutMs: 5000 });
+      const [quotesRows] = await bigquery.query({ query: tableQuery, timeoutMs: 5000 });
+      
+      let requestsRows;
+      try {
+        [requestsRows] = await bigquery.query({ query: requestsTestQuery, timeoutMs: 5000 });
+      } catch (requestsError) {
+        requestsRows = [{ request_count: 'ERROR: ' + requestsError.message }];
+      }
+      
+      const [rows] = [quotesRows];
       
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           message: 'Table access test successful',
-          result: rows,
+          quotes_result: rows,
+          requests_result: requestsRows,
           timestamp: new Date().toISOString()
         }),
       };
@@ -486,25 +502,11 @@ export const handler = async (event, context) => {
     `;
 
     // ============================================
-    // QUERY 3: CALCULATE SPEED TO LEAD METRICS
+    // QUERY 3: CALCULATE SPEED TO LEAD METRICS (TEMPORARILY DISABLED)
     // ============================================
     // Purpose: Measure how fast we respond to customer requests
-    // Faster response = higher close rate (proven correlation)
-    const speedToLeadQuery = `
-      SELECT 
-        AVG(TIMESTAMP_DIFF(
-          CAST(q.sent_date AS TIMESTAMP),
-          CAST(r.requested_on_date AS TIMESTAMP), 
-          MINUTE
-        )) as avg_minutes_to_quote
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
-      JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-        ON r.quote_number = q.quote_number
-      WHERE r.requested_on_date IS NOT NULL
-        AND q.sent_date IS NOT NULL
-        AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-      LIMIT 1
-    `;
+    // Note: Temporarily using placeholder value until v_requests table is confirmed to exist
+    const speedToLeadQuery = null; // Disabled for now
 
     // ============================================
     // QUERY 4: COUNT GOOGLE REVIEWS THIS WEEK
@@ -537,9 +539,9 @@ export const handler = async (event, context) => {
       [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
       console.log('[dashboard-data-sales] Jobs data fetched, rows:', jobsData?.length);
       
-      console.log('[dashboard-data-sales] Fetching speed to lead data...');
-      [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
-      console.log('[dashboard-data-sales] Speed to lead data fetched, rows:', speedToLeadData?.length);
+      console.log('[dashboard-data-sales] Speed to lead query disabled - using placeholder');
+      speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Placeholder: 12 hours
+      console.log('[dashboard-data-sales] Speed to lead data set to placeholder');
       
       // Try to get reviews count, but don't fail if it doesn't work
       try {
@@ -566,12 +568,9 @@ export const handler = async (event, context) => {
         jobsData = [];
       }
       
-      try {
-        [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
-      } catch (speedErr) {
-        console.error('[dashboard-data-sales] Speed to lead query failed:', speedErr);
-        speedToLeadData = [];
-      }
+      // Speed to lead query disabled - use placeholder
+      console.log('[dashboard-data-sales] Speed to lead query disabled in fallback - using placeholder');
+      speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Placeholder: 12 hours
       
       // If we still don't have essential data, throw error
       if (quotesData.length === 0) {
