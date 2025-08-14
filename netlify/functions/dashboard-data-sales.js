@@ -617,11 +617,25 @@ export const handler = async (event, context) => {
     `;
 
     // ============================================
-    // QUERY 3: CALCULATE SPEED TO LEAD METRICS (TEMPORARILY DISABLED)
+    // QUERY 3: CALCULATE SPEED TO LEAD METRICS
     // ============================================
     // Purpose: Measure how fast we respond to customer requests
-    // Note: Temporarily using placeholder value until v_requests table is confirmed to exist
-    const speedToLeadQuery = null; // Disabled for now
+    // Faster response = higher close rate (proven correlation)
+    const speedToLeadQuery = `
+      SELECT 
+        AVG(TIMESTAMP_DIFF(
+          CAST(q.sent_date AS TIMESTAMP),
+          CAST(r.requested_on_date AS TIMESTAMP), 
+          MINUTE
+        )) as avg_minutes_to_quote
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
+      JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+        ON r.quote_number = q.quote_number
+      WHERE r.requested_on_date IS NOT NULL
+        AND q.sent_date IS NOT NULL
+        AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+      LIMIT 1
+    `;
 
     // ============================================
     // QUERY 4: COUNT GOOGLE REVIEWS THIS WEEK (TEMPORARILY DISABLED)
@@ -650,9 +664,9 @@ export const handler = async (event, context) => {
       jobsData = []; // Temporarily disabled to isolate issue
       console.log('[dashboard-data-sales] Jobs data set to empty array');
       
-      console.log('[dashboard-data-sales] Speed to lead query disabled - using placeholder');
-      speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Placeholder: 12 hours
-      console.log('[dashboard-data-sales] Speed to lead data set to placeholder');
+      console.log('[dashboard-data-sales] Fetching speed to lead data...');
+      [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
+      console.log('[dashboard-data-sales] Speed to lead data fetched, rows:', speedToLeadData?.length);
       
       // Reviews query disabled - use placeholder  
       console.log('[dashboard-data-sales] Reviews query disabled - using placeholder');
@@ -672,9 +686,13 @@ export const handler = async (event, context) => {
       console.log('[dashboard-data-sales] Jobs query disabled in fallback - using empty array');
       jobsData = [];
       
-      // Speed to lead query disabled - use placeholder
-      console.log('[dashboard-data-sales] Speed to lead query disabled in fallback - using placeholder');
-      speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Placeholder: 12 hours
+      // Try speed to lead query in fallback
+      try {
+        [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
+      } catch (speedErr) {
+        console.error('[dashboard-data-sales] Speed to lead query failed:', speedErr);
+        speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Fallback to 12 hours
+      }
       
       // If we still don't have essential data, throw error
       if (quotesData.length === 0) {
@@ -714,55 +732,19 @@ export const handler = async (event, context) => {
     // Add debugging checkpoint before processing
     console.log('[dashboard-data-sales] ✅ About to process dashboard format');
     
-    // TEMPORARY: Return simple data structure with actual quotes count
-    console.log('[dashboard-data-sales] ✅ Using temporary simple data structure with real quotes data');
-    
-    // Calculate basic metrics from quotes data
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const quotesSentToday = quotesData.filter(q => {
-      const sentDate = q.sent_date?.value || q.sent_date;
-      return sentDate && sentDate.toString().includes(today);
-    }).length;
-    
-    // Debug: check what quotes data we have
-    console.log('[dashboard-data-sales] Quotes debug:', {
-      totalQuotes: quotesData.length,
-      today: today,
-      sampleQuotes: quotesData.slice(0, 3).map(q => ({
-        quote_number: q.quote_number,
-        sent_date: q.sent_date,
-        salesperson: q.salesperson
-      })),
-      quotesSentToday: quotesSentToday
-    });
-    
-    const dashboardData = {
-      kpiMetrics: {
-        quotesSentToday: quotesSentToday,
-        convertedToday: 0,
-        convertedThisWeek: 0,
-        conversionRateThisWeek: 0,
-        averageQuotesPerDay: 15,
-        winterOTB: 450000,
-        nextMonthOTB: 175000,
-        speedToLead: 720,
-        conversionRate30Day: 35,
-        googleReviews: 8
-      },
-      rawQuotes: quotesData.slice(0, 100), // Include first 100 quotes for display
-      rawJobs: [],
-      timeSeries: {
-        week: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
-        currentWeekDaily: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
-        month: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
-        year: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
-        all: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 }
-      },
-      salespersons: [],
-      dataSource: 'temporary-simple',
-      timestamp: new Date().toISOString()
-    };
-    console.log('[dashboard-data-sales] ✅ Simple data structure created');
+    // Process data into dashboard format using the proper function
+    let dashboardData;
+    try {
+      // Use placeholder for reviews since it's disabled
+      const reviewsThisWeek = 8; // reviewsData[0]?.reviews_count || 0;
+      console.log('[dashboard-data-sales] ✅ Calling processIntoDashboardFormat with real data...');
+      dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek);
+      console.log('[dashboard-data-sales] ✅ processIntoDashboardFormat completed successfully');
+    } catch (processError) {
+      console.error('[dashboard-data-sales] Error processing data:', processError);
+      console.error('[dashboard-data-sales] processError stack:', processError.stack);
+      throw processError;
+    }
     
     console.log('[dashboard-data-sales] Dashboard data processed:', {
       kpiMetrics: dashboardData.kpiMetrics,
