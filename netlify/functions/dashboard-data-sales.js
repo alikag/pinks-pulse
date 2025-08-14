@@ -571,6 +571,9 @@ export const handler = async (event, context) => {
     console.log(`[dashboard-data-sales] Queries completed in ${queryEndTime - queryStartTime}ms`);
     console.log(`[dashboard-data-sales] Query results: ${quotesData.length} quotes, ${jobsData.length} jobs, ${speedToLeadData.length} speed to lead records`);
     
+    // Add debugging checkpoint
+    console.log('[dashboard-data-sales] ✅ Reached post-query checkpoint');
+    
     
     // Debug: Check sample job dates
     if (jobsData.length > 0) {
@@ -593,14 +596,20 @@ export const handler = async (event, context) => {
       });
     }
 
+    // Add debugging checkpoint before processing
+    console.log('[dashboard-data-sales] ✅ About to process dashboard format');
+    
     // Process data into dashboard format
     let dashboardData;
     try {
       // Manually set to 7 for the new reviews this week
       const reviewsThisWeek = 7; // reviewsData[0]?.reviews_count || 0;
+      console.log('[dashboard-data-sales] ✅ Calling processIntoDashboardFormat...');
       dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek);
+      console.log('[dashboard-data-sales] ✅ processIntoDashboardFormat completed');
     } catch (processError) {
       console.error('[dashboard-data-sales] Error processing data:', processError);
+      console.error('[dashboard-data-sales] processError stack:', processError.stack);
       throw processError;
     }
     
