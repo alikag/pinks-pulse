@@ -35,6 +35,62 @@ export const handler = async (event, context) => {
     };
   }
 
+  // Add speed-to-lead test endpoint to test if proper query works
+  if (event.path && event.path.includes('/speed-test')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      console.log('[speed-test] Testing speed to lead query...');
+      
+      const speedToLeadQuery = `
+        SELECT 
+          AVG(TIMESTAMP_DIFF(
+            CAST(q.sent_date AS TIMESTAMP),
+            CAST(r.requested_on_date AS TIMESTAMP), 
+            MINUTE
+          )) as avg_minutes_to_quote,
+          COUNT(*) as record_count
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
+        JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
+          ON r.quote_number = q.quote_number
+        WHERE r.requested_on_date IS NOT NULL
+          AND q.sent_date IS NOT NULL
+          AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+        LIMIT 1
+      `;
+      
+      const [rows] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: 8000 });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Speed to lead query test successful',
+          result: rows[0] || null,
+          timestamp: new Date().toISOString()
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Speed to lead query test failed',
+          message: error.message,
+          stack: error.stack
+        }),
+      };
+    }
+  }
+
   // Add quotes test endpoint to test the exact query from main function
   if (event.path && event.path.includes('/quotes-test')) {
     try {
