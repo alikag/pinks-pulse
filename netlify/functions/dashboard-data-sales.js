@@ -1824,6 +1824,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     console.log('[Smart CVR] No quotes sent this week for CVR calculation');
   }
   
+  // Helper function to calculate Winter OTB - must be defined before use
+  const calculateWinterOTB = (monthlyData) => {
+    const december = monthlyData[12] || 0;
+    const january = monthlyData[1] || 0;
+    const february = monthlyData[2] || 0;
+    return december + january + february;
+  };
+  
   const kpiMetrics = {
     quotesToday: metrics.quotesToday,
     convertedToday: metrics.convertedToday,
@@ -1889,13 +1897,6 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   }
   
   // Calculate Winter OTB (December + January + February)
-  const calculateWinterOTB = (monthlyData) => {
-    const december = monthlyData[12] || 0;
-    const january = monthlyData[1] || 0;
-    const february = monthlyData[2] || 0;
-    return december + january + february;
-  };
-  
   // Debug jobs-related KPIs
   console.log('[Jobs KPI Debug]', {
     recurringRevenue2026: metrics.recurringRevenue2026,
