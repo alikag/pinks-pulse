@@ -668,6 +668,18 @@ export const handler = async (event, context) => {
       return sentDate && sentDate.toString().includes(today);
     }).length;
     
+    // Debug: check what quotes data we have
+    console.log('[dashboard-data-sales] Quotes debug:', {
+      totalQuotes: quotesData.length,
+      today: today,
+      sampleQuotes: quotesData.slice(0, 3).map(q => ({
+        quote_number: q.quote_number,
+        sent_date: q.sent_date,
+        salesperson: q.salesperson
+      })),
+      quotesSentToday: quotesSentToday
+    });
+    
     const dashboardData = {
       kpiMetrics: {
         quotesSentToday: quotesSentToday,
