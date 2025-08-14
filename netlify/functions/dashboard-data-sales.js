@@ -509,15 +509,11 @@ export const handler = async (event, context) => {
     const speedToLeadQuery = null; // Disabled for now
 
     // ============================================
-    // QUERY 4: COUNT GOOGLE REVIEWS THIS WEEK
+    // QUERY 4: COUNT GOOGLE REVIEWS THIS WEEK (TEMPORARILY DISABLED)
     // ============================================
     // Purpose: Track reputation building through review acquisition
     // NOTE: This is now deprecated - we scrape Google Maps directly instead
-    const reviewsQuery = `
-      SELECT COUNT(*) as reviews_count
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.google_reviews\`
-      WHERE created_at >= FORMAT_TIMESTAMP('%Y-%m-%d', TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY))
-    `;
+    const reviewsQuery = null; // Disabled - using placeholder
 
     console.log('[dashboard-data-sales] Executing queries...');
     const queryStartTime = Date.now();
@@ -543,13 +539,9 @@ export const handler = async (event, context) => {
       speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Placeholder: 12 hours
       console.log('[dashboard-data-sales] Speed to lead data set to placeholder');
       
-      // Try to get reviews count, but don't fail if it doesn't work
-      try {
-        [reviewsData] = await bigquery.query({ query: reviewsQuery, timeoutMs: 2000 });
-      } catch (reviewErr) {
-        console.log('[dashboard-data-sales] Reviews query failed (non-critical):', reviewErr.message);
-        reviewsData = [{ reviews_count: 0 }];
-      }
+      // Reviews query disabled - use placeholder  
+      console.log('[dashboard-data-sales] Reviews query disabled - using placeholder');
+      reviewsData = [{ reviews_count: 8 }]; // Placeholder value
     } catch (queryError) {
       console.error('[dashboard-data-sales] Critical query error:', queryError);
       // Try to run queries individually if parallel execution fails
