@@ -519,7 +519,7 @@ export const handler = async (event, context) => {
   }
 
   try {
-    console.log('[dashboard-data-sales] Starting request processing... v3');
+    console.log('[dashboard-data-sales] Starting request processing... v4 - Root Cause Fix');
     
     // Check environment variables
     console.log('[dashboard-data-sales] Environment check:', {
