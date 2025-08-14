@@ -658,11 +658,19 @@ export const handler = async (event, context) => {
     // Add debugging checkpoint before processing
     console.log('[dashboard-data-sales] ✅ About to process dashboard format');
     
-    // TEMPORARY: Return simple data structure to test if processing is the issue
-    console.log('[dashboard-data-sales] ✅ Using temporary simple data structure');
+    // TEMPORARY: Return simple data structure with actual quotes count
+    console.log('[dashboard-data-sales] ✅ Using temporary simple data structure with real quotes data');
+    
+    // Calculate basic metrics from quotes data
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const quotesSentToday = quotesData.filter(q => {
+      const sentDate = q.sent_date?.value || q.sent_date;
+      return sentDate && sentDate.toString().includes(today);
+    }).length;
+    
     const dashboardData = {
       kpiMetrics: {
-        quotesSentToday: 0,
+        quotesSentToday: quotesSentToday,
         convertedToday: 0,
         convertedThisWeek: 0,
         conversionRateThisWeek: 0,
@@ -673,7 +681,7 @@ export const handler = async (event, context) => {
         conversionRate30Day: 35,
         googleReviews: 8
       },
-      rawQuotes: [],
+      rawQuotes: quotesData.slice(0, 100), // Include first 100 quotes for display
       rawJobs: [],
       timeSeries: {
         week: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
