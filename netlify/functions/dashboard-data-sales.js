@@ -190,6 +190,56 @@ export const handler = async (event, context) => {
     }
   }
 
+  // Add endpoint to test jobs table specifically
+  if (event.path && event.path.includes('/jobs-test')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      console.log('[jobs-test] Testing jobs table access...');
+      
+      const jobsTestQuery = `
+        SELECT 
+          COUNT(*) as total_jobs,
+          SUM(COALESCE(One_off_job_dollars, 0) + COALESCE(Visit_based_dollars, 0)) as total_value,
+          MIN(Date) as earliest_job,
+          MAX(Date) as latest_job
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
+        WHERE Date IS NOT NULL
+          AND EXTRACT(YEAR FROM DATE(Date)) = 2025
+      `;
+      
+      const [rows] = await bigquery.query({ query: jobsTestQuery, timeoutMs: 5000 });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Jobs table test successful',
+          result: rows[0] || null,
+          timestamp: new Date().toISOString()
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Jobs table test failed',
+          message: error.message,
+          stack: error.stack
+        }),
+      };
+    }
+  }
+
   // Add endpoint to test table access
   if (event.path && event.path.includes('/table-test')) {
     try {
@@ -660,9 +710,9 @@ export const handler = async (event, context) => {
       [quotesData] = await bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout });
       console.log('[dashboard-data-sales] Quotes data fetched, rows:', quotesData?.length);
       
-      console.log('[dashboard-data-sales] Jobs query temporarily disabled - using empty array');
-      jobsData = []; // Temporarily disabled to isolate issue
-      console.log('[dashboard-data-sales] Jobs data set to empty array');
+      console.log('[dashboard-data-sales] Fetching jobs data...');
+      [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
+      console.log('[dashboard-data-sales] Jobs data fetched, rows:', jobsData?.length);
       
       console.log('[dashboard-data-sales] Fetching speed to lead data...');
       [speedToLeadData] = await bigquery.query({ query: speedToLeadQuery, timeoutMs: queryTimeout });
@@ -682,9 +732,13 @@ export const handler = async (event, context) => {
         quotesData = [];
       }
       
-      // Jobs query temporarily disabled
-      console.log('[dashboard-data-sales] Jobs query disabled in fallback - using empty array');
-      jobsData = [];
+      // Try jobs query in fallback
+      try {
+        [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
+      } catch (jobsErr) {
+        console.error('[dashboard-data-sales] Jobs query failed:', jobsErr);
+        jobsData = [];
+      }
       
       // Try speed to lead query in fallback
       try {
