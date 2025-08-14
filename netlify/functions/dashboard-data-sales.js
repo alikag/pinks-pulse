@@ -599,19 +599,35 @@ export const handler = async (event, context) => {
     // Add debugging checkpoint before processing
     console.log('[dashboard-data-sales] ✅ About to process dashboard format');
     
-    // Process data into dashboard format
-    let dashboardData;
-    try {
-      // Manually set to 7 for the new reviews this week
-      const reviewsThisWeek = 7; // reviewsData[0]?.reviews_count || 0;
-      console.log('[dashboard-data-sales] ✅ Calling processIntoDashboardFormat...');
-      dashboardData = processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, reviewsThisWeek);
-      console.log('[dashboard-data-sales] ✅ processIntoDashboardFormat completed');
-    } catch (processError) {
-      console.error('[dashboard-data-sales] Error processing data:', processError);
-      console.error('[dashboard-data-sales] processError stack:', processError.stack);
-      throw processError;
-    }
+    // TEMPORARY: Return simple data structure to test if processing is the issue
+    console.log('[dashboard-data-sales] ✅ Using temporary simple data structure');
+    const dashboardData = {
+      kpiMetrics: {
+        quotesSentToday: 0,
+        convertedToday: 0,
+        convertedThisWeek: 0,
+        conversionRateThisWeek: 0,
+        averageQuotesPerDay: 15,
+        winterOTB: 450000,
+        nextMonthOTB: 175000,
+        speedToLead: 720,
+        conversionRate30Day: 35,
+        googleReviews: 8
+      },
+      rawQuotes: [],
+      rawJobs: [],
+      timeSeries: {
+        week: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+        currentWeekDaily: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+        month: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+        year: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+        all: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 }
+      },
+      salespersons: [],
+      dataSource: 'temporary-simple',
+      timestamp: new Date().toISOString()
+    };
+    console.log('[dashboard-data-sales] ✅ Simple data structure created');
     
     console.log('[dashboard-data-sales] Dashboard data processed:', {
       kpiMetrics: dashboardData.kpiMetrics,
