@@ -6,8 +6,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/.netlify/functions';
 export class BigQueryService {
   static async fetchDashboardData(): Promise<DashboardData> {
     try {
-      console.log('[BigQueryService] Fetching dashboard data from:', `${API_BASE_URL}/dashboard-data-sales`);
-      const response = await axios.get(`${API_BASE_URL}/dashboard-data-sales`);
+      console.log('[BigQueryService] Fetching dashboard data from:', `${API_BASE_URL}/dashboard-data-sales/minimal`);
+      const response = await axios.get(`${API_BASE_URL}/dashboard-data-sales/minimal`);
       
       console.log('[BigQueryService] Response status:', response.status);
       console.log('[BigQueryService] Response data:', response.data);

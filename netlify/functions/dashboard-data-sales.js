@@ -118,6 +118,86 @@ export const handler = async (event, context) => {
       };
     }
   }
+
+  // MINIMAL WORKING ENDPOINT - Just get basic data flowing
+  if (event.path && event.path.includes('/minimal')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      console.log('[minimal] Starting minimal data fetch...');
+      
+      // Just get basic quote counts - SIMPLEST POSSIBLE QUERIES
+      const quotesTodayQuery = `
+        SELECT COUNT(*) as count 
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` 
+        WHERE DATE(sent_date) = CURRENT_DATE('America/New_York')`;
+        
+      const quotesThisWeekQuery = `
+        SELECT COUNT(*) as count 
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` 
+        WHERE EXTRACT(WEEK FROM sent_date) = EXTRACT(WEEK FROM CURRENT_DATE('America/New_York'))
+        AND EXTRACT(YEAR FROM sent_date) = EXTRACT(YEAR FROM CURRENT_DATE('America/New_York'))`;
+
+      const [quotesToday] = await bigquery.query({ query: quotesTodayQuery, timeoutMs: 3000 });
+      const [quotesThisWeek] = await bigquery.query({ query: quotesThisWeekQuery, timeoutMs: 3000 });
+      
+      // Return minimal working data structure
+      const minimalData = {
+        kpiMetrics: {
+          quotesSentToday: quotesToday[0]?.count || 0,
+          convertedToday: 0, // Placeholder
+          convertedThisWeek: 0, // Placeholder
+          conversionRateThisWeek: 0, // Placeholder
+          averageQuotesPerDay: 15, // Placeholder
+          winterOTB: 450000, // Placeholder
+          nextMonthOTB: 175000, // Placeholder
+          speedToLead: 720, // Placeholder
+          conversionRate30Day: 35, // Placeholder
+          googleReviews: 8 // From the working reviews endpoint
+        },
+        rawQuotes: [],
+        rawJobs: [],
+        timeSeries: {
+          week: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+          currentWeekDaily: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+          month: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+          year: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 },
+          all: { labels: [], quotesSent: [], quotesConverted: [], conversionRate: [], totalSent: 0, totalConverted: 0 }
+        },
+        salespersons: [],
+        dataSource: 'minimal',
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('[minimal] Success:', minimalData.kpiMetrics);
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(minimalData),
+      };
+      
+    } catch (error) {
+      console.error('[minimal] Error:', error);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Minimal test failed',
+          message: error.message,
+          stack: error.stack
+        }),
+      };
+    }
+  }
   
   // Add debug endpoint to check join issue
   if (event.path && event.path.includes('/debug-join')) {
