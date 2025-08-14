@@ -35,6 +35,65 @@ export const handler = async (event, context) => {
     };
   }
 
+  // Add quotes test endpoint to test the exact query from main function
+  if (event.path && event.path.includes('/quotes-test')) {
+    try {
+      const bigqueryConfig = {
+        projectId: process.env.BIGQUERY_PROJECT_ID
+      };
+      
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        bigqueryConfig.credentials = credentials;
+      }
+      
+      const bigquery = new BigQuery(bigqueryConfig);
+      console.log('[quotes-test] Testing exact quotes query from main function...');
+      
+      const quotesQuery = `
+        SELECT 
+          quote_number,
+          quote_id,
+          client_name,
+          salesperson,
+          status,
+          total_dollars,
+          sent_date,
+          converted_date,
+          days_to_convert,
+          job_numbers
+        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
+        WHERE sent_date IS NOT NULL
+          AND sent_date >= '2024-01-01'
+        ORDER BY sent_date DESC
+        LIMIT 5000
+      `;
+      
+      const [rows] = await bigquery.query({ query: quotesQuery, timeoutMs: 8000 });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'Quotes query test successful',
+          rowCount: rows.length,
+          sampleRow: rows[0] || null,
+          timestamp: new Date().toISOString()
+        }),
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Quotes query test failed',
+          message: error.message,
+          stack: error.stack
+        }),
+      };
+    }
+  }
+
   // Add simple test endpoint for basic query
   if (event.path && event.path.includes('/simple-test')) {
     try {
