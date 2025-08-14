@@ -315,7 +315,7 @@ const SalesTeamPerformance: React.FC = () => {
       case 'currency':
         return formatCurrency(value)
       case 'percentage':
-        return `${value.toFixed(1)}%`
+        return `${(value || 0).toFixed(1)}%`
       case 'number':
       default:
         return value.toLocaleString()
@@ -701,7 +701,7 @@ const SalesTeamPerformance: React.FC = () => {
               <span className="text-sm text-gray-400">Conversion Rate</span>
               <Award className="h-4 w-4 text-yellow-400" />
             </div>
-            <p className="text-2xl font-bold">{summaryStats.conversionRate.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">{(summaryStats.conversionRate || 0).toFixed(1)}%</p>
           </div>
 
           <div 
@@ -889,21 +889,21 @@ const SalesTeamPerformance: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-400">Quotes/Day:</span>
                       <span className={`font-medium ${
-                        person.quotesPerDay >= 12 ? 'text-green-400' : 
-                        person.quotesPerDay >= 8 ? 'text-yellow-400' : 
+                        (person.quotesPerDay || 0) >= 12 ? 'text-green-400' : 
+                        (person.quotesPerDay || 0) >= 8 ? 'text-yellow-400' : 
                         'text-red-400'
                       }`}>
-                        {person.quotesPerDay.toFixed(1)}
+                        {person.quotesPerDay?.toFixed(1) || '0.0'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Conversion Rate:</span>
                       <span className={`font-medium ${
-                        person.conversionRate >= 45 ? 'text-green-400' : 
-                        person.conversionRate >= 30 ? 'text-yellow-400' : 
+                        (person.conversionRate || 0) >= 45 ? 'text-green-400' : 
+                        (person.conversionRate || 0) >= 30 ? 'text-yellow-400' : 
                         'text-red-400'
                       }`}>
-                        {person.conversionRate.toFixed(1)}%
+                        {person.conversionRate?.toFixed(1) || '0.0'}%
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -913,12 +913,12 @@ const SalesTeamPerformance: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-400">Speed to Lead:</span>
                       <span className={`font-medium ${
-                        person.avgSpeedToLead === null ? 'text-gray-500' :
+                        person.avgSpeedToLead === null || person.avgSpeedToLead === undefined ? 'text-gray-500' :
                         person.avgSpeedToLead <= 1440 ? 'text-green-400' : 
                         person.avgSpeedToLead <= 2880 ? 'text-yellow-400' : 
                         'text-red-400'
                       }`}>
-                        {person.avgSpeedToLead === null ? 'N/A' : 
+                        {person.avgSpeedToLead === null || person.avgSpeedToLead === undefined ? 'N/A' : 
                          person.avgSpeedToLead < 60 ? `${Math.round(person.avgSpeedToLead)}m` :
                          person.avgSpeedToLead < 1440 ? `${(person.avgSpeedToLead / 60).toFixed(1)}h` :
                          `${(person.avgSpeedToLead / 1440).toFixed(1)}d`}
