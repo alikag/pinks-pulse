@@ -1812,8 +1812,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const currentYear = estToday.getFullYear();
     const nextYear = currentYear + 1;
     
-    // Add to monthly OTB data for current year and next year's winter months (only future jobs)
-    if (isFutureJob && jobDate) {
+    // Add to monthly OTB data for current year and next year's winter months
+    // Monthly OTB shows ALL scheduled visits for the month (past and future)
+    // This represents the total booked revenue for each month
+    if (jobDate) {
       const year = jobDate.getFullYear();
       const month = jobDate.getMonth() + 1; // JavaScript months are 0-indexed
       
