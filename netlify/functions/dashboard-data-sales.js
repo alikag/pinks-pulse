@@ -36,7 +36,7 @@ export const handler = async (event, context) => {
   }
 
   // Add speed-to-lead test endpoint to test if proper query works
-  if (event.path && event.path.includes('/speed-test')) {
+  if (event.path && event.path.includes('/speedtest')) {
     try {
       const bigqueryConfig = {
         projectId: process.env.BIGQUERY_PROJECT_ID
