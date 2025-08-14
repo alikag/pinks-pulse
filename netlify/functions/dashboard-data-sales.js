@@ -1708,6 +1708,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const jobDate = parseDate(job.date || job.Date);
     const jobValue = parseFloat(job.calculated_value || job.Calculated_Value) || 0;
     
+    // CRITICAL: Only include FUTURE jobs for OTB (On The Books)
+    // OTB represents future scheduled work, not past completed work
+    const isFutureJob = jobDate && jobDate >= estToday;
+    
     // Count jobs for today
     if (isToday(jobDate)) {
       metrics.jobsToday++;
@@ -1718,74 +1722,82 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     if (isThisWeek(jobDate)) {
       metrics.jobsThisWeek++;
       metrics.jobsThisWeekValue += jobValue;
-      metrics.thisWeekOTB += jobValue;
+      // Only future jobs count for OTB
+      if (isFutureJob) {
+        metrics.thisWeekOTB += jobValue;
+      }
     }
     
-    if (isThisMonth(jobDate)) {
+    // Only future jobs count for monthly OTB
+    if (isFutureJob && isThisMonth(jobDate)) {
       metrics.thisMonthOTB += jobValue;
     }
     
-    // Add OTB by year
+    // Add OTB by year (only future jobs)
     const jobYear = jobDate ? jobDate.getFullYear() : null;
-    if (jobYear === 2025) {
+    if (isFutureJob && jobYear === 2025) {
       metrics.otb2025 += jobValue;
-    } else if (jobYear === 2026) {
+    } else if (isFutureJob && jobYear === 2026) {
       metrics.otb2026 += jobValue;
     }
     
-    // Add to total OTB
-    if (jobDate) {
+    // Add to total OTB (only future jobs)
+    if (isFutureJob) {
       metrics.totalOTB += jobValue;
     }
     
-    // Calculate weekly OTB for 11-week display
-    // Find the current week's Sunday
-    const currentWeekStart = new Date(estToday);
-    if (currentWeekStart.getDay() !== 0) {
-      currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
-    }
-    currentWeekStart.setHours(0, 0, 0, 0);
-    
-    // Calculate 11 weeks centered on current week (4 before, current, 6 after)
-    const weeksToShow = 11;
-    const weeksBefore = 4;
-    
-    // Start from 4 weeks before current week
-    const startWeek = new Date(currentWeekStart);
-    startWeek.setDate(startWeek.getDate() - (weeksBefore * 7));
-    
-    // Process each of the 11 weeks
-    for (let weekIndex = 0; weekIndex < weeksToShow; weekIndex++) {
-      const weekStart = new Date(startWeek);
-      weekStart.setDate(startWeek.getDate() + (weekIndex * 7));
+    // Calculate weekly OTB for 11-week display (only future jobs)
+    if (isFutureJob) {
+      // Find the current week's Sunday
+      const currentWeekStart = new Date(estToday);
+      if (currentWeekStart.getDay() !== 0) {
+        currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
+      }
+      currentWeekStart.setHours(0, 0, 0, 0);
       
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      weekEnd.setHours(23, 59, 59, 999);
+      // Calculate 11 weeks centered on current week (4 before, current, 6 after)
+      const weeksToShow = 11;
+      const weeksBefore = 4;
       
-      // Create a unique key for this week based on its position
-      const weekKey = `week${weekIndex}`;
+      // Start from 4 weeks before current week
+      const startWeek = new Date(currentWeekStart);
+      startWeek.setDate(startWeek.getDate() - (weeksBefore * 7));
       
-      // Check if this job falls within this week
-      if (jobDate >= weekStart && jobDate <= weekEnd) {
-        console.log('[OTB Week Debug]', {
-          jobDate: jobDate.toLocaleDateString(),
-          weekRange: `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`,
-          weekIndex,
-          weekKey,
-          jobValue,
-          jobNumber: job.Job_Number,
-          isCurrentWeek: weekIndex === weeksBefore
-        });
+      // Process each of the 11 weeks
+      for (let weekIndex = 0; weekIndex < weeksToShow; weekIndex++) {
+        const weekStart = new Date(startWeek);
+        weekStart.setDate(startWeek.getDate() + (weekIndex * 7));
         
-        if (!metrics.weeklyOTBBreakdown[weekKey]) {
-          metrics.weeklyOTBBreakdown[weekKey] = 0;
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        
+        // Create a unique key for this week based on its position
+        const weekKey = `week${weekIndex}`;
+        
+        // Check if this job falls within this week
+        if (jobDate >= weekStart && jobDate <= weekEnd) {
+          console.log('[OTB Week Debug]', {
+            jobDate: jobDate.toLocaleDateString(),
+            weekRange: `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`,
+            weekIndex,
+            weekKey,
+            jobValue,
+            jobNumber: job.Job_Number,
+            isCurrentWeek: weekIndex === weeksBefore
+          });
+          
+          if (!metrics.weeklyOTBBreakdown[weekKey]) {
+            metrics.weeklyOTBBreakdown[weekKey] = 0;
+          }
+          metrics.weeklyOTBBreakdown[weekKey] += jobValue;
+          break; // Job found in a week, no need to check other weeks
         }
-        metrics.weeklyOTBBreakdown[weekKey] += jobValue;
-        break; // Job found in a week, no need to check other weeks
       }
     }
-    if (isNextMonth(jobDate)) {
+    
+    // Next month OTB (only future jobs)
+    if (isFutureJob && isNextMonth(jobDate)) {
       metrics.nextMonthOTB += jobValue;
       console.log('[Next Month OTB Debug]', {
         jobNumber: job.Job_Number,
@@ -1800,8 +1812,8 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const currentYear = estToday.getFullYear();
     const nextYear = currentYear + 1;
     
-    // Add to monthly OTB data for current year and next year's winter months
-    if (jobDate) {
+    // Add to monthly OTB data for current year and next year's winter months (only future jobs)
+    if (isFutureJob && jobDate) {
       const year = jobDate.getFullYear();
       const month = jobDate.getMonth() + 1; // JavaScript months are 0-indexed
       
@@ -1811,9 +1823,9 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       }
     }
     
-    // Calculate 2026 revenue (ALL jobs, not just recurring)
+    // Calculate 2026 revenue (only future jobs)
     // This metric is mislabeled as "recurringRevenue2026" but should include all 2026 revenue
-    if (jobDate && jobDate.getFullYear() === nextYear) {
+    if (isFutureJob && jobDate && jobDate.getFullYear() === nextYear) {
       // Sum BOTH one-off and visit-based dollars for complete revenue picture
       const oneOffValue = parseFloat(job.One_off_job_dollars) || 0;
       const visitBasedValue = parseFloat(job.Visit_based_dollars) || 0;
