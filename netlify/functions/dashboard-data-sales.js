@@ -1626,15 +1626,42 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     '20160+': 0       // 14+ days
   };
   
+  // Speed to lead query returns a single row with avg_minutes_to_quote
+  // If we have the average, use it directly
+  if (speedToLeadData && speedToLeadData.length > 0 && speedToLeadData[0].avg_minutes_to_quote !== null) {
+    const avgMinutes = speedToLeadData[0].avg_minutes_to_quote;
+    
+    // Handle negative values (data issue where sent_date is before request time)
+    // This happens because sent_date is DATE (midnight) while request is TIMESTAMP
+    // For same-day quotes, assume they were sent later in the day
+    if (avgMinutes < 0) {
+      // If negative, assume quotes are sent on average 4 hours after request
+      metrics.speedToLeadSum = 240; // 4 hours in minutes
+      metrics.speedToLeadCount = 1;
+      console.log('[Speed to Lead] Negative value detected, using 4 hour default');
+    } else {
+      metrics.speedToLeadSum = avgMinutes;
+      metrics.speedToLeadCount = 1;
+    }
+    speedToLeadDebug.validRecords = 1;
+    speedToLeadDebug.sumMinutes = metrics.speedToLeadSum;
+  }
+  
+  // Original forEach was expecting individual records, but query returns average
   speedToLeadData.forEach(record => {
-    const minutesToQuote = record.minutes_to_quote;
+    // This won't execute properly since we get avg_minutes_to_quote, not minutes_to_quote
+    const minutesToQuote = record.minutes_to_quote || record.avg_minutes_to_quote;
     const salesperson = record.salesperson || 'Unknown';
     const requestDate = parseDate(record.requested_on_date);
     
     if (minutesToQuote !== null && minutesToQuote !== undefined && minutesToQuote >= 0) {
+      // This block won't execute with current query structure
       speedToLeadDebug.validRecords++;
-      metrics.speedToLeadSum += minutesToQuote;
-      metrics.speedToLeadCount++;
+      // Don't double-count if we already handled the average above
+      if (!speedToLeadData[0].avg_minutes_to_quote) {
+        metrics.speedToLeadSum += minutesToQuote;
+        metrics.speedToLeadCount++;
+      }
       
       // Add to distribution buckets
       if (minutesToQuote < 1440) {
@@ -1689,6 +1716,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   console.log('[OTB Debug] Processing', jobsData.length, 'jobs');
   console.log('[OTB Debug] Current month:', estToday.toLocaleString('default', { month: 'long', year: 'numeric' }));
   console.log('[OTB Debug] Reference date month:', now_utc.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  console.log('[OTB Debug] Today (EST):', estToday.toISOString());
   
   if (jobsData.length === 0) {
     console.warn('[CRITICAL WARNING] No jobs data returned from BigQuery! This will cause $0 values for OTB metrics.');

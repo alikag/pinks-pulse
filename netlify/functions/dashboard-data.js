@@ -368,34 +368,10 @@ export const handler = async (event, context) => {
     };
   } catch (error) {
     console.error('BigQuery error:', error);
-    
-    // Return mock data on error
-    const mockData = {
-      kpis: {
-        quotesSentToday: 0,
-        convertedToday: 0,
-        convertedAmountToday: '$0',
-        convertedThisWeek: 0,
-        cvrThisWeek: '0%',
-        convertedAmountThisWeek: '$0',
-        speedToLead30Day: '0 hrs',
-        cvr30Day: '0%',
-        avgQPD30Day: '0',
-        recurringRevenue2026: '$0',
-        nextMonthOTB: '$0',
-        weeklyHistorical: [],
-        otbByMonth: [],
-        otbByWeek: [],
-        monthlyProjections: [],
-      },
-      lastUpdated: new Date().toISOString(),
-      error: error.message
-    };
-
     return {
-      statusCode: 200,
+      statusCode: 503,
       headers,
-      body: JSON.stringify(mockData),
+      body: JSON.stringify({ success: false, error: error.message }),
     };
   }
 };

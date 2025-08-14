@@ -36,9 +36,12 @@ export default async (req, context) => {
     
     // Check BigQuery availability
     if (!bigquery) {
-      console.log('[dashboard-data-v2] BigQuery not available, returning mock data');
-      return new Response(JSON.stringify(getMockDashboardData()), { 
-        status: 200, 
+      console.log('[dashboard-data-v2] BigQuery not available');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'BigQuery not available',
+      }), { 
+        status: 503,
         headers 
       });
     }
@@ -78,14 +81,11 @@ export default async (req, context) => {
 
   } catch (error) {
     console.error('[dashboard-data-v2] Error:', error);
-    
-    // Return mock data on error
     return new Response(JSON.stringify({
-      ...getMockDashboardData(),
+      success: false,
       error: error.message,
-      dataSource: 'mock'
     }), {
-      status: 200,
+      status: 503,
       headers
     });
   }
@@ -252,79 +252,7 @@ function processTimeSeriesData(quotes, calculator) {
   };
 }
 
-function getMockDashboardData() {
-  return {
-    kpiMetrics: {
-      quotesToday: 0,
-      convertedToday: 0,
-      convertedTodayDollars: 0,
-      quotesThisWeek: 48,
-      convertedThisWeek: 14,
-      convertedThisWeekDollars: 25000,
-      cvrThisWeek: 29.2,
-      quotes30Days: 85,
-      converted30Days: 45,
-      cvr30Days: 53,
-      avgQPD: 3.45,
-      speedToLead30Days: 22,
-      recurringRevenue2026: 111160,
-      nextMonthOTB: 73052.50,
-      thisMonthOTB: 52000,
-      thisWeekOTB: 12500,
-      weeklyOTBBreakdown: {
-        week1: 32000,
-        week2: 28500,
-        week3: 24300,
-        week4: 18750,
-        week5: 12500
-      },
-      reviewsThisWeek: 3,
-      dataQuality: {
-        totalQuotes: 100,
-        validQuotes: 95,
-        totalRequests: 80,
-        validRequests: 75,
-        totalJobs: 60,
-        validJobs: 58
-      }
-    },
-    salespersons: [
-      { 
-        name: 'Michael Squires', 
-        quotesSent: 12, 
-        quotesConverted: 3, 
-        conversionRate: 25.0,
-        valueSent: 18819.0,
-        valueConverted: 7479.0,
-        color: 'rgb(147, 51, 234)'
-      },
-      { 
-        name: 'Christian Ruddy', 
-        quotesSent: 6, 
-        quotesConverted: 1, 
-        conversionRate: 16.7,
-        valueSent: 8602.2,
-        valueConverted: 826.2,
-        color: 'rgb(236, 72, 153)'
-      }
-    ],
-    salespersonsThisWeek: [
-      { 
-        name: 'Michael Squires', 
-        quotesSent: 8, 
-        quotesConverted: 2, 
-        conversionRate: 25.0,
-        valueSent: 12000.0,
-        valueConverted: 5000.0,
-        color: 'rgb(147, 51, 234)'
-      }
-    ],
-    recentConvertedQuotes: [],
-    timeSeries: {},
-    lastUpdated: new Date(),
-    dataSource: 'mock'
-  };
-}
+// Removed mock data generator to avoid temporary manual entries
 
 export const config = {
   path: "/api/dashboard-data-v2"
