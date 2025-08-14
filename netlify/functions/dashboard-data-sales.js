@@ -425,56 +425,26 @@ export const handler = async (event, context) => {
     console.log('[dashboard-data-sales] BigQuery client created');
 
     // ============================================
-    // QUERY 1: FETCH ALL QUOTES DATA WITH JOB CONVERSION DATES
+    // SIMPLIFIED QUERY 1: FETCH ESSENTIAL QUOTES DATA
     // ============================================
-    // Purpose: Get all quotes with ACCURATE conversion dates from jobs table
-    // This fixes the issue where quote approval date differs from job creation date
+    // Simple query without complex joins to prevent timeouts
     const quotesQuery = `
-      WITH job_conversion_dates AS (
-        -- Get the earliest conversion date for each job number
-        -- This handles recurring jobs that might have multiple entries
-        SELECT 
-          CAST(Job_Number AS STRING) as job_number_str,
-          MIN(PARSE_DATE('%Y-%m-%d', Date_Converted)) as earliest_conversion_date
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-        WHERE Date_Converted IS NOT NULL
-        GROUP BY Job_Number
-      ),
-      job_details AS (
-        -- Get job details including type and scheduled date
-        SELECT DISTINCT
-          CAST(Job_Number AS STRING) as job_number_str,
-          FIRST_VALUE(Job_type) OVER (PARTITION BY Job_Number ORDER BY Date) as job_type,
-          FIRST_VALUE(Date) OVER (PARTITION BY Job_Number ORDER BY Date) as job_date,
-          FIRST_VALUE(Client_Name) OVER (PARTITION BY Job_Number ORDER BY Date) as visit_title
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_jobs\`
-      )
       SELECT 
-        q.quote_number,
-        q.quote_id,
-        q.client_name,
-        q.salesperson,
-        q.status,
-        q.total_dollars,
-        q.sent_date,
-        -- Use job's conversion date if available, otherwise fall back to quote's converted_date
-        COALESCE(
-          j.earliest_conversion_date,
-          CAST(q.converted_date AS DATE)
-        ) as converted_date,
-        q.days_to_convert,
-        q.job_numbers,
-        -- Include job details
-        jd.job_type,
-        jd.job_date,
-        jd.visit_title
-      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-      LEFT JOIN job_conversion_dates j
-        ON j.job_number_str = q.job_numbers
-      LEFT JOIN job_details jd
-        ON jd.job_number_str = q.job_numbers
-      WHERE q.sent_date IS NOT NULL
-        AND q.sent_date >= '2024-01-01'
+        quote_number,
+        quote_id,
+        client_name,
+        salesperson,
+        status,
+        total_dollars,
+        sent_date,
+        converted_date,
+        days_to_convert,
+        job_numbers
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\`
+      WHERE sent_date IS NOT NULL
+        AND sent_date >= '2024-01-01'
+      ORDER BY sent_date DESC
+      LIMIT 5000
     `;
 
     // ============================================
@@ -521,42 +491,17 @@ export const handler = async (event, context) => {
     // Purpose: Measure how fast we respond to customer requests
     // Faster response = higher close rate (proven correlation)
     const speedToLeadQuery = `
-      WITH speed_data AS (
-        SELECT 
-          r.quote_number,                    -- Links request to quote
-          r.requested_on_date,               -- When customer asked for quote
-          q.sent_date,                       -- When we sent the quote
-          q.salesperson,                     -- Who handled it
-          
-          -- Calculate time difference in MINUTES
-          -- This is the key metric: how fast did we respond?
-          TIMESTAMP_DIFF(
-            CAST(q.sent_date AS TIMESTAMP),      -- End time (quote sent)
-            CAST(r.requested_on_date AS TIMESTAMP), -- Start time (request received)
-            MINUTE                                -- Unit: minutes
-          ) as minutes_to_quote
-          
-        FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
-        
-        -- Join requests to quotes on quote_number
-        INNER JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
-          ON r.quote_number = q.quote_number
-          
-        WHERE r.requested_on_date IS NOT NULL    -- Must have request date
-          AND q.sent_date IS NOT NULL            -- Must have sent date
-          -- Only look at last 30 days for current performance
-          AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-      )
       SELECT 
-        quote_number,
-        requested_on_date,
-        sent_date,
-        salesperson,
-        minutes_to_quote
-      FROM speed_data
-      WHERE minutes_to_quote >= 0        -- Exclude negative times (data errors)
-        AND minutes_to_quote < 10080     -- Exclude >7 days (10080 min) as likely data issues
-      LIMIT 1000  -- Performance limit, we don't need more than this
+        AVG(TIMESTAMP_DIFF(
+          CAST(sent_date AS TIMESTAMP),
+          CAST(requested_on_date AS TIMESTAMP), 
+          MINUTE
+        )) as avg_minutes_to_quote
+      FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_speed_to_lead\`
+      WHERE requested_on_date IS NOT NULL
+        AND sent_date IS NOT NULL
+        AND DATE(requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+      LIMIT 1
     `;
 
     // ============================================
@@ -577,10 +522,10 @@ export const handler = async (event, context) => {
     
     try {
       // Add timeout to prevent Netlify function timeout
-      const queryTimeout = 6000; // 6 seconds (leaving more buffer for processing)
+      const queryTimeout = 8000; // 8 seconds - more reasonable for simplified queries
       
       // Execute main queries sequentially to avoid memory/timeout issues
-      console.log('[dashboard-data-sales] Starting sequential queries with 6s timeout each...');
+      console.log('[dashboard-data-sales] Starting sequential queries with 8s timeout each...');
       
       console.log('[dashboard-data-sales] Fetching quotes data...');
       [quotesData] = await bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout });
