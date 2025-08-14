@@ -531,9 +531,9 @@ export const handler = async (event, context) => {
       [quotesData] = await bigquery.query({ query: quotesQuery, timeoutMs: queryTimeout });
       console.log('[dashboard-data-sales] Quotes data fetched, rows:', quotesData?.length);
       
-      console.log('[dashboard-data-sales] Fetching jobs data...');
-      [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
-      console.log('[dashboard-data-sales] Jobs data fetched, rows:', jobsData?.length);
+      console.log('[dashboard-data-sales] Jobs query temporarily disabled - using empty array');
+      jobsData = []; // Temporarily disabled to isolate issue
+      console.log('[dashboard-data-sales] Jobs data set to empty array');
       
       console.log('[dashboard-data-sales] Speed to lead query disabled - using placeholder');
       speedToLeadData = [{ avg_minutes_to_quote: 720 }]; // Placeholder: 12 hours
@@ -553,12 +553,9 @@ export const handler = async (event, context) => {
         quotesData = [];
       }
       
-      try {
-        [jobsData] = await bigquery.query({ query: jobsQuery, timeoutMs: queryTimeout });
-      } catch (jobsErr) {
-        console.error('[dashboard-data-sales] Jobs query failed:', jobsErr);
-        jobsData = [];
-      }
+      // Jobs query temporarily disabled
+      console.log('[dashboard-data-sales] Jobs query disabled in fallback - using empty array');
+      jobsData = [];
       
       // Speed to lead query disabled - use placeholder
       console.log('[dashboard-data-sales] Speed to lead query disabled in fallback - using placeholder');
