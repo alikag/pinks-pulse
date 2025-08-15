@@ -1775,8 +1775,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       metrics.totalOTB += jobValue;
     }
     
-    // Calculate weekly OTB for 11-week display (only future jobs)
-    if (isFutureJob) {
+    // Calculate weekly OTB for 11-week display
+    // Include ALL jobs in the 11-week range (past, present, and future)
+    // This shows actual revenue for past weeks and scheduled revenue for future weeks
+    if (jobDate) {
       // Find the current week's Sunday
       const currentWeekStart = new Date(estToday);
       if (currentWeekStart.getDay() !== 0) {
@@ -1792,20 +1794,27 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       const startWeek = new Date(currentWeekStart);
       startWeek.setDate(startWeek.getDate() - (weeksBefore * 7));
       
-      // Process each of the 11 weeks
-      for (let weekIndex = 0; weekIndex < weeksToShow; weekIndex++) {
-        const weekStart = new Date(startWeek);
-        weekStart.setDate(startWeek.getDate() + (weekIndex * 7));
-        
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        weekEnd.setHours(23, 59, 59, 999);
-        
-        // Create a unique key for this week based on its position
-        const weekKey = `week${weekIndex}`;
-        
-        // Check if this job falls within this week
-        if (jobDate >= weekStart && jobDate <= weekEnd) {
+      // End at 6 weeks after current week
+      const endWeek = new Date(currentWeekStart);
+      endWeek.setDate(endWeek.getDate() + ((weeksToShow - weeksBefore - 1) * 7) + 6);
+      endWeek.setHours(23, 59, 59, 999);
+      
+      // Only include jobs within the 11-week window
+      if (jobDate >= startWeek && jobDate <= endWeek) {
+        // Process each of the 11 weeks
+        for (let weekIndex = 0; weekIndex < weeksToShow; weekIndex++) {
+          const weekStart = new Date(startWeek);
+          weekStart.setDate(startWeek.getDate() + (weekIndex * 7));
+          
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          weekEnd.setHours(23, 59, 59, 999);
+          
+          // Create a unique key for this week based on its position
+          const weekKey = `week${weekIndex}`;
+          
+          // Check if this job falls within this week
+          if (jobDate >= weekStart && jobDate <= weekEnd) {
           console.log('[OTB Week Debug]', {
             jobDate: jobDate.toLocaleDateString(),
             weekRange: `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`,
@@ -1818,9 +1827,10 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           
           if (!metrics.weeklyOTBBreakdown[weekKey]) {
             metrics.weeklyOTBBreakdown[weekKey] = 0;
+            }
+            metrics.weeklyOTBBreakdown[weekKey] += jobValue;
+            break; // Job found in a week, no need to check other weeks
           }
-          metrics.weeklyOTBBreakdown[weekKey] += jobValue;
-          break; // Job found in a week, no need to check other weeks
         }
       }
     }
