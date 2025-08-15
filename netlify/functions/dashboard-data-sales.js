@@ -671,24 +671,14 @@ export const handler = async (event, context) => {
     // QUERY 3: CALCULATE SPEED TO LEAD METRICS
     // ============================================
     // Purpose: Measure how fast we respond to customer requests
-    // Faster response = higher close rate (proven correlation)
-    // Note: sent_date is DATE (midnight), requested_on_date is TIMESTAMP
-    // For same-day quotes (87% of all quotes), we assume 4-hour average response time
+    // CRITICAL ISSUE: sent_date is DATE not TIMESTAMP - needs to be fixed in v_quotes
     const speedToLeadQuery = `
       SELECT 
-        AVG(CASE 
-          WHEN DATE(r.requested_on_date) = DATE(q.sent_date) THEN
-            -- Same day quote: assume 4 hours average response time
-            -- This is necessary because sent_date is DATE (00:00:00) not TIMESTAMP
-            240
-          ELSE
-            -- Different day: calculate actual difference
-            TIMESTAMP_DIFF(
-              CAST(q.sent_date AS TIMESTAMP),
-              CAST(r.requested_on_date AS TIMESTAMP), 
-              MINUTE
-            )
-        END) as avg_minutes_to_quote
+        AVG(TIMESTAMP_DIFF(
+          CAST(q.sent_date AS TIMESTAMP),
+          CAST(r.requested_on_date AS TIMESTAMP), 
+          MINUTE
+        )) as avg_minutes_to_quote
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
       JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
         ON r.quote_number = q.quote_number
@@ -1663,15 +1653,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   };
   
   // Speed to lead query returns a single row with avg_minutes_to_quote
-  // The query now properly handles same-day quotes (87% of all quotes)
   if (speedToLeadData && speedToLeadData.length > 0 && speedToLeadData[0].avg_minutes_to_quote !== null) {
     const avgMinutes = speedToLeadData[0].avg_minutes_to_quote;
     
-    // Query now returns positive values with smart calculation for same-day quotes
     metrics.speedToLeadSum = avgMinutes;
     metrics.speedToLeadCount = 1;
     
-    console.log('[Speed to Lead] Average response time:', avgMinutes, 'minutes (', (avgMinutes/60).toFixed(1), 'hours)');
+    // WARNING: This will show negative values until sent_date is fixed to TIMESTAMP in v_quotes
+    console.log('[Speed to Lead] Current value (BROKEN until BigQuery fix):', avgMinutes, 'minutes');
     speedToLeadDebug.validRecords = 1;
     speedToLeadDebug.sumMinutes = metrics.speedToLeadSum;
   }
