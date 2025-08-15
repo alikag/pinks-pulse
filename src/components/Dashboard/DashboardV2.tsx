@@ -1818,15 +1818,16 @@ const DashboardV2: React.FC = () => {
         gradient.addColorStop(0, CHART_COLORS.revenue.gradient)
         gradient.addColorStop(1, 'rgba(59, 130, 246, 0)')
         
-        // Show all 12 months of 2025
-        const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        // Show only March-December 2025 (company launched in March)
+        const activeMonths = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] // March onwards only
+        const activeMonthIndices = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11] // 0-indexed month numbers
         
         // Use filtered data if a salesperson is selected
         const filteredOTBData = data.rawJobs ? calculateFilteredOTBData(data.rawJobs, selectedSalesperson) : null;
         
-        let monthLabels = allMonths
-        let monthlyOTB = allMonths.map((_, index) => {
-          const monthNumber = index + 1
+        let monthLabels = activeMonths
+        let monthlyOTB = activeMonthIndices.map((monthIndex) => {
+          const monthNumber = monthIndex + 1 // Convert to 1-indexed
           if (selectedSalesperson !== 'all' && filteredOTBData) {
             return filteredOTBData.monthlyOTB[monthNumber] || 0
           }
@@ -1845,9 +1846,9 @@ const DashboardV2: React.FC = () => {
         // July 20+: 6 vans
         // Aug-Dec: 6 vans
         
-        const monthlyTargets = allMonths.map((_, index) => {
-          const month = index + 1;
-          const workingDays = workingDaysPerMonth[index];
+        const monthlyTargets = activeMonthIndices.map((monthIndex) => {
+          const month = monthIndex + 1; // Convert to 1-indexed (1=Jan, 2=Feb, etc.)
+          const workingDays = workingDaysPerMonth[monthIndex];
           
           let vans;
           if (month < 7) {

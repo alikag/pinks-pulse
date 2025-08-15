@@ -1056,6 +1056,23 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       day: '2-digit'
     });
     
+    // Compare with today's EST date string
+    const isMatchingDate = dateEstStr === estDateString;
+    
+    return isMatchingDate;
+  };
+  
+  const isTodayAndNotFuture = (date) => {
+    if (!date) return false;
+    
+    // Get the date components in EST
+    const dateEstStr = date.toLocaleDateString("en-US", {
+      timeZone: "America/New_York",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
     // Get the date in EST timezone for future comparison
     const dateInEST = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
     const isNotFuture = dateInEST <= estToday;
@@ -1064,7 +1081,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     const isMatchingDate = dateEstStr === estDateString;
     
     if (isMatchingDate && !isNotFuture) {
-      console.log('[Future conversion blocked in isToday]', {
+      console.log('[Future conversion blocked in isTodayAndNotFuture]', {
         quote_converted_date: date.toISOString(),
         dateInEST: dateInEST.toISOString(),
         estToday: estToday.toISOString(),
@@ -1245,6 +1262,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   let metrics = {
     // === TODAY'S METRICS ===
     quotesToday: 0,              // KPI: "Quotes Sent Today" - Count of quotes sent today
+    quotesTodayDollars: 0,       // Total dollar value of quotes sent today
     convertedToday: 0,           // Count of quotes that converted today (not displayed)
     convertedTodayDollars: 0,    // KPI: "Converted Today ($)" - Dollar value of today's conversions
     jobsToday: 0,                // KPI: "Jobs Today" - Count of jobs scheduled for today
@@ -1363,7 +1381,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         parsedConvertedDate: convertedDate ? convertedDate.toISOString() : null,
         status: quote.status,
         isToday_sent: sentDate ? isToday(sentDate) : false,
-        isToday_converted: convertedDate ? isToday(convertedDate) : false,
+        isToday_converted: convertedDate ? isTodayAndNotFuture(convertedDate) : false,
         isThisWeek_sent: sentDate ? isThisWeek(sentDate) : false,
         isThisWeek_converted: convertedDate ? isThisWeek(convertedDate) : false
       });
@@ -1391,6 +1409,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
       
       if (isToday(sentDate)) {
         metrics.quotesToday++;
+        metrics.quotesTodayDollars += totalDollars;
+        console.log('[Quote Sent Today]', {
+          quote_number: quote.quote_number,
+          client_name: quote.client_name,
+          sent_date: quote.sent_date,
+          parsed_sent_date: sentDate.toISOString(),
+          total_dollars: totalDollars
+        });
       }
       if (isThisWeek(sentDate)) {
         metrics.quotesThisWeek++;
@@ -1477,14 +1503,14 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           parsed_converted_date: convertedDate.toISOString(),
           convertedDate_EST: convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"}),
           convertedDate_full_EST: convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
-          isToday_result: isToday(convertedDate),
+          isToday_result: isTodayAndNotFuture(convertedDate),
           isThisWeek_result: isThisWeek(convertedDate),
           estToday_EST: estDateString,
           totalDollars
         });
       }
       
-      if (isToday(convertedDate)) {
+      if (isTodayAndNotFuture(convertedDate)) {
         console.log('🚨🚨🚨 CONVERTED TODAY FOUND - THIS SHOULD NOT HAPPEN ON 7/1! 🚨🚨🚨', {
           quoteNumber: quote.quote_number,
           clientName: quote.client_name,
@@ -1494,7 +1520,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
           convertedDate_FULL_EST: convertedDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
           estToday_EST: estDateString,
           totalDollars,
-          isToday_result: isToday(convertedDate),
+          isToday_result: isTodayAndNotFuture(convertedDate),
           status: quote.status
         });
         
@@ -1503,7 +1529,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
         const isActuallyJuly1 = estDateParts[0] === '7' && estDateParts[1] === '1';
         
         if (!isActuallyJuly1) {
-          console.error(`❌❌❌ CRITICAL BUG: Quote ${quote.quote_number} (${quote.client_name}) converted on ${convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"})} but isToday() returned true for July 1st!`);
+          console.error(`❌❌❌ CRITICAL BUG: Quote ${quote.quote_number} (${quote.client_name}) converted on ${convertedDate.toLocaleDateString("en-US", {timeZone: "America/New_York"})} but isTodayAndNotFuture() returned true for July 1st!`);
         }
         
         metrics.convertedToday++;
@@ -1888,9 +1914,13 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
   // Calculate final KPI metrics
   console.log('[dashboard-data-sales] Metrics summary:', {
     quotesToday: metrics.quotesToday,
+    quotesTodayDollars: metrics.quotesTodayDollars,
+    convertedToday: metrics.convertedToday,
+    convertedTodayDollars: metrics.convertedTodayDollars,
     quotesThisWeek: metrics.quotesThisWeek,
     quotes30Days: metrics.quotes30Days,
-    referenceDate: estToday.toISOString()
+    referenceDate: estToday.toISOString(),
+    todayString: estDateString
   });
   
   // Debug CVR calculation
