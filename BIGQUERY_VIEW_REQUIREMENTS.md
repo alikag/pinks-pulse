@@ -202,6 +202,17 @@ WHERE EXTRACT(YEAR FROM Date) = 2025
   AND EXTRACT(MONTH FROM Date) = 9
 ```
 
+## Known Data Issues (August 15, 2025)
+
+### Duplicate Quote Records
+**Problem**: Quote #1154 (Paul Fargione) appears twice in v_quotes with identical data
+- Both records show status: "draft", sent_date: 2025-08-15, total: $2052
+- This causes dashboard to show 8 quotes when Jobber shows 7
+- Total value is correct but count is off by 1
+
+**Impact**: Dashboard shows 8 quotes sent today instead of 7
+**Fix Required**: v_quotes view should deduplicate quotes by quote_number
+
 ## Error Handling
 
 The dashboard backend expects:
@@ -209,6 +220,7 @@ The dashboard backend expects:
 2. Required columns must be present (queries will fail otherwise)
 3. Date columns should handle NULL values gracefully
 4. Monetary values should default to 0, not NULL
+5. Quotes should be deduplicated by quote_number to prevent counting issues
 
 ## Contact for Issues
 
