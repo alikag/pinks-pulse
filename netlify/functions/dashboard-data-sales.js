@@ -671,19 +671,19 @@ export const handler = async (event, context) => {
     // QUERY 3: CALCULATE SPEED TO LEAD METRICS
     // ============================================
     // Purpose: Measure how fast we respond to customer requests
-    // CRITICAL ISSUE: sent_date is DATE not TIMESTAMP - needs to be fixed in v_quotes
+    // Now using sent_datetime TIMESTAMP field for accurate calculations
     const speedToLeadQuery = `
       SELECT 
         AVG(TIMESTAMP_DIFF(
-          CAST(q.sent_date AS TIMESTAMP),
-          CAST(r.requested_on_date AS TIMESTAMP), 
+          q.sent_datetime,
+          r.requested_on_date, 
           MINUTE
         )) as avg_minutes_to_quote
       FROM \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_requests\` r
       JOIN \`${process.env.BIGQUERY_PROJECT_ID}.jobber_data.v_quotes\` q
         ON r.quote_number = q.quote_number
       WHERE r.requested_on_date IS NOT NULL
-        AND q.sent_date IS NOT NULL
+        AND q.sent_datetime IS NOT NULL
         AND DATE(r.requested_on_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
       LIMIT 1
     `;
@@ -1659,8 +1659,7 @@ function processIntoDashboardFormat(quotesData, jobsData, speedToLeadData, revie
     metrics.speedToLeadSum = avgMinutes;
     metrics.speedToLeadCount = 1;
     
-    // WARNING: This will show negative values until sent_date is fixed to TIMESTAMP in v_quotes
-    console.log('[Speed to Lead] Current value (BROKEN until BigQuery fix):', avgMinutes, 'minutes');
+    console.log('[Speed to Lead] Average response time:', avgMinutes?.toFixed(0), 'minutes (', (avgMinutes/60).toFixed(1), 'hours)');
     speedToLeadDebug.validRecords = 1;
     speedToLeadDebug.sumMinutes = metrics.speedToLeadSum;
   }
