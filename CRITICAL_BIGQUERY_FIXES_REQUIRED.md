@@ -174,13 +174,76 @@ WHERE EXTRACT(YEAR FROM Date) = 2025
 
 ---
 
+## 7. CRITICAL: Late Jobs Query is Completely Wrong
+
+### Current Problem
+- Dashboard shows 0 late jobs
+- v_late_jobs view returns error or wrong data
+- Cannot track overdue work
+
+### Root Cause
+v_late_jobs has BACKWARDS logic - Line 25:
+```sql
+-- WRONG - This finds COMPLETED jobs, not LATE jobs!
+AND j.Date_Converted IS NOT NULL
+```
+
+### Data Analysis Results
+- **316 past-due jobs** exist in v_jobs
+- ALL 316 have `Date_Converted IS NOT NULL` (they're completed!)
+- **0 jobs** have `Date_Converted IS NULL` (truly incomplete/late)
+- **Visit_Status field exists** and shows: "upcoming", "today", "late", "archived"
+
+### REQUIRED FIX in v_late_jobs view
+```sql
+-- Current (WRONG):
+WHERE DATE(j.Date) < CURRENT_DATE('America/New_York')
+  AND j.Date_Converted IS NOT NULL  -- DELETE THIS LINE!
+
+-- Required (CORRECT):
+WHERE DATE(j.Date) < CURRENT_DATE('America/New_York')
+  AND (Visit_Status IN ('late', 'upcoming', 'today') 
+       OR Visit_Status IS NULL)
+  AND Visit_completed != 'Yes'  -- or similar field to exclude completed visits
+```
+
+### The Real Issue
+The data shows ALL past-due jobs are already converted/completed. This means either:
+1. No jobs are actually late (everything gets done on time)
+2. The Visit_Status field should be used instead of Date_Converted
+3. Need to check Visit_completed field or similar
+
+---
+
+## 8. CRITICAL: All Past Jobs Show as Converted
+
+### Current Problem  
+- v_jobs shows 316 past-due jobs
+- ALL 316 have Date_Converted NOT NULL
+- This means 100% of past jobs appear completed
+
+### Possible Root Causes
+1. Date_Converted might mean "quote converted to job" not "job completed"
+2. Need to use Visit_Status or Visit_completed fields instead
+3. Data sync might be marking all scheduled jobs as "converted"
+
+### REQUIRED Investigation
+Check what these fields actually mean:
+- `Date_Converted`: When quote became a job? Or when job was completed?
+- `Visit_Status`: Values include "late", "upcoming", "today", "archived"
+- `Visit_completed`: Appears to be a Yes/No field
+
+---
+
 ## Implementation Priority
 
-1. **IMMEDIATE**: Fix v_quotes.sent_date to TIMESTAMP (Speed to Lead)
-2. **IMMEDIATE**: Deduplicate quotes in v_quotes 
-3. **HIGH**: Fix September 2025 data sync
-4. **HIGH**: Remove date filter from v_jobs
-5. **MEDIUM**: Fix job dollar categorization
+1. **IMMEDIATE**: Fix v_late_jobs to use Visit_Status/Visit_completed
+2. **IMMEDIATE**: Fix v_quotes.sent_date to TIMESTAMP (Speed to Lead) ✅ PARTIALLY FIXED
+3. **IMMEDIATE**: Deduplicate quotes in v_quotes 
+4. **HIGH**: Fix September 2025 data sync
+5. **HIGH**: Remove date filter from v_jobs
+6. **MEDIUM**: Fix job dollar categorization
+7. **INVESTIGATE**: What does Date_Converted actually mean?
 
 ---
 
